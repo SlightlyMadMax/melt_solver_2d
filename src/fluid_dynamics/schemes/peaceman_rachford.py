@@ -47,6 +47,7 @@ class PRNavierStokesScheme(Sweep2DScheme):
         self.implicit_sf_max_iters = implicit_sf_max_iters
         self.implicit_sf_stopping_criteria = implicit_sf_stopping_criteria
 
+        # Pre-allocate some arrays that will be used in the calculations
         self._temp_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
