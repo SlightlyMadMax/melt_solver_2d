@@ -2,8 +2,11 @@ import numba
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryConditionType
+from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
+from src.fluid_dynamics.schemes.registry import NavierStokesScheme
+from src.fluid_dynamics.schemes.utils import register_scheme
+from src.geometry import DomainGeometry
 from src.solver import BaseScheme
 from src.fluid_dynamics.utils import (
     get_indicator_function as c_ind,
@@ -12,24 +15,38 @@ from src.fluid_dynamics.utils import (
 from src import constants as cfg
 
 
+@register_scheme(NavierStokesScheme.EXPLICIT_UPWIND)
 class ExpUpwindNavierStokesScheme(BaseScheme):
     def __init__(
         self,
+        geometry: DomainGeometry,
         parameters: FluidParameters,
+        top_bc: BoundaryCondition,
+        right_bc: BoundaryCondition,
+        bottom_bc: BoundaryCondition,
+        left_bc: BoundaryCondition,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
         *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            geometry=geometry,
+            top_bc=top_bc,
+            right_bc=right_bc,
+            bottom_bc=bottom_bc,
+            left_bc=left_bc,
+        )
 
         self.parameters = parameters
+        self.sf_max_iters = sf_max_iters
+        self.sf_stopping_criteria = sf_stopping_criteria
+
+        # Pre-allocate some arrays that will be used in the calculations
         self._new_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
         self._sf: NDArray[np.float64] = np.empty((self.geometry.n_y, self.geometry.n_x))
-        self.sf_max_iters = sf_max_iters
-        self.sf_stopping_criteria = sf_stopping_criteria
 
     @staticmethod
     @numba.jit(nopython=True)

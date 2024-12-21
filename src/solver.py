@@ -36,8 +36,21 @@ class BaseScheme(ABC):
 
 
 class Sweep2DScheme(BaseScheme, ABC):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        geometry: DomainGeometry,
+        top_bc: BoundaryCondition,
+        right_bc: BoundaryCondition,
+        bottom_bc: BoundaryCondition,
+        left_bc: BoundaryCondition,
+    ):
+        super().__init__(
+            geometry=geometry,
+            top_bc=top_bc,
+            right_bc=right_bc,
+            bottom_bc=bottom_bc,
+            left_bc=left_bc,
+        )
 
         # Pre-allocate some arrays that will be used for calculations
         self._a_x: NDArray[np.float64] = np.empty((self.geometry.n_x - 1))

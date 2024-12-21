@@ -5,6 +5,8 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import G
 from src.fluid_dynamics.parameters import FluidParameters
+from src.fluid_dynamics.schemes.registry import NavierStokesScheme
+from src.fluid_dynamics.schemes.utils import register_scheme
 from src.geometry import DomainGeometry
 from src.solver import Sweep2DScheme
 from src.fluid_dynamics.utils import (
@@ -14,6 +16,7 @@ from src.fluid_dynamics.utils import (
 from src.utils import solve_tridiagonal
 
 
+@register_scheme(NavierStokesScheme.PEACEMAN_RACHFORD)
 class PRNavierStokesScheme(Sweep2DScheme):
     def __init__(
         self,
@@ -27,6 +30,8 @@ class PRNavierStokesScheme(Sweep2DScheme):
         sf_stopping_criteria: float = 1e-6,
         implicit_sf_max_iters: int = 5,
         implicit_sf_stopping_criteria: float = 1e-6,
+        *args,
+        **kwargs,
     ):
         super().__init__(
             geometry=geometry,
@@ -35,7 +40,13 @@ class PRNavierStokesScheme(Sweep2DScheme):
             bottom_bc=bottom_bc,
             left_bc=left_bc,
         )
+
         self.parameters = parameters
+        self.sf_max_iters = sf_max_iters
+        self.sf_stopping_criteria = sf_stopping_criteria
+        self.implicit_sf_max_iters = implicit_sf_max_iters
+        self.implicit_sf_stopping_criteria = implicit_sf_stopping_criteria
+
         self._temp_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
@@ -43,10 +54,6 @@ class PRNavierStokesScheme(Sweep2DScheme):
             (self.geometry.n_y, self.geometry.n_x)
         )
         self._sf: NDArray[np.float64] = np.empty((self.geometry.n_y, self.geometry.n_x))
-        self.sf_max_iters = sf_max_iters
-        self.sf_stopping_criteria = sf_stopping_criteria
-        self.implicit_sf_max_iters = implicit_sf_max_iters
-        self.implicit_sf_stopping_criteria = implicit_sf_stopping_criteria
 
     @staticmethod
     @numba.jit(nopython=True)

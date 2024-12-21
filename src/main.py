@@ -7,7 +7,7 @@ from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_velocity_field
 from src.fluid_dynamics.utils import calculate_velocity_field
-from src.fluid_dynamics.schemes.solver import NavierStokesSolver, NavierStokesSchemes
+from src.fluid_dynamics.schemes.solver import NavierStokesSolver, NavierStokesScheme
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         fixed_delta=False,
     )
     navier_solver = NavierStokesSolver(
-        scheme=NavierStokesSchemes.EXPLICIT_UPWIND,
+        scheme=NavierStokesScheme.EXPLICIT_UPWIND,
         geometry=geometry,
         parameters=fluid_params,
         top_bc=sf_top_bc,

@@ -2,8 +2,10 @@ import numba
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
+from src.fluid_dynamics.schemes.registry import NavierStokesScheme
+from src.fluid_dynamics.schemes.utils import register_scheme
 from src.geometry import DomainGeometry
 from src.solver import BaseScheme
 from src.fluid_dynamics.utils import (
@@ -13,6 +15,7 @@ from src.fluid_dynamics.utils import (
 from src import constants as cfg
 
 
+@register_scheme(NavierStokesScheme.EXPLICIT_CENTRAL)
 class ExpCentralNavierStokesScheme(BaseScheme):
     def __init__(
         self,
@@ -24,8 +27,8 @@ class ExpCentralNavierStokesScheme(BaseScheme):
         left_bc: BoundaryCondition,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
-        implicit_sf_max_iters: int = 5,
-        implicit_sf_stopping_criteria: float = 1e-6,
+        *args,
+        **kwargs,
     ):
         super().__init__(
             geometry=geometry,
@@ -34,15 +37,16 @@ class ExpCentralNavierStokesScheme(BaseScheme):
             bottom_bc=bottom_bc,
             left_bc=left_bc,
         )
+
         self.parameters = parameters
+        self.sf_max_iters = sf_max_iters
+        self.sf_stopping_criteria = sf_stopping_criteria
+
+        # Pre-allocate some arrays that will be used in the calculations
         self._new_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
         self._sf: NDArray[np.float64] = np.empty((self.geometry.n_y, self.geometry.n_x))
-        self.sf_max_iters = sf_max_iters
-        self.sf_stopping_criteria = sf_stopping_criteria
-        self.implicit_sf_max_iters = implicit_sf_max_iters
-        self.implicit_sf_stopping_criteria = implicit_sf_stopping_criteria
 
     @staticmethod
     @numba.jit(nopython=True)
@@ -155,53 +159,46 @@ class ExpCentralNavierStokesScheme(BaseScheme):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
-        temp_sf = np.copy(sf)
-        for iteration in range(self.implicit_sf_max_iters):
-            self._compute_vorticity(
-                w=w,
-                sf=temp_sf,
-                u=u,
-                result=self._new_w,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                dt=self.geometry.dt,
-                u_ref=self.parameters.u_ref,
-                u_pt_ref=self.parameters.u_pt_ref,
-                visc=self.parameters.kinematic_viscosity_at_u_ref,
-                epsilon=self.parameters.epsilon,
-            )
-            self._sf = self._compute_stream_function(
-                w=self._new_w,
-                sf=sf,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                max_iters=self.sf_max_iters,
-                stopping_criteria=self.sf_stopping_criteria,
-                right_value=(
-                    self.right_bc.get_value(t=time)
-                    if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                left_value=(
-                    self.left_bc.get_value(t=time)
-                    if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                top_value=(
-                    self.top_bc.get_value(t=time)
-                    if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                bottom_value=(
-                    self.bottom_bc.get_value(t=time)
-                    if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-            )
-            diff = np.linalg.norm(temp_sf - self._sf)
-            if diff < self.implicit_sf_stopping_criteria:
-                break
-            # temp_sf = 0.5 * (temp_sf + self._sf)
-            temp_sf = np.copy(self._sf)
+        self._compute_vorticity(
+            w=w,
+            sf=sf,
+            u=u,
+            result=self._new_w,
+            dx=self.geometry.dx,
+            dy=self.geometry.dy,
+            dt=self.geometry.dt,
+            u_ref=self.parameters.u_ref,
+            u_pt_ref=self.parameters.u_pt_ref,
+            visc=self.parameters.kinematic_viscosity_at_u_ref,
+            epsilon=self.parameters.epsilon,
+        )
+        self._sf = self._compute_stream_function(
+            w=self._new_w,
+            sf=sf,
+            dx=self.geometry.dx,
+            dy=self.geometry.dy,
+            max_iters=self.sf_max_iters,
+            stopping_criteria=self.sf_stopping_criteria,
+            right_value=(
+                self.right_bc.get_value(t=time)
+                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            left_value=(
+                self.left_bc.get_value(t=time)
+                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            top_value=(
+                self.top_bc.get_value(t=time)
+                if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            bottom_value=(
+                self.bottom_bc.get_value(t=time)
+                if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+        )
 
         return self._sf, self._new_w
