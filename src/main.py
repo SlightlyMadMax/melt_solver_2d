@@ -18,7 +18,7 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.schemes.solver import HeatTransferSolver, HeatTransferSchemes
+from src.heat_transfer.schemes.solver import HeatTransferSolver, HeatTransferScheme
 
 
 if __name__ == "__main__":
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        scheme=HeatTransferSchemes.PEACEMAN_RACHFORD,
+        scheme=HeatTransferScheme.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
         top_bc=u_top_bc,
@@ -163,10 +163,10 @@ if __name__ == "__main__":
         right_bc=sf_right_bc,
         bottom_bc=sf_bottom_bc,
         left_bc=sf_left_bc,
-        implicit_sf_max_iters=1,
-        implicit_sf_stopping_criteria=1e-6,
         sf_max_iters=50,
         sf_stopping_criteria=1e-6,
+        implicit_sf_max_iters=1,
+        implicit_sf_stopping_criteria=1e-6,
     )
 
     start_time = time.process_time()

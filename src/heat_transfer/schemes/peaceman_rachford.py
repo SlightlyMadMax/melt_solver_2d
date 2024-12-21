@@ -6,9 +6,12 @@ from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.schemes.base import HeatTransferScheme
+from src.heat_transfer.schemes.registry import HeatTransferSchemeName
+from src.heat_transfer.schemes.utils import register_scheme
 from src.utils import solve_tridiagonal
 
 
+@register_scheme(HeatTransferSchemeName.PEACEMAN_RACHFORD)
 class PeacemanRachfordScheme(HeatTransferScheme):
     @staticmethod
     @numba.jit(nopython=True)
