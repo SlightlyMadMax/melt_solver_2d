@@ -4,9 +4,9 @@ import time
 import numpy as np
 
 from src.geometry import DomainGeometry
-from src.temperature.solver import solve
+from src.heat_transfer.solver import solve
 from src.plotting import plot_temperature, animate
-from src.temperature import init_temperature_2f_test
+from src.heat_transfer import init_temperature_2f_test
 from src.constants import K_ICE, K_WATER, RHO_ICE, L
 
 T_WATER = 5.0

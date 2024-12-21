@@ -3,13 +3,13 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditionType
-from src.temperature.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
-from src.temperature.coefficient_smoothing.delta import get_max_delta
-from src.temperature.schemes.base import HeatTransferScheme
+from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.schemes.base import HeatTransferScheme
 from src.utils import solve_tridiagonal
 
 
-class DouglasRachfordScheme(HeatTransferScheme):
+class PeacemanRachfordScheme(HeatTransferScheme):
     @staticmethod
     @numba.jit(nopython=True)
     def _compute_sweep_x(
@@ -43,8 +43,8 @@ class DouglasRachfordScheme(HeatTransferScheme):
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
-        inv_dx2 = 1.0 / (dx * dx)
         inv_dy = 1.0 / dy
+        inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
 
         rhs = np.empty(n_x)
@@ -63,6 +63,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
                 a_x[i] = (
                     dt
+                    * 0.5
                     * inv_dx
                     * (
                         0.125
@@ -89,6 +90,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 b_x[i] = (
                     1.0
                     + dt
+                    * 0.5
                     * (
                         k_smoothed(
                             u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]),
@@ -112,6 +114,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
                 c_x[i] = (
                     -dt
+                    * 0.5
                     * inv_dx
                     * (
                         0.125
@@ -229,8 +232,9 @@ class DouglasRachfordScheme(HeatTransferScheme):
         bottom_phi: NDArray[np.float64] = None,
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
-        inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
+        inv_dx = 1.0 / dx
+        inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
 
         rhs = np.empty(n_y)
@@ -249,6 +253,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 # Coefficient at T_{i, j + 1}^{n + 1}
                 a_y[j] = (
                     dt
+                    * 0.5
                     * inv_dy
                     * (
                         0.125
@@ -275,6 +280,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 b_y[j] = (
                     1.0
                     + dt
+                    * 0.5
                     * (
                         k_smoothed(
                             u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
@@ -298,6 +304,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 # Coefficient at T_{i, j - 1}^{n + 1}
                 c_y[j] = (
                     -dt
+                    * 0.5
                     * inv_dy
                     * (
                         0.125
@@ -321,46 +328,46 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 )
 
                 # Right-hand side of the equation
-                rhs[j] = u[j, i] - dt * inv_c * (
-                    inv_dy2
+                rhs[j] = u[j, i] + dt * 0.5 * inv_c * (
+                    inv_dx2
                     * (
                         k_smoothed(
-                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
+                            u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]),
                             u_pt_ref=u_pt_ref,
                             k_solid=k_solid,
                             k_liquid=k_liquid,
                             delta=delta,
                         )
-                        * (u[j + 1, i] - u[j, i])
+                        * (u[j, i + 1] - u[j, i])
                         - k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]),
+                            u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]),
                             u_pt_ref=u_pt_ref,
                             k_solid=k_solid,
                             k_liquid=k_liquid,
                             delta=delta,
                         )
-                        * (u[j, i] - u[j - 1, i])
+                        * (u[j, i] - u[j, i - 1])
                     )
-                    + 0.125
-                    * inv_dx
-                    * inv_dy
-                    * (
-                        sf[j, i - 1]
-                        - sf[j, i + 1]
-                        + sf[j + 1, i - 1]
-                        - sf[j + 1, i + 1]
-                    )
-                    * u[j + 1, i]
                     - 0.125
                     * inv_dx
                     * inv_dy
                     * (
-                        sf[j, i - 1]
-                        - sf[j, i + 1]
-                        + sf[j - 1, i - 1]
+                        sf[j + 1, i]
+                        - sf[j - 1, i]
+                        + sf[j + 1, i + 1]
                         - sf[j - 1, i + 1]
                     )
-                    * u[j - 1, i]
+                    * u[j, i + 1]
+                    + 0.125
+                    * inv_dx
+                    * inv_dy
+                    * (
+                        sf[j + 1, i]
+                        - sf[j - 1, i]
+                        + sf[j + 1, i - 1]
+                        - sf[j - 1, i - 1]
+                    )
+                    * u[j, i - 1]
                 )
 
             result[:, i] = solve_tridiagonal(
@@ -390,6 +397,7 @@ class DouglasRachfordScheme(HeatTransferScheme):
         time: float = 0.0,
         iters: int = 1,
     ) -> NDArray[np.float64]:
+
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
 
@@ -424,42 +432,42 @@ class DouglasRachfordScheme(HeatTransferScheme):
                 rbc_type=self.right_bc.boundary_type.value,
                 lbc_type=self.left_bc.boundary_type.value,
                 right_value=(
-                    self.right_bc.get_value(t=time)
+                    self.right_bc.get_value(t=time - 0.5 * self.geometry.dt)
                     if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 left_value=(
-                    self.left_bc.get_value(t=time)
+                    self.left_bc.get_value(t=time - 0.5 * self.geometry.dt)
                     if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 right_flux=(
-                    self.right_bc.get_flux(t=time)
+                    self.right_bc.get_flux(t=time - 0.5 * self.geometry.dt)
                     if self.right_bc.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 left_flux=(
-                    self.left_bc.get_flux(t=time)
+                    self.left_bc.get_flux(t=time - 0.5 * self.geometry.dt)
                     if self.left_bc.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 right_psi=(
-                    self.right_bc.get_psi(t=time)
+                    self.right_bc.get_psi(t=time - 0.5 * self.geometry.dt)
                     if self.right_bc.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 left_psi=(
-                    self.left_bc.get_psi(t=time)
+                    self.left_bc.get_psi(t=time - 0.5 * self.geometry.dt)
                     if self.left_bc.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 right_phi=(
-                    self.right_bc.get_phi(t=time)
+                    self.right_bc.get_phi(t=time - 0.5 * self.geometry.dt)
                     if self.right_bc.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 left_phi=(
-                    self.left_bc.get_phi(t=time)
+                    self.left_bc.get_phi(t=time - 0.5 * self.geometry.dt)
                     if self.left_bc.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),

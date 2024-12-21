@@ -6,8 +6,8 @@ from compare_boundary import compare_num_with_analytic
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.geometry import DomainGeometry
 from src.constants import N_Y, N_X, N_T, T_0, WIDTH, HEIGHT, FULL_TIME
-from src.temperature.schemes.peaceman_rachford import PeacemanRachfordScheme
-from src.temperature.schemes.loc_one_dim import LocOneDimScheme
+from src.heat_transfer.schemes.peaceman_rachford import PeacemanRachfordScheme
+from src.heat_transfer.schemes.loc_one_dim import LocOneDimScheme
 from src.tests.one_dim.analytic_solution_1d_2f import get_analytic_solution
 
 

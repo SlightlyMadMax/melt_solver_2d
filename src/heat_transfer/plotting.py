@@ -8,8 +8,8 @@ from PIL import Image
 from matplotlib import animation
 from numpy.typing import NDArray
 
-from src.temperature.boundary import get_phase_trans_boundary
-from src.temperature.utils import TemperatureUnit
+from src.heat_transfer.boundary import get_phase_trans_boundary
+from src.heat_transfer.utils import TemperatureUnit
 from src.geometry import DomainGeometry
 import src.constants as cfg
 
@@ -20,7 +20,7 @@ def _convert_temp_in_display_units(
     display_temp_units: TemperatureUnit = TemperatureUnit.CELSIUS,
 ) -> NDArray[np.float64]:
     """
-    Convert temperature to the desired units.
+    Convert heat_transfer to the desired units.
 
     :param u: A 2D array of temperatures.
     :param actual_temp_units: The original units of measurement.
@@ -47,7 +47,7 @@ def plot_temperature(
     plot_boundary: bool = False,
     show_graph: bool = True,
     show_grid: bool = False,
-    directory: str = "../graphs/temperature/",
+    directory: str = "../graphs/heat_transfer/",
     min_temp: Optional[float] = None,
     max_temp: Optional[float] = None,
     equal_aspect: Optional[bool] = True,
@@ -209,7 +209,7 @@ def animate(
 
 def create_gif_from_images(
     output_filename: str,
-    source_directory: str = "../graphs/temperature/",
+    source_directory: str = "../graphs/heat_transfer/",
     output_directory: str = "../graphs/animations/",
     duration: int = 100,
     loop: int = 0,

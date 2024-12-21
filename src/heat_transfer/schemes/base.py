@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryCondition
 from src.geometry import DomainGeometry
 from src.solver import SweepScheme2D
-from src.temperature.parameters import ThermalParameters
+from src.heat_transfer.parameters import ThermalParameters
 
 
 class HeatTransferScheme(SweepScheme2D):

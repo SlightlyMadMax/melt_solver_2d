@@ -4,8 +4,8 @@ from src.constants import ABS_ZERO
 
 
 class FluidParameters(BaseModel):
-    u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
-    u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
+    u_pt: float = Field(..., gt=0.0, description="Phase transition heat_transfer [K].")
+    u_ref: float = Field(..., gte=0.0, description="Reference heat_transfer [K].")
     epsilon: float = Field(
         ...,
         gt=0.0,
@@ -15,7 +15,7 @@ class FluidParameters(BaseModel):
     @property
     def kinematic_viscosity_at_u_ref(self) -> float:
         """
-        Calculate the kinematic viscosity coefficient at the reference temperature.
+        Calculate the kinematic viscosity coefficient at the reference heat_transfer.
         """
         return (
             -2.74319393e-12
@@ -30,7 +30,7 @@ class FluidParameters(BaseModel):
     @property
     def u_pt_ref(self) -> float:
         """
-        Calculate the deviation of phase transition temperature from the reference temperature.
+        Calculate the deviation of phase transition heat_transfer from the reference heat_transfer.
         """
         return self.u_pt - self.u_ref
 

@@ -5,10 +5,10 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition
 from src.geometry import DomainGeometry
-from src.temperature.parameters import ThermalParameters
-from src.temperature.schemes.douglas_rachford import DouglasRachfordScheme
-from src.temperature.schemes.loc_one_dim import LocOneDimScheme
-from src.temperature.schemes.peaceman_rachford import PeacemanRachfordScheme
+from src.heat_transfer.parameters import ThermalParameters
+from src.heat_transfer.schemes.douglas_rachford import DouglasRachfordScheme
+from src.heat_transfer.schemes.loc_one_dim import LocOneDimScheme
+from src.heat_transfer.schemes.peaceman_rachford import PeacemanRachfordScheme
 
 
 class HeatTransferSchemes(Enum):

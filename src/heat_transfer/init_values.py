@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from typing import Tuple, Optional
 
 from src.geometry import DomainGeometry
-from src.temperature.parameters import ThermalParameters
+from src.heat_transfer.parameters import ThermalParameters
 
 
 class DomainShape(Enum):
@@ -27,10 +27,10 @@ def init_temperature_with_interface(
     solid_temp: float,
 ) -> NDArray[np.float64]:
     """
-    Initializes the temperature field based on the given interface f.
+    Initializes the heat_transfer field based on the given interface f.
 
     :param geom: An object containing geometry information.
-    :param thermal_parameters: Object containing thermal parameters (phase-transition temperature etc.).
+    :param thermal_parameters: Object containing thermal parameters (phase-transition heat_transfer etc.).
     :param f: 1D array representing the interface position for the phase transition.
     :param liquid_region_height: Height of the liquid region.
     :param liquid_temp: Temperature of the liquid phase.
@@ -68,13 +68,13 @@ def init_temperature(
     eye_offset: float = 0.6,
 ) -> NDArray[np.float64]:
     """
-    Initializes the temperature field based on a specified domain shape.
+    Initializes the heat_transfer field based on a specified domain shape.
 
     :param geom: An object containing geometry information.
-    :param reference_temperature: The reference temperature, from which deviations are measured.
-    :param shape: The shape of the temperature distribution.
-    :param liquid_temp: The temperature assigned to water regions.
-    :param solid_temp: The temperature assigned to ice regions.
+    :param reference_temperature: The reference heat_transfer, from which deviations are measured.
+    :param shape: The shape of the heat_transfer distribution.
+    :param liquid_temp: The heat_transfer assigned to water regions.
+    :param solid_temp: The heat_transfer assigned to ice regions.
     :param radius: The radius used for circular shapes (default: 0.25).
     :param small_radius: A smaller radius for additional features in shapes (default: 0.1).
     :param square_size: The size of the square region (default: 0.5).
@@ -103,7 +103,7 @@ def init_temperature(
         ), f"Both liquid_temp and solid_temp must be specified when shape = {shape}."
 
     if shape == DomainShape.LINEAR:
-        # Linear temperature gradient from bottom (solid phase) to top (liquid phase)
+        # Linear heat_transfer gradient from bottom (solid phase) to top (liquid phase)
         u[:, :] = np.linspace(solid_temp, liquid_temp, geom.n_y).reshape(1, -1)
 
     elif shape == DomainShape.CIRCLE:
@@ -168,14 +168,14 @@ def init_temperature_lake(
     ice_temp: float,
 ) -> NDArray[np.float64]:
     """
-    Initialize temperature for a lake profile using preloaded thickness data.
+    Initialize heat_transfer for a lake profile using preloaded thickness data.
 
     :param geom: An object containing geometry information.
-    :param thermal_parameters: An object containing thermal parameters (phase transition temperature etc.).
+    :param thermal_parameters: An object containing thermal parameters (phase transition heat_transfer etc.).
     :param lake_data: Preloaded water and ice thickness grids.
-    :param water_temp: The water temperature.
-    :param ice_temp: The ice temperature.
-    :return: A 2D temperature field array.
+    :param water_temp: The water heat_transfer.
+    :param ice_temp: The ice heat_transfer.
+    :return: A 2D heat_transfer field array.
     """
     water_th_grid, ice_th_grid = lake_data
 

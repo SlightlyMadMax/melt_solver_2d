@@ -13,12 +13,12 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
 )
 from src.geometry import DomainGeometry
-from src.temperature.init_values import init_temperature, DomainShape
-from src.temperature.parameters import ThermalParameters
-from src.temperature.utils import TemperatureUnit
-from src.temperature.coefficient_smoothing.delta import get_max_delta
-from src.temperature.plotting import plot_temperature, create_gif_from_images
-from src.temperature.schemes.solver import HeatTransferSolver, HeatTransferSchemes
+from src.heat_transfer.init_values import init_temperature, DomainShape
+from src.heat_transfer.parameters import ThermalParameters
+from src.heat_transfer.utils import TemperatureUnit
+from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
+from src.heat_transfer.schemes.solver import HeatTransferSolver, HeatTransferSchemes
 
 
 if __name__ == "__main__":

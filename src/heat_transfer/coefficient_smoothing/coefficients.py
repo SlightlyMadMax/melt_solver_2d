@@ -7,7 +7,7 @@ def delta_function(u: float, u_0: float, delta: float) -> float:
     """
     Smoothed approximation of the delta function, centered at u_0.
 
-    :param u: The temperature value (deviation from the reference temperature).
+    :param u: The heat_transfer value (deviation from the reference heat_transfer).
     :param u_0: The point where the delta function is centered.
     :param delta: The smoothing parameter.
     :return: The value of the smoothed delta function at the point u.
@@ -29,13 +29,13 @@ def c_smoothed(
     """
     Smoothed effective volumetric heat capacity.
 
-    :param u: The temperature value (deviation from the reference temperature).
-    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
+    :param u: The heat_transfer value (deviation from the reference heat_transfer).
+    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
     :param c_solid: The volumetric heat capacity of the solid phase.
     :param c_liquid: The volumetric heat capacity of the liquid phase.
     :param l_solid: The volumetric latent heat of fusion of the solid phase.
     :param delta: The smoothing parameter.
-    :return: The value of the smoothed effective volumetric heat capacity at the temperature u.
+    :return: The value of the smoothed effective volumetric heat capacity at the heat_transfer u.
     """
     if delta <= 0:
         return c_solid if u < u_pt_ref else c_liquid
@@ -60,12 +60,12 @@ def k_smoothed(
     """
     Smoothed heat conductivity coefficient.
 
-    :param u: The temperature value (deviation from the reference temperature).
-    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
+    :param u: The heat_transfer value (deviation from the reference heat_transfer).
+    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
     :param k_solid: The heat conductivity of the solid phase.
     :param k_liquid: The heat conductivity of the liquid phase.
     :param delta: The smoothing parameter.
-    :return: The value of the smoothed heat conductivity coefficient at the temperature u.
+    :return: The value of the smoothed heat conductivity coefficient at the heat_transfer u.
     """
     if delta <= 0.0:
         return k_solid if u < u_pt_ref else k_liquid

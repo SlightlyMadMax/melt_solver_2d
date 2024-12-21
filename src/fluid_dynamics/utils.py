@@ -11,8 +11,8 @@ def get_indicator_function(u: float, u_pt_ref: float, eps: float) -> float:
     Indicator function for the fictitious domain method.
     Is equal to 1 for liquid phase and 1 / eps^2 for solid phase.
 
-    :param u: The temperature value (deviation from the reference temperature).
-    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
+    :param u: The heat_transfer value (deviation from the reference heat_transfer).
+    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
     :param eps: A big parameter.
     :return: The value of the indicator function at u.
     """
@@ -26,10 +26,10 @@ def thermal_expansion_coefficient(u: float, u_ref: float, u_pt_ref: float) -> fl
     """
     Calculate the thermal expansion coefficient of water.
 
-    :param u: The temperature value (deviation from the reference temperature).
-    :param u_ref: The reference temperature.
-    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
-    :return: The thermal expansion coefficient of water at the temperature u.
+    :param u: The heat_transfer value (deviation from the reference heat_transfer).
+    :param u_ref: The reference heat_transfer.
+    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
+    :return: The thermal expansion coefficient of water at the heat_transfer u.
     """
     if u - u_pt_ref < 0.0:
         return 0.0
