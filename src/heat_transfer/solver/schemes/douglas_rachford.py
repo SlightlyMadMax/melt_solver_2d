@@ -5,14 +5,14 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
-from src.heat_transfer.schemes.base import HeatTransferScheme
-from src.heat_transfer.schemes.registry import HeatTransferSchemeName
-from src.heat_transfer.schemes.utils import register_scheme
+from src.heat_transfer.solver.registry import HeatTransferSchemeName
+from src.heat_transfer.solver.schemes.base import HeatTransferScheme
+from src.heat_transfer.solver.utils import register_scheme
 from src.utils import solve_tridiagonal
 
 
-@register_scheme(HeatTransferSchemeName.LOC_ONE_DIM)
-class LocOneDimScheme(HeatTransferScheme):
+@register_scheme(HeatTransferSchemeName.DOUGLAS_RACHFORD)
+class DouglasRachfordScheme(HeatTransferScheme):
     @staticmethod
     @numba.jit(nopython=True)
     def _compute_sweep_x(
@@ -48,6 +48,9 @@ class LocOneDimScheme(HeatTransferScheme):
         inv_dx = 1.0 / dx
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy = 1.0 / dy
+        inv_dy2 = 1.0 / (dy * dy)
+
+        rhs = np.empty(n_x)
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -134,11 +137,54 @@ class LocOneDimScheme(HeatTransferScheme):
                     )
                 )
 
+                # Right-hand side of the equation
+                rhs[i] = u[j, i] + dt * 0.5 * inv_c * (
+                    inv_dy2
+                    * (
+                        k_smoothed(
+                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
+                            u_pt_ref=u_pt_ref,
+                            k_solid=k_solid,
+                            k_liquid=k_liquid,
+                            delta=delta,
+                        )
+                        * (u[j + 1, i] - u[j, i])
+                        - k_smoothed(
+                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]),
+                            u_pt_ref=u_pt_ref,
+                            k_solid=k_solid,
+                            k_liquid=k_liquid,
+                            delta=delta,
+                        )
+                        * (u[j, i] - u[j - 1, i])
+                    )
+                    - 0.125
+                    * inv_dx
+                    * inv_dy
+                    * (
+                        sf[j, i - 1]
+                        - sf[j, i + 1]
+                        + sf[j + 1, i - 1]
+                        - sf[j + 1, i + 1]
+                    )
+                    * u[j + 1, i]
+                    + 0.125
+                    * inv_dx
+                    * inv_dy
+                    * (
+                        sf[j, i - 1]
+                        - sf[j, i + 1]
+                        + sf[j - 1, i - 1]
+                        - sf[j - 1, i + 1]
+                    )
+                    * u[j - 1, i]
+                )
+
             result[j, :] = solve_tridiagonal(
                 a=a_x,
                 b=b_x,
                 c=c_x,
-                f=u[j, :],
+                f=rhs,
                 left_type=lbc_type,
                 left_value=left_value[j] if left_value is not None else 0.0,
                 left_flux=left_flux[j] if left_flux is not None else 0.0,
@@ -189,6 +235,8 @@ class LocOneDimScheme(HeatTransferScheme):
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
         inv_dy2 = 1.0 / (dy * dy)
+
+        rhs = np.empty(n_y)
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
@@ -275,11 +323,54 @@ class LocOneDimScheme(HeatTransferScheme):
                     )
                 )
 
+                # Right-hand side of the equation
+                rhs[j] = u[j, i] - dt * inv_c * (
+                    inv_dy2
+                    * (
+                        k_smoothed(
+                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
+                            u_pt_ref=u_pt_ref,
+                            k_solid=k_solid,
+                            k_liquid=k_liquid,
+                            delta=delta,
+                        )
+                        * (u[j + 1, i] - u[j, i])
+                        - k_smoothed(
+                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]),
+                            u_pt_ref=u_pt_ref,
+                            k_solid=k_solid,
+                            k_liquid=k_liquid,
+                            delta=delta,
+                        )
+                        * (u[j, i] - u[j - 1, i])
+                    )
+                    + 0.125
+                    * inv_dx
+                    * inv_dy
+                    * (
+                        sf[j, i - 1]
+                        - sf[j, i + 1]
+                        + sf[j + 1, i - 1]
+                        - sf[j + 1, i + 1]
+                    )
+                    * u[j + 1, i]
+                    - 0.125
+                    * inv_dx
+                    * inv_dy
+                    * (
+                        sf[j, i - 1]
+                        - sf[j, i + 1]
+                        + sf[j - 1, i - 1]
+                        - sf[j - 1, i + 1]
+                    )
+                    * u[j - 1, i]
+                )
+
             result[:, i] = solve_tridiagonal(
                 a=a_y,
                 b=b_y,
                 c=c_y,
-                f=u[:, i],
+                f=rhs,
                 left_type=bbc_type,
                 left_value=bottom_value[i] if bottom_value is not None else 0.0,
                 left_flux=bottom_flux[i] if bottom_flux is not None else 0.0,
@@ -302,7 +393,6 @@ class LocOneDimScheme(HeatTransferScheme):
         time: float = 0.0,
         iters: int = 1,
     ) -> NDArray[np.float64]:
-
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
 
@@ -378,7 +468,6 @@ class LocOneDimScheme(HeatTransferScheme):
                 ),
             )
             self._iter_u = self._temp_u
-            # self._iter_u = 0.5 * (self._iter_u + self._temp_u)
 
         self._new_u = np.copy(self._temp_u)
 
@@ -454,6 +543,5 @@ class LocOneDimScheme(HeatTransferScheme):
                 ),
             )
             self._iter_u = self._new_u
-            # self._iter_u = 0.5 * (self._iter_u + self._new_u)
 
         return self._new_u

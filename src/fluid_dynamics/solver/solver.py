@@ -3,10 +3,11 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.schemes.registry import (
+from src.fluid_dynamics.solver.registry import (
     NavierStokesSchemeName,
     NavierStokesSchemeRegistry,
 )
+from src.fluid_dynamics.solver.schemes import * # noqa, automatically register all of the schemes
 from src.geometry import DomainGeometry
 
 

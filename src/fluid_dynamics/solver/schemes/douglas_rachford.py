@@ -4,8 +4,8 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.schemes.registry import NavierStokesSchemeName
-from src.fluid_dynamics.schemes.utils import register_scheme
+from src.fluid_dynamics.solver.registry import NavierStokesSchemeName
+from src.fluid_dynamics.solver.utils import register_scheme
 from src.geometry import DomainGeometry
 from src.base_solver import Sweep2DScheme
 from src.fluid_dynamics.utils import (
