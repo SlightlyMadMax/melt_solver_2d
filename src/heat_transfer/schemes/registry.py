@@ -3,9 +3,9 @@ from enum import Enum
 
 
 class HeatTransferSchemeName(Enum):
-    LOC_ONE_DIM = 1, "Locally one dimensional"
-    DOUGLAS_RACHFORD = 2, "Douglas-Rachford"
-    PEACEMAN_RACHFORD = 3, "Peaceman-Rachford"
+    LOC_ONE_DIM = "Locally one dimensional"
+    DOUGLAS_RACHFORD = "Douglas-Rachford"
+    PEACEMAN_RACHFORD = "Peaceman-Rachford"
 
 
 class HeatTransferSchemeRegistry:
@@ -18,6 +18,6 @@ class HeatTransferSchemeRegistry:
     @classmethod
     def get_scheme_class(cls, scheme: HeatTransferSchemeName) -> typing.Type:
         try:
-            return cls._registry[scheme]
+            return cls._registry[scheme.value]
         except KeyError:
             raise ValueError(f"Scheme {scheme} not registered.")

@@ -3,10 +3,10 @@ from enum import Enum
 
 
 class NavierStokesSchemeName(Enum):
-    EXPLICIT_CENTRAL = 1, "Explicit central differences"
-    EXPLICIT_UPWIND = 2, "Explicit upwind"
-    DOUGLAS_RACHFORD = 3, "Douglas-Rachford"
-    PEACEMAN_RACHFORD = 4, "Peaceman-Rachford"
+    EXPLICIT_CENTRAL = "Explicit central differences"
+    EXPLICIT_UPWIND = "Explicit upwind"
+    DOUGLAS_RACHFORD = "Douglas-Rachford"
+    PEACEMAN_RACHFORD = "Peaceman-Rachford"
 
 
 class NavierStokesSchemeRegistry:
@@ -19,6 +19,6 @@ class NavierStokesSchemeRegistry:
     @classmethod
     def get_scheme_class(cls, scheme: NavierStokesSchemeName) -> typing.Type:
         try:
-            return cls._registry[scheme]
+            return cls._registry[scheme.value]
         except KeyError:
             raise ValueError(f"Scheme {scheme} not registered.")
