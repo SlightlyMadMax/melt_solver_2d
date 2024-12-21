@@ -26,7 +26,7 @@ class BaseScheme(ABC):
     def solve(self, *kwargs) -> NDArray[np.float64]: ...
 
 
-class SweepScheme2D(BaseScheme, ABC):
+class Sweep2DScheme(BaseScheme, ABC):
     def __init__(
         self,
         geometry: DomainGeometry,

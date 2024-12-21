@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.fluid_dynamics.parameters import FluidParameters
 from src.geometry import DomainGeometry
-from src.solver import SweepScheme2D
+from src.solver import Sweep2DScheme
 from src.fluid_dynamics.utils import (
     get_indicator_function as c_ind,
     thermal_expansion_coefficient as thermal_exp,
@@ -14,7 +14,7 @@ from src.utils import solve_tridiagonal
 from src import constants as cfg
 
 
-class DRNavierStokesScheme(SweepScheme2D):
+class DRNavierStokesScheme(Sweep2DScheme):
     def __init__(
         self,
         geometry: DomainGeometry,
