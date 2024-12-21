@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.schemes.registry import (
-    NavierStokesScheme,
+    NavierStokesSchemeName,
     NavierStokesSchemeRegistry,
 )
 from src.geometry import DomainGeometry
@@ -13,7 +13,7 @@ from src.geometry import DomainGeometry
 class NavierStokesSolver:
     def __init__(
         self,
-        scheme: NavierStokesScheme,
+        scheme: NavierStokesSchemeName,
         geometry: DomainGeometry,
         parameters: FluidParameters,
         top_bc: BoundaryCondition,

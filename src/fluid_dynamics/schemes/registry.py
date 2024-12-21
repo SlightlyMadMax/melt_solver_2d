@@ -2,7 +2,7 @@ import typing
 from enum import Enum
 
 
-class NavierStokesScheme(Enum):
+class NavierStokesSchemeName(Enum):
     EXPLICIT_CENTRAL = 1, "Explicit central differences"
     EXPLICIT_UPWIND = 2, "Explicit upwind"
     DOUGLAS_RACHFORD = 3, "Douglas-Rachford"
@@ -13,11 +13,11 @@ class NavierStokesSchemeRegistry:
     _registry = {}
 
     @classmethod
-    def register_scheme(cls, scheme: NavierStokesScheme, scheme_class: typing.Type):
+    def register_scheme(cls, scheme: NavierStokesSchemeName, scheme_class: typing.Type):
         cls._registry[scheme] = scheme_class
 
     @classmethod
-    def get_scheme_class(cls, scheme: NavierStokesScheme) -> typing.Type:
+    def get_scheme_class(cls, scheme: NavierStokesSchemeName) -> typing.Type:
         try:
             return cls._registry[scheme]
         except KeyError:

@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.schemes.registry import NavierStokesScheme
+from src.fluid_dynamics.schemes.registry import NavierStokesSchemeName
 from src.fluid_dynamics.schemes.utils import register_scheme
 from src.geometry import DomainGeometry
 from src.solver import BaseScheme
@@ -15,7 +15,7 @@ from src.fluid_dynamics.utils import (
 from src import constants as cfg
 
 
-@register_scheme(NavierStokesScheme.EXPLICIT_UPWIND)
+@register_scheme(NavierStokesSchemeName.EXPLICIT_UPWIND)
 class ExpUpwindNavierStokesScheme(BaseScheme):
     def __init__(
         self,

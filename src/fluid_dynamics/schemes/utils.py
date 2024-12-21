@@ -1,12 +1,12 @@
 from functools import wraps
 
 from src.fluid_dynamics.schemes.registry import (
-    NavierStokesScheme,
+    NavierStokesSchemeName,
     NavierStokesSchemeRegistry,
 )
 
 
-def register_scheme(scheme: NavierStokesScheme):
+def register_scheme(scheme: NavierStokesSchemeName):
     def decorator(scheme_class):
         NavierStokesSchemeRegistry.register_scheme(scheme, scheme_class)
 
