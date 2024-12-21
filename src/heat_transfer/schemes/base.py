@@ -28,7 +28,8 @@ class HeatTransferScheme(Sweep2DScheme):
         )
         self.fixed_delta = fixed_delta
         self.parameters = parameters
-        # Pre-allocate arrays
+
+        # Pre-allocate arrays, used for calculations
         self._temp_u: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
