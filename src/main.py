@@ -154,6 +154,9 @@ if __name__ == "__main__":
         bottom_bc=u_bottom_bc,
         left_bc=u_left_bc,
         fixed_delta=False,
+        implicit_lin_max_iters=3,
+        implicit_lin_stopping_criteria=1e-6,
+        implicit_lin_urf=0.5,
     )
     navier_solver = NavierStokesSolver(
         scheme=NavierStokesSchemeName.PEACEMAN_RACHFORD,
@@ -165,7 +168,7 @@ if __name__ == "__main__":
         left_bc=sf_left_bc,
         sf_max_iters=50,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=10,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=0.5,
     )
@@ -174,7 +177,7 @@ if __name__ == "__main__":
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
-        u = heat_transfer_solver.solve(u=u, sf=sf, time=t, iters=3)
+        u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
         if n % 100 == 0:

@@ -11,6 +11,9 @@ class HeatTransferScheme(Sweep2DScheme):
         self,
         parameters: ThermalParameters,
         fixed_delta: bool = False,
+        implicit_lin_max_iters: int = 5,
+        implicit_lin_stopping_criteria: float = 1e-6,
+        implicit_lin_urf: float = 0.5,
         *args,
         **kwargs,
     ):
@@ -18,6 +21,9 @@ class HeatTransferScheme(Sweep2DScheme):
 
         self.parameters = parameters
         self.fixed_delta = fixed_delta
+        self.implicit_lin_max_iters = implicit_lin_max_iters
+        self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
+        self.implicit_lin_urf = implicit_lin_urf
 
         # Pre-allocate some arrays that will be used in the calculations
         self._temp_u: NDArray[np.float64] = np.empty(
@@ -36,5 +42,4 @@ class HeatTransferScheme(Sweep2DScheme):
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         time: float = 0.0,
-        iters: int = 1,
     ) -> NDArray[np.float64]: ...

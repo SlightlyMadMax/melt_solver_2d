@@ -300,14 +300,13 @@ class LocOneDimScheme(HeatTransferScheme):
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         time: float = 0.0,
-        iters: int = 1,
     ) -> NDArray[np.float64]:
-
+        alpha = self.implicit_lin_urf
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
 
         # Run the x-direction sweep iterations
-        for i in range(iters):
+        for i in range(self.implicit_lin_max_iters):
             delta = (
                 self.parameters.delta
                 if self.fixed_delta
@@ -377,13 +376,15 @@ class LocOneDimScheme(HeatTransferScheme):
                     else None
                 ),
             )
-            self._iter_u = self._temp_u
-            # self._iter_u = 0.5 * (self._iter_u + self._temp_u)
+            diff = np.linalg.norm(self._temp_u - self._iter_u)
+            if diff < self.implicit_lin_stopping_criteria:
+                break
+            self._iter_u = self._iter_u + alpha * (self._temp_u - self._iter_u)
 
         self._new_u = np.copy(self._temp_u)
 
         # Run the y-direction sweep iterations
-        for i in range(iters):
+        for i in range(self.implicit_lin_max_iters):
             delta = (
                 self.parameters.delta
                 if self.fixed_delta
@@ -453,7 +454,9 @@ class LocOneDimScheme(HeatTransferScheme):
                     else None
                 ),
             )
-            self._iter_u = self._new_u
-            # self._iter_u = 0.5 * (self._iter_u + self._new_u)
+            diff = np.linalg.norm(self._new_u - self._iter_u)
+            if diff < self.implicit_lin_stopping_criteria:
+                break
+            self._iter_u = self._iter_u + alpha * (self._new_u - self._iter_u)
 
         return self._new_u
