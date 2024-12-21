@@ -7,7 +7,7 @@ from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.schemes.registry import NavierStokesSchemeName
 from src.fluid_dynamics.schemes.utils import register_scheme
 from src.geometry import DomainGeometry
-from src.solver import Sweep2DScheme
+from src.base_solver import Sweep2DScheme
 from src.fluid_dynamics.utils import (
     get_indicator_function as c_ind,
     thermal_expansion_coefficient as thermal_exp,

@@ -2,7 +2,7 @@ from abc import abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from src.solver import Sweep2DScheme
+from src.base_solver import Sweep2DScheme
 from src.heat_transfer.parameters import ThermalParameters
 
 
