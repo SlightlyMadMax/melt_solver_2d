@@ -1,5 +1,3 @@
-from functools import wraps
-
 from src.fluid_dynamics.solver.registry import (
     NavierStokesSchemeName,
     NavierStokesSchemeRegistry,
