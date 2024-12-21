@@ -18,6 +18,6 @@ class HeatTransferSchemeRegistry:
     @classmethod
     def get_scheme_class(cls, scheme: HeatTransferSchemeName) -> typing.Type:
         try:
-            return cls._registry[scheme.value]
+            return cls._registry[scheme]
         except KeyError:
             raise ValueError(f"Scheme {scheme} not registered.")

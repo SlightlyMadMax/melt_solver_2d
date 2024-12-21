@@ -206,7 +206,7 @@ if __name__ == "__main__":
                 f"Maximum temperature value: {round(np.max(u + thermal_params.u_ref + ABS_ZERO), 2)} C"
             )
             print(
-                f"Minimum temperature value: {round(np.min(u  + thermal_params.u_ref + ABS_ZERO), 2)} C"
+                f"Minimum temperature value: {round(np.min(u + thermal_params.u_ref + ABS_ZERO), 2)} C"
             )
             # print(f"Maximum stream function value: {round(np.max(sf), 6)}")
             # print(f"Minimum stream function value: {round(np.min(sf), 6)}")
