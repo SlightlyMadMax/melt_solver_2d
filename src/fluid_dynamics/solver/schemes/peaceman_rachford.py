@@ -28,8 +28,9 @@ class PRNavierStokesScheme(Sweep2DScheme):
         left_bc: BoundaryCondition,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
-        implicit_sf_max_iters: int = 5,
-        implicit_sf_stopping_criteria: float = 1e-6,
+        implicit_lin_max_iters: int = 5,
+        implicit_lin_stopping_criteria: float = 1e-6,
+        implicit_lin_urf: float = 0.5,
         *args,
         **kwargs,
     ):
@@ -44,8 +45,9 @@ class PRNavierStokesScheme(Sweep2DScheme):
         self.parameters = parameters
         self.sf_max_iters = sf_max_iters
         self.sf_stopping_criteria = sf_stopping_criteria
-        self.implicit_sf_max_iters = implicit_sf_max_iters
-        self.implicit_sf_stopping_criteria = implicit_sf_stopping_criteria
+        self.implicit_lin_max_iters = implicit_lin_max_iters
+        self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
+        self.implicit_lin_urf = implicit_lin_urf
 
         # Pre-allocate some arrays that will be used in the calculations
         self._temp_w: NDArray[np.float64] = np.empty(
@@ -274,8 +276,9 @@ class PRNavierStokesScheme(Sweep2DScheme):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
+        alpha = self.implicit_lin_urf
         temp_sf = np.copy(sf)
-        for iteration in range(self.implicit_sf_max_iters):
+        for iteration in range(self.implicit_lin_max_iters):
             self._compute_sweep_x(
                 w=w,
                 sf=temp_sf,
@@ -338,9 +341,8 @@ class PRNavierStokesScheme(Sweep2DScheme):
                 ),
             )
             diff = np.linalg.norm(temp_sf - self._sf)
-            if diff < self.implicit_sf_stopping_criteria:
+            if diff < self.implicit_lin_stopping_criteria:
                 break
-            # temp_sf = 0.5 * (temp_sf + self._sf)
-            temp_sf = np.copy(self._sf)
+            temp_sf = self._sf + alpha * (temp_sf - self._sf)
 
         return self._sf, self._new_w

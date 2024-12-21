@@ -7,7 +7,7 @@ from src.fluid_dynamics.solver.registry import (
     NavierStokesSchemeName,
     NavierStokesSchemeRegistry,
 )
-from src.fluid_dynamics.solver.schemes import * # noqa, automatically register all of the schemes
+from src.fluid_dynamics.solver.schemes import *  # noqa, automatically register all of the schemes
 from src.geometry import DomainGeometry
 
 
@@ -23,8 +23,9 @@ class NavierStokesSolver:
         left_bc: BoundaryCondition,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
-        implicit_sf_max_iters: int = 5,
-        implicit_sf_stopping_criteria: float = 1e-6,
+        implicit_lin_max_iters: int = 5,
+        implicit_lin_stopping_criteria: float = 1e-6,
+        implicit_lin_urf: float = 0.5,
     ):
         self.scheme = scheme
         scheme_class = NavierStokesSchemeRegistry.get_scheme_class(self.scheme)
@@ -37,8 +38,9 @@ class NavierStokesSolver:
             left_bc=left_bc,
             sf_max_iters=sf_max_iters,
             sf_stopping_criteria=sf_stopping_criteria,
-            implicit_sf_max_iters=implicit_sf_max_iters,
-            implicit_sf_stopping_criteria=implicit_sf_stopping_criteria,
+            implicit_lin_max_iters=implicit_lin_max_iters,
+            implicit_lin_stopping_criteria=implicit_lin_stopping_criteria,
+            implicit_lin_urf=implicit_lin_urf,
         )
 
     def solve(

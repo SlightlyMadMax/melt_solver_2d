@@ -156,7 +156,7 @@ if __name__ == "__main__":
         fixed_delta=False,
     )
     navier_solver = NavierStokesSolver(
-        scheme=NavierStokesSchemeName.EXPLICIT_UPWIND,
+        scheme=NavierStokesSchemeName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=fluid_params,
         top_bc=sf_top_bc,
@@ -165,8 +165,9 @@ if __name__ == "__main__":
         left_bc=sf_left_bc,
         sf_max_iters=50,
         sf_stopping_criteria=1e-6,
-        implicit_sf_max_iters=1,
-        implicit_sf_stopping_criteria=1e-6,
+        implicit_lin_max_iters=10,
+        implicit_lin_stopping_criteria=1e-6,
+        implicit_lin_urf=0.5,
     )
 
     start_time = time.process_time()
