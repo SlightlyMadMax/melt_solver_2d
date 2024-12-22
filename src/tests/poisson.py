@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from src.utils import solve_poisson_sor
 
 
-def test_solve_poisson(
+def test_poisson_solver(
     solve_poisson: Callable,
 ):
     nx, ny = 300, 300
@@ -64,4 +64,4 @@ def test_solve_poisson(
     plt.show()
 
 
-test_solve_poisson(solve_poisson_sor)
+test_poisson_solver(solve_poisson_sor)
