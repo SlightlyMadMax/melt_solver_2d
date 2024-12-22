@@ -146,7 +146,7 @@ class ExpCentralNavierStokesScheme(BaseScheme):
                         + beta * beta * result[j - 1, i]
                         + dx * dx * w[j, i]
                     )
-            diff = np.linalg.norm(temp - result)
+            diff = np.linalg.norm(temp - result, ord=2)
             if diff < stopping_criteria:
                 break
             temp = np.copy(result)

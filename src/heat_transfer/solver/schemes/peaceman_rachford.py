@@ -474,7 +474,7 @@ class PeacemanRachfordScheme(HeatTransferScheme):
                     else None
                 ),
             )
-            diff = np.linalg.norm(self._temp_u - self._iter_u)
+            diff = np.linalg.norm(self._temp_u - self._iter_u, ord=2)
             if diff < self.implicit_lin_stopping_criteria:
                 break
             self._iter_u = self._iter_u + alpha * (self._temp_u - self._iter_u)
@@ -552,7 +552,7 @@ class PeacemanRachfordScheme(HeatTransferScheme):
                     else None
                 ),
             )
-            diff = np.linalg.norm(self._new_u - self._iter_u)
+            diff = np.linalg.norm(self._new_u - self._iter_u, ord=2)
             if diff < self.implicit_lin_stopping_criteria:
                 break
             self._iter_u = self._iter_u + alpha * (self._new_u - self._iter_u)

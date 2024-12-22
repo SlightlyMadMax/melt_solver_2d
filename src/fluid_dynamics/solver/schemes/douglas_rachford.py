@@ -253,7 +253,7 @@ class DRNavierStokesScheme(Sweep2DScheme):
                         + beta * beta * result[j - 1, i]
                         + dx * dx * w[j, i]
                     )
-            diff = np.linalg.norm(temp - result)
+            diff = np.linalg.norm(temp - result, ord=2)
             if diff < stopping_criteria:
                 break
             temp = np.copy(result)
@@ -330,7 +330,7 @@ class DRNavierStokesScheme(Sweep2DScheme):
                     else None
                 ),
             )
-            diff = np.linalg.norm(temp_sf - self._sf)
+            diff = np.linalg.norm(temp_sf - self._sf, ord=2)
             if diff < self.implicit_lin_stopping_criteria:
                 break
             temp_sf = self._sf + alpha * (temp_sf - self._sf)
