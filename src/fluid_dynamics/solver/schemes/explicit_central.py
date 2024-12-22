@@ -13,6 +13,7 @@ from src.fluid_dynamics.utils import (
     thermal_expansion_coefficient as thermal_exp,
 )
 from src import constants as cfg
+from src.utils import solve_poisson_sor
 
 
 @register_scheme(NavierStokesSchemeName.EXPLICIT_CENTRAL)
@@ -109,49 +110,6 @@ class ExpCentralNavierStokesScheme(BaseScheme):
 
         return result
 
-    @staticmethod
-    @numba.jit(nopython=True)
-    def _compute_stream_function(
-        w: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        dx: float,
-        dy: float,
-        max_iters: int,
-        stopping_criteria: float,
-        right_value: NDArray[np.float64] = None,
-        left_value: NDArray[np.float64] = None,
-        top_value: NDArray[np.float64] = None,
-        bottom_value: NDArray[np.float64] = None,
-    ) -> NDArray[np.float64]:
-        n_y, n_x = w.shape
-        beta = dx / dy
-        factor = 0.5 / (1.0 + beta * beta)
-
-        result = np.copy(sf)
-
-        result[0, :] = top_value
-        result[n_y - 1, :] = bottom_value
-        result[:, 0] = left_value
-        result[:, n_x - 1] = right_value
-
-        temp = np.copy(result)
-
-        for iteration in range(max_iters):
-            for i in range(1, n_x - 1):
-                for j in range(1, n_y - 1):
-                    result[j, i] = factor * (
-                        temp[j, i + 1]
-                        + result[j, i - 1]
-                        + beta * beta * temp[j + 1, i]
-                        + beta * beta * result[j - 1, i]
-                        + dx * dx * w[j, i]
-                    )
-            diff = np.linalg.norm(temp - result, ord=2)
-            if diff < stopping_criteria:
-                break
-            temp = np.copy(result)
-        return result
-
     def solve(
         self,
         w: NDArray[np.float64],
@@ -172,9 +130,9 @@ class ExpCentralNavierStokesScheme(BaseScheme):
             visc=self.parameters.kinematic_viscosity_at_u_ref,
             epsilon=self.parameters.epsilon,
         )
-        self._sf = self._compute_stream_function(
-            w=self._new_w,
-            sf=sf,
+        self._sf = solve_poisson_sor(
+            initial_guess=sf,
+            rhs=self._new_w,
             dx=self.geometry.dx,
             dy=self.geometry.dy,
             max_iters=self.sf_max_iters,
