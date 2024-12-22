@@ -159,16 +159,16 @@ if __name__ == "__main__":
         implicit_lin_urf=1.0,
     )
     navier_solver = NavierStokesSolver(
-        scheme=NavierStokesSchemeName.DOUGLAS_RACHFORD,
+        scheme=NavierStokesSchemeName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=fluid_params,
         top_bc=sf_top_bc,
         right_bc=sf_right_bc,
         bottom_bc=sf_bottom_bc,
         left_bc=sf_left_bc,
-        sf_max_iters=50,
+        sf_max_iters=1000,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=5,
+        implicit_lin_max_iters=10,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=0.5,
     )

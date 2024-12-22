@@ -235,6 +235,8 @@ class PRNavierStokesScheme(Sweep2DScheme):
     ) -> (NDArray[np.float64], NDArray[np.float64]):
         alpha = self.implicit_lin_urf
         temp_sf = np.copy(sf)
+        self._temp_w = np.copy(w)
+
         for iteration in range(self.implicit_lin_max_iters):
             self._compute_sweep_x(
                 w=w,

@@ -113,6 +113,7 @@ class ExpUpwindNavierStokesScheme(BaseScheme):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
+        self._new_w = np.copy(w)
         self._compute_vorticity(
             w=w,
             sf=sf,

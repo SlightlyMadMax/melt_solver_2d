@@ -1,5 +1,3 @@
-import math
-
 import numba
 import numpy as np
 
@@ -128,10 +126,10 @@ def solve_poisson_sor(
     temp = np.copy(result)
 
     zeta = (
-        (np.cos(math.pi / (n_x - 1)) + beta * beta * np.cos(math.pi / (n_y - 1)))
+        (np.cos(np.pi / (n_x - 1)) + beta * beta * np.cos(np.pi / (n_y - 1)))
         / (1.0 + beta * beta)
     ) ** 2
-    omega_opt = 2.0 * (1.0 - math.sqrt(1.0 - zeta)) / zeta
+    omega_opt = 2.0 * (1.0 - np.sqrt(1.0 - zeta)) / zeta
     factor *= omega_opt
 
     for iteration in range(max_iters):
