@@ -134,9 +134,9 @@ class PRNavierStokesScheme(Sweep2DScheme):
                 c=c_x,
                 f=f,
                 left_type=1,  # Dirichlet
-                left_value=-0.5 * inv_dx2 * (8.0 * sf[j, 1] - sf[j, 2]),
+                left_value=0.5 * inv_dx2 * (sf[j, 2] - 8.0 * sf[j, 1]),
                 right_type=1,  # Dirichlet
-                right_value=-0.5 * inv_dx2 * (8.0 * sf[j, n_x - 2] - sf[j, n_x - 3]),
+                right_value=0.5 * inv_dx2 * (sf[j, n_x - 3] - 8.0 * sf[j, n_x - 2]),
                 h=dx,
             )
 
@@ -218,9 +218,9 @@ class PRNavierStokesScheme(Sweep2DScheme):
                 c=c_y,
                 f=f,
                 left_type=1,  # Dirichlet
-                left_value=-0.5 * inv_dy2 * (8.0 * sf[1, i] - sf[2, i]),
+                left_value=0.5 * inv_dy2 * (sf[2, i] - 8.0 * sf[1, i]),
                 right_type=1,  # Dirichlet
-                right_value=-0.5 * inv_dy2 * (8.0 * sf[n_y - 2, i] - sf[n_y - 3, i]),
+                right_value=0.5 * inv_dy2 * (sf[n_y - 3, i] - 8.0 * sf[n_y - 2, i]),
                 h=dy,
             )
 
