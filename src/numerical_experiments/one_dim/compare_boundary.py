@@ -2,59 +2,81 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 
-from typing import Optional
 from scipy.optimize import fsolve
 from scipy.special import erf
 
-from src.constants import K_ICE, K_WATER, C_ICE_VOL, C_WATER_VOL, L_VOL, dy
-
-g = -5.0
-u_0 = 5.0
-
-a_ice = (K_ICE / C_ICE_VOL) ** 0.5
-a_water = (K_WATER / C_WATER_VOL) ** 0.5
+from src.constants import ABS_ZERO
+from src.geometry import DomainGeometry
+from src.heat_transfer.parameters import ThermalParameters
 
 
-def trans_eq(_gamma: float):
-    lhs = K_ICE * g * math.exp(-(_gamma / (2.0 * a_ice)) ** 2) / (a_ice * erf(_gamma / (2.0 * a_ice)))
-    rhs = -K_WATER * u_0 * math.exp(-(_gamma / (2.0 * a_water)) ** 2) / \
-          (a_water * (1.0 - erf(_gamma / (2.0 * a_water)))) - \
-          _gamma * L_VOL * math.pi ** 0.5 / 2
+def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp: float):
+    a_ice = params.thermal_diffusivity_solid**0.5
+    a_water = params.thermal_diffusivity_liquid**0.5
+
+    lhs = (
+        params.thermal_conductivity_solid
+        * min_temp
+        * math.exp(-((gamma / (2.0 * a_ice)) ** 2))
+        / (a_ice * erf(gamma / (2.0 * a_ice)))
+    )
+    rhs = (
+        -params.thermal_conductivity_liquid
+        * max_temp
+        * math.exp(-((gamma / (2.0 * a_water)) ** 2))
+        / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
+        - gamma * params.volumetric_latent_heat_solid * math.pi**0.5 / 2
+    )
     return lhs - rhs
 
 
-def compare_num_with_analytic(num: list[float], _s_0: float, dir_name: str,
-                              _delta: Optional[float] = None, show_graphs: bool = True):
+def compare_num_with_analytic(
+    min_temp: float,
+    max_temp: float,
+    params: ThermalParameters,
+    num: list[float],
+    s_0: float,
+    dir_name: str,
+    show_graphs: bool = True,
+) -> None:
+    """
 
-    gamma = fsolve(trans_eq, 0.0002)[0]
+    :param min_temp: Initial temperature of the solid phase region.
+    :param max_temp: Initial temperature of the liquid phase region.
+    :param geometry: Object containing the domain geometry information.
+    :param params: Object containing parameters of the problem like thermal conductivity etc.
+    :param num: Array containing positions of the boundary throughout the modelling time.
+    :param s_0: Initial position of the boundary.
+    :param dir_name: Name of the directory where the graphs will be saved.
+    :param show_graphs: If set to True, the graphs will be opened in a new window.
+    :return: None
+    """
 
-    print(f"GAMMA: {gamma}")
+    gamma = fsolve(
+        lambda x: trans_eq(
+            gamma=x,
+            params=params,
+            min_temp=min_temp + ABS_ZERO,
+            max_temp=max_temp + ABS_ZERO,
+        ),
+        0.0002,
+    )[0]
 
     n = len(num)
-    print(f"Modeling time: {n} days.")
 
-    t_0 = (_s_0 / gamma) ** 2
+    t_0: float = (s_0 / gamma) ** 2
 
-    print(int(t_0/3600))
+    print(int(t_0 / 3600))
 
-    print(num)
-
-    time = [i * 60. * 60. * 24.0 + t_0 for i in range(n)]
+    time = [i * 60.0 * 60.0 * 24.0 + t_0 for i in range(n)]
 
     exact = [gamma * time[i] ** 0.5 for i in range(n)]
 
-    print(exact)
-
     relative_error = [abs(exact[i] - num[i]) * 100 / exact[i] for i in range(n)]
-
-    print(relative_error)
 
     abs_error = [abs(exact[i] - num[i]) for i in range(n)]
 
-    print(abs_error)
-
-    print(f"Average abs. error: {np.average(abs_error)}")
-    print(f"Шаг сетки: {dy}")
+    print(f"Average abs. error: {np.average(abs_error)}\n")
 
     fig = plt.figure()
 
@@ -63,8 +85,12 @@ def compare_num_with_analytic(num: list[float], _s_0: float, dir_name: str,
         time,
         relative_error,
         linewidth=1,
-        color='r',
-        label="дельта = " + str(_delta) if _delta is not None else "адаптивная дельта"
+        color="r",
+        label=(
+            "дельта = " + str(params.delta)
+            if params.delta is not None
+            else "адаптивная дельта"
+        ),
     )
     ax.set_title("Относительная погрешность")
     ax.set_xlabel("Время, с")
@@ -80,8 +106,12 @@ def compare_num_with_analytic(num: list[float], _s_0: float, dir_name: str,
         time,
         abs_error,
         linewidth=1,
-        color='r',
-        label="дельта = " + str(_delta) if _delta is not None else "адаптивная дельта"
+        color="r",
+        label=(
+            "дельта = " + str(params.delta)
+            if params.delta is not None
+            else "адаптивная дельта"
+        ),
     )
     ax.set_title("Абсолютная погрешность")
     ax.set_xlabel("Время, с")
@@ -93,8 +123,8 @@ def compare_num_with_analytic(num: list[float], _s_0: float, dir_name: str,
     plt.clf()
 
     ax = plt.axes()
-    plt.plot(time, exact, linewidth=1, color='r', label='Аналитическое решение')
-    plt.plot(time, num, linewidth=1, color='k', label='Численное решение')
+    plt.plot(time, exact, linewidth=1, color="r", label="Аналитическое решение")
+    plt.plot(time, num, linewidth=1, color="k", label="Численное решение")
     ax.set_title("Сравнение численного и аналитического решения")
     ax.set_xlabel("Время, с")
     ax.set_ylabel("Положение границы фазового перехода, м")
