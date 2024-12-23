@@ -65,6 +65,22 @@ class ThermalParameters(BaseModel):
         """
         return self.density_liquid * self.specific_latent_heat_solid
 
+    @property
+    def thermal_diffusivity_solid(self) -> float:
+        """
+        Calculate the thermal diffusivity for the solid phase.
+        Formula: thermal_diffusivity = thermal_conductivity / volumetric_heat_capacity
+        """
+        return self.thermal_conductivity_solid / self.volumetric_heat_capacity_solid
+
+    @property
+    def thermal_diffusivity_liquid(self) -> float:
+        """
+        Calculate the thermal diffusivity for the liquid phase.
+        Formula: thermal_diffusivity = thermal_conductivity / volumetric_heat_capacity
+        """
+        return self.thermal_conductivity_liquid / self.volumetric_heat_capacity_liquid
+
     def __str__(self):
         s = (
             f"Heat Transfer Parameters:\n"
@@ -79,6 +95,8 @@ class ThermalParameters(BaseModel):
             f"  Volumetric Latent Heat of Fusion (Solid): {self.volumetric_latent_heat_solid} J/m^3\n"
             f"  Thermal Conductivity (Liquid): {self.thermal_conductivity_liquid} W/(m⋅K)\n"
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
+            f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid} m^2/s\n"
+            f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta}\n"
         )
         return s
