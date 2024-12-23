@@ -30,7 +30,7 @@ class ThermalParameters(BaseModel):
         ..., gt=0, description="Thermal conductivity of the solid phase [W/(m⋅K)]."
     )
     delta: float = Field(
-        ..., gt=0.0, description="Default smoothing parameter (delta)."
+        None, gt=0.0, description="Default smoothing parameter (delta)."
     )
 
     @property
@@ -97,6 +97,6 @@ class ThermalParameters(BaseModel):
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid} m^2/s\n"
-            f"  Default Smoothing Parameter (Delta): {self.delta}\n"
+            f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
         )
         return s
