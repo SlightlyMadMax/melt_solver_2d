@@ -7,6 +7,7 @@ class NavierStokesSchemeName(Enum):
     EXPLICIT_UPWIND = "Explicit upwind"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
+    LOC_ONE_DIM = "Local one dimensional"
 
 
 class NavierStokesSchemeRegistry:
