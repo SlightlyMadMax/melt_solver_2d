@@ -22,25 +22,6 @@ def get_indicator_function(u: float, u_pt_ref: float, eps: float) -> float:
 
 
 @numba.jit(nopython=True)
-def thermal_expansion_coefficient(u: float, u_ref: float, u_pt_ref: float) -> float:
-    """
-    Calculate the thermal expansion coefficient of water.
-
-    :param u: The heat_transfer value (deviation from the reference heat_transfer).
-    :param u_ref: The reference heat_transfer.
-    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
-    :return: The thermal expansion coefficient of water at the heat_transfer u.
-    """
-    if u - u_pt_ref < 0.0:
-        return 0.0
-    return (
-        -9.85e-8 * (u + u_ref + ABS_ZERO) * (u + u_ref + ABS_ZERO)
-        + 1.4872e-5 * (u + u_ref + ABS_ZERO)
-        - 5.2770e-5
-    )
-
-
-@numba.jit(nopython=True)
 def calculate_velocity_field(sf: NDArray[np.float64], dx: float, dy: float):
     """
     Calculate the velocity field based on the values of the stream function using finite differences.
