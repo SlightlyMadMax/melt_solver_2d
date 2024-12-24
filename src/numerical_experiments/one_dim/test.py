@@ -40,8 +40,11 @@ if __name__ == "__main__":
     reference_temperature = 0.5 * (min_temp + max_temp)
 
     thermal_params = ThermalParameters(
+        domain_geometry=geometry,
         u_pt=273.15,
         u_ref=reference_temperature,
+        delta_u=max_temp - min_temp,
+        v=0.01,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
         specific_latent_heat_solid=333000.0,
@@ -57,6 +60,7 @@ if __name__ == "__main__":
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
         value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_x),
     )
     right_bc = BoundaryCondition(
@@ -68,6 +72,7 @@ if __name__ == "__main__":
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
         value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_x),
     )
     left_bc = BoundaryCondition(
@@ -77,7 +82,7 @@ if __name__ == "__main__":
     )
 
     heat_transfer_solver = HeatTransferSolver(
-        scheme=HeatTransferSchemeName.LOC_ONE_DIM,
+        scheme=HeatTransferSchemeName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
         top_bc=top_bc,
@@ -85,9 +90,9 @@ if __name__ == "__main__":
         bottom_bc=bottom_bc,
         left_bc=left_bc,
         fixed_delta=False,
-        implicit_lin_max_iters=5,
+        implicit_lin_max_iters=1,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=0.5,
+        implicit_lin_urf=1.0,
     )
 
     # s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
@@ -115,7 +120,7 @@ if __name__ == "__main__":
         )
         - ABS_ZERO
         - thermal_params.u_ref
-    )
+    ) / thermal_params.delta_u
 
     boundary = [s_0]
     times = [0.0]
