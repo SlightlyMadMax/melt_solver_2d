@@ -8,12 +8,8 @@ from src.fluid_dynamics.solver.registry import NavierStokesSchemeName
 from src.fluid_dynamics.solver.utils import register_scheme
 from src.geometry import DomainGeometry
 from src.base_solver import Sweep2DScheme
-from src.fluid_dynamics.utils import (
-    get_indicator_function as c_ind,
-    thermal_expansion_coefficient as thermal_exp,
-)
+from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_tridiagonal, solve_poisson_sor
-from src import constants as cfg
 
 
 @register_scheme(NavierStokesSchemeName.DOUGLAS_RACHFORD)
@@ -71,16 +67,20 @@ class DRNavierStokesScheme(Sweep2DScheme):
         dx: float,
         dy: float,
         dt: float,
+        reynolds_number: float,
+        grashof_number: float,
         u_ref: float,
         u_pt_ref: float,
-        visc: float,
         epsilon: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
-        inv_dx2 = 1.0 / (dx * dx)
+        inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
-        inv_dy2 = 1.0 / (dy * dy)
+        inv_dy2 = inv_dy * inv_dy
+
+        inv_re = 1.0 / reynolds_number
+        inv_re2 = inv_re * inv_re
 
         f = np.empty(n_x)
 
@@ -91,28 +91,28 @@ class DRNavierStokesScheme(Sweep2DScheme):
                     * inv_dx
                     * (
                         (sf[j + 1, i + 1] - sf[j - 1, i + 1]) * 0.25 * inv_dy
-                        - visc * inv_dx
+                        - inv_re * inv_dx
                     )
                 )
 
-                b_x[i] = 1.0 + 2.0 * visc * dt * inv_dx2
+                b_x[i] = 1.0 + 2.0 * inv_re * dt * inv_dx2
 
                 c_x[i] = (
                     dt
                     * inv_dx
                     * (
                         (sf[j - 1, i - 1] - sf[j + 1, i - 1]) * 0.25 * inv_dy
-                        - visc * inv_dx
+                        - inv_re * inv_dx
                     )
                 )
 
                 f[i] = w[j, i] + dt * (
-                    -cfg.G
-                    * thermal_exp(u=u[j, i], u_ref=u_ref, u_pt_ref=u_pt_ref)
+                    -grashof_number
+                    * inv_re2
                     * 0.5
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
-                    + visc * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
+                    + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     + 0.25
                     * inv_dy
                     * inv_dx
@@ -123,7 +123,7 @@ class DRNavierStokesScheme(Sweep2DScheme):
                     * inv_dx
                     * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
                     * w[j + 1, i]
-                    # + visc * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
+                    # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
             result[j, :] = solve_tridiagonal(
@@ -153,15 +153,18 @@ class DRNavierStokesScheme(Sweep2DScheme):
         dx: float,
         dy: float,
         dt: float,
+        reynolds_number: float,
+        grashof_number: float,
         u_ref: float,
         u_pt_ref: float,
-        visc: float,
         epsilon: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
-        inv_dy2 = 1.0 / (dy * dy)
+        inv_dy2 = inv_dy * inv_dy
+
+        inv_re = 1.0 / reynolds_number
 
         f = np.empty(n_y)
 
@@ -172,23 +175,23 @@ class DRNavierStokesScheme(Sweep2DScheme):
                     * inv_dy
                     * (
                         (sf[j + 1, i - 1] - sf[j + 1, i + 1]) * 0.25 * inv_dx
-                        - visc * inv_dy
+                        - inv_re * inv_dy
                     )
                 )
 
-                b_y[j] = 1.0 + 2.0 * visc * dt * inv_dy2
+                b_y[j] = 1.0 + 2.0 * inv_re * dt * inv_dy2
 
                 c_y[j] = (
                     dt
                     * inv_dy
                     * (
                         (sf[j - 1, i + 1] - sf[j - 1, i - 1]) * 0.25 * inv_dx
-                        - visc * inv_dy
+                        - inv_re * inv_dy
                     )
                 )
 
                 f[j] = w[j, i] - dt * (
-                    visc * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
+                    inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     + 0.25
                     * inv_dy
                     * inv_dx
@@ -199,7 +202,7 @@ class DRNavierStokesScheme(Sweep2DScheme):
                     * inv_dx
                     * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
                     * w[j + 1, i]
-                    # + visc(u[j, i]) * c_ind(u[j, i]) * sf[j, i]
+                    # + inv_re * c_ind(u[j, i]) * sf[j, i]
                 )
 
             result[:, i] = solve_tridiagonal(
@@ -236,12 +239,13 @@ class DRNavierStokesScheme(Sweep2DScheme):
                 a_x=self._a_x,
                 b_x=self._b_x,
                 c_x=self._c_x,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                dt=self.geometry.dt,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
                 u_ref=self.parameters.u_ref,
                 u_pt_ref=self.parameters.u_pt_ref,
-                visc=self.parameters.kinematic_viscosity_at_u_ref,
+                reynolds_number=self.parameters.reynolds_number,
+                grashof_number=self.parameters.grashof_number,
                 epsilon=self.parameters.epsilon,
             )
             self._new_w = np.copy(self._temp_w)
@@ -253,19 +257,20 @@ class DRNavierStokesScheme(Sweep2DScheme):
                 a_y=self._a_y,
                 b_y=self._b_y,
                 c_y=self._c_y,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                dt=self.geometry.dt,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
                 u_ref=self.parameters.u_ref,
                 u_pt_ref=self.parameters.u_pt_ref,
-                visc=self.parameters.kinematic_viscosity_at_u_ref,
+                reynolds_number=self.parameters.reynolds_number,
+                grashof_number=self.parameters.grashof_number,
                 epsilon=self.parameters.epsilon,
             )
             self._sf = solve_poisson_sor(
                 initial_guess=temp_sf,
                 rhs=self._new_w,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
                 max_iters=self.sf_max_iters,
                 stopping_criteria=self.sf_stopping_criteria,
                 right_value=(
