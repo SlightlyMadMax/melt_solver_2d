@@ -87,7 +87,7 @@ class FluidParameters(BaseModel):
             f"{self.thermal_exp_coefficient_at_u_ref:.2E} 1/K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
             f"  Characteristic Temperature Difference {self.delta_u} K\n"
-            f"  The Reynolds number {self.reynolds_number:.2E}\n"
-            f"  The Grashof number {self.grashof_number:.2E}\n"
+            f"  Reynolds number {self.reynolds_number:.2E}\n"
+            f"  Grashof number {self.grashof_number:.2E}\n"
         )
         return s

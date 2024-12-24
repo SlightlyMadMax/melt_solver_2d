@@ -1,9 +1,16 @@
 from pydantic import BaseModel, Field, validator
 
+from src.geometry import DomainGeometry
+from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+
 
 class ThermalParameters(BaseModel):
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
+    delta_u: float = Field(
+        ..., gt=0.0, description="Characteristic temperature difference [K]."
+    )
+    v: float = Field(..., gt=0.0, description="Characteristic flow velocity [m/s].")
     specific_heat_liquid: float = Field(
         ...,
         gt=0.0,
@@ -32,6 +39,7 @@ class ThermalParameters(BaseModel):
     delta: float = Field(
         None, gt=0.0, description="Default smoothing parameter (delta)."
     )
+    domain_geometry: DomainGeometry
 
     @property
     def u_pt_ref(self) -> float:
@@ -81,11 +89,44 @@ class ThermalParameters(BaseModel):
         """
         return self.thermal_conductivity_liquid / self.volumetric_heat_capacity_liquid
 
+    @property
+    def volumetric_heat_capacity_ref(self):
+        return c_smoothed(
+            u=0.0,
+            u_pt_ref=self.u_pt_ref,
+            c_solid=self.specific_heat_solid,
+            c_liquid=self.specific_heat_liquid,
+            l_solid=self.volumetric_latent_heat_solid,
+            delta=self.delta,
+        )
+
+    @property
+    def thermal_diffusivity_ref(self):
+        return k_smoothed(
+            u=0.0,
+            u_pt_ref=self.u_pt_ref,
+            c_solid=self.specific_heat_solid,
+            c_liquid=self.specific_heat_liquid,
+            l_solid=self.volumetric_latent_heat_solid,
+            delta=self.delta,
+        )
+
+    @property
+    def pekle_number(self):
+        return (
+            self.v
+            * self.domain_geometry.length_scale
+            * self.volumetric_heat_capacity_ref
+            / self.thermal_diffusivity_ref
+        )
+
     def __str__(self):
         s = (
             f"Heat Transfer Parameters:\n"
             f"  Phase Transition Temperature: {self.u_pt} K\n"
             f"  Reference Temperature: {self.u_ref} K\n"
+            f"  Characteristic Temperature Difference {self.delta_u} K\n"
+            f"  Characteristic Flow Velocity {self.v} m/s\n"
             f"  Specific Heat (Liquid): {self.specific_heat_liquid} J/(kg⋅K)\n"
             f"  Specific Heat (Solid): {self.specific_heat_solid} J/(kg⋅K)\n"
             f"  Density (Liquid): {self.density_liquid} kg/m^3\n"
@@ -98,5 +139,6 @@ class ThermalParameters(BaseModel):
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
+            f"  Pekle Number: {self.pekle_number:.2E}\n"
         )
         return s

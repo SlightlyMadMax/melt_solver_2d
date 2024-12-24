@@ -57,8 +57,8 @@ if __name__ == "__main__":
         domain_geometry=geometry,
         u_pt=273.15,
         u_ref=reference_temperature,
-        delta_u=max_temp-min_temp,
-        v=0.1,
+        delta_u=max_temp - min_temp,
+        v=0.01,
         epsilon=100000.0,
     )
 
@@ -66,12 +66,16 @@ if __name__ == "__main__":
 
     u = init_temperature(
         geom=geometry,
-        reference_temperature=reference_temperature,
+        thermal_parameters=thermal_params,
         shape=DomainShape.UNIFORM_LIQUID,
         liquid_temp=min_temp,
     )
 
-    u[:, geometry.n_x - 1] = (max_temp - thermal_params.u_ref) * np.ones(geometry.n_y)
+    u[:, geometry.n_x - 1] = (
+        (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(geometry.n_y)
+    )
 
     print(
         f"Delta for the initial temperature distribution: {
@@ -83,7 +87,7 @@ if __name__ == "__main__":
     )
 
     plot_temperature(
-        u=u + thermal_params.u_ref,
+        u=u * thermal_params.delta_u + thermal_params.u_ref,
         u_pt=thermal_params.u_pt,
         geom=geometry,
         time=0.0,
@@ -102,24 +106,28 @@ if __name__ == "__main__":
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
         value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_x),
     )
     u_right_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
         value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_y),
     )
     u_bottom_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
         value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_x),
     )
     u_left_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
         value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
         * np.ones(geometry.n_y),
     )
 
@@ -185,7 +193,7 @@ if __name__ == "__main__":
 
         if n % 100 == 0:
             plot_temperature(
-                u=u + thermal_params.u_ref,
+                u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
                 geom=geometry,
                 time=t,
@@ -210,10 +218,10 @@ if __name__ == "__main__":
                 f"Modelling Time: {n * geometry.dt} s, Execution Time: {time.process_time() - start_time} s.\n"
             )
             print(
-                f"Maximum temperature value: {round(np.max(u + thermal_params.u_ref + ABS_ZERO), 2)} C"
+                f"Maximum temperature value: {round(np.max(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
             )
             print(
-                f"Minimum temperature value: {round(np.min(u + thermal_params.u_ref + ABS_ZERO), 2)} C"
+                f"Minimum temperature value: {round(np.min(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
             )
             # print(f"Maximum stream function value: {round(np.max(sf), 6)}")
             # print(f"Minimum stream function value: {round(np.min(sf), 6)}")
