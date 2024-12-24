@@ -3,56 +3,28 @@ from typing import Any
 import numpy as np
 from decimal import Decimal
 
+from pydantic import BaseModel, Field
 
-class DomainGeometry:
-    def __init__(
-        self, width: float, height: float, end_time: float, n_x: int, n_y: int, n_t: int
-    ):
-        self._width = width
-        self._height = height
-        self._end_time = end_time
-        self._n_x = n_x
-        self._n_y = n_y
-        self._n_t = n_t
-        self._dx = width / (n_x - 1)
-        self._dy = height / (n_y - 1)
-        self._dt = end_time / n_t
 
-    @property
-    def width(self) -> float:
-        return self._width
-
-    @property
-    def height(self) -> float:
-        return self._height
-
-    @property
-    def end_time(self) -> float:
-        return self._end_time
-
-    @property
-    def n_x(self) -> int:
-        return self._n_x
-
-    @property
-    def n_y(self) -> int:
-        return self._n_y
-
-    @property
-    def n_t(self) -> int:
-        return self._n_t
+class DomainGeometry(BaseModel):
+    width: float = Field(..., gt=0.0, description="Width of the domain [m].")
+    height: float = Field(..., gt=0.0, description="Height of the domain [m].")
+    end_time: float = Field(..., gt=0.0, description="Terminate modelling time [s].")
+    n_x: int = Field(..., gt=0, description="Number of grid points in X-direction.")
+    n_y: int = Field(..., gt=0, description="Number of grid points in Y-direction")
+    n_t: int = Field(..., gt=0, description="Number of time steps.")
 
     @property
     def dx(self) -> float:
-        return self._dx
+        return self.width / (self.n_x - 1)
 
     @property
     def dy(self) -> float:
-        return self._dy
+        return self.height / (self.n_y - 1)
 
     @property
     def dt(self) -> float:
-        return self._dt
+        return self.end_time / self.n_t
 
     @property
     def length_scale(self) -> float:
