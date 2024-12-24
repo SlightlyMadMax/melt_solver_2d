@@ -34,7 +34,7 @@ if __name__ == "__main__":
     print(geometry)
 
     min_temp = 274.15
-    max_temp = 283.15
+    max_temp = 276.15
     reference_temperature = 0.5 * (min_temp + max_temp)
     # reference_temperature = max_temp
 
@@ -54,8 +54,11 @@ if __name__ == "__main__":
     print(thermal_params)
 
     fluid_params = FluidParameters(
+        domain_geometry=geometry,
         u_pt=273.15,
         u_ref=reference_temperature,
+        delta_u=max_temp-min_temp,
+        v=0.1,
         epsilon=100000.0,
     )
 
@@ -73,7 +76,7 @@ if __name__ == "__main__":
     print(
         f"Delta for the initial temperature distribution: {
             get_max_delta(
-                u, 
+                u,
                 u_pt_ref=thermal_params.u_pt_ref,
             )
         }"
@@ -166,9 +169,9 @@ if __name__ == "__main__":
         right_bc=sf_right_bc,
         bottom_bc=sf_bottom_bc,
         left_bc=sf_left_bc,
-        sf_max_iters=1000,
+        sf_max_iters=500,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=10,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=0.5,
     )
