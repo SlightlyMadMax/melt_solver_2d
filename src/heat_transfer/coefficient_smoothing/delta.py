@@ -9,8 +9,8 @@ def get_max_delta(u: NDArray[np.float64], u_pt_ref: float) -> float:
     Find the smoothing parameter for both axes.
 
     :param u: A 2D array of temperatures at the current time layer.
-    :param u_pt_ref: The phase transition heat_transfer (deviation from the reference heat_transfer).
-    :return: The maximum heat_transfer interval containing the phase transition boundary.
+    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
+    :return: The maximum temperature interval containing the phase transition boundary.
     """
     n_y, n_x = u.shape
     delta = 0.0

@@ -38,7 +38,7 @@ def get_phase_trans_boundary(
 
     :param geom: Object containing geometry information.
     :param u: A 2D array of temperatures at the current time layer.
-    :param u_pt: The phase transition heat_transfer.
+    :param u_pt: The phase transition temperature.
     :return: 1d arrays for x and y coordinates of the phase-transition boundary interface.
     """
     x, y = [], []

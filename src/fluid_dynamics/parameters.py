@@ -44,7 +44,7 @@ class FluidParameters(BaseModel):
     @property
     def u_pt_ref(self) -> float:
         """
-        Calculate the deviation of phase transition heat_transfer from the reference temperature.
+        Calculate the deviation of phase transition temperature from the reference temperature.
         """
         return self.u_pt - self.u_ref
 
