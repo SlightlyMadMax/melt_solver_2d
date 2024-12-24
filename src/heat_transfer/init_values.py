@@ -154,7 +154,7 @@ def init_temperature(
     else:
         raise Exception("Unknown shape")
 
-    u = (u - thermal_parameters.reference_temperature) /  thermal_parameters.delta_u
+    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
 
     return u
 
@@ -213,6 +213,6 @@ def init_temperature_lake(
                     thermal_parameters.u_pt - ice_temp
                 )
 
-    u = (u - thermal_parameters.u_ref)  / thermal_parameters.delta_u
+    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
 
     return u
