@@ -33,15 +33,15 @@ if __name__ == "__main__":
 
     print(geometry)
 
-    min_temp = 293.15
-    max_temp = 297.15
+    min_temp = 274.15
+    max_temp = 283.15
     reference_temperature = 0.5 * (min_temp + max_temp)
 
     thermal_params = ThermalParameters(
         domain_geometry=geometry,
         u_pt=273.15,
         u_ref=reference_temperature,
-        delta_u=max_temp - min_temp,
+        delta_u=abs(max_temp - reference_temperature),
         v=0.01,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         domain_geometry=geometry,
         u_pt=273.15,
         u_ref=reference_temperature,
-        delta_u=max_temp - min_temp,
+        delta_u=abs(max_temp - reference_temperature),
         v=0.01,
         epsilon=100000.0,
     )
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         implicit_lin_urf=1.0,
     )
     navier_solver = NavierStokesSolver(
-        scheme=NavierStokesSchemeName.PEACEMAN_RACHFORD,
+        scheme=NavierStokesSchemeName.DOUGLAS_RACHFORD,
         geometry=geometry,
         parameters=fluid_params,
         top_bc=sf_top_bc,
@@ -181,9 +181,9 @@ if __name__ == "__main__":
         left_bc=sf_left_bc,
         sf_max_iters=500,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=3,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=1.0,
+        implicit_lin_urf=0.5,
     )
 
     start_time = time.process_time()
