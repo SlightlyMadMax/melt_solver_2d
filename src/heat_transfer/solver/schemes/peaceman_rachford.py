@@ -409,8 +409,8 @@ class PeacemanRachfordScheme(HeatTransferScheme):
                 self.parameters.delta
                 if self.fixed_delta
                 else get_max_delta(
-                    u=self._iter_u,
-                    u_pt_ref=self.parameters.u_pt_ref,
+                    u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
+                    u_pt=self.parameters.u_pt,
                 )
             )
             self._compute_sweep_x(
@@ -487,8 +487,8 @@ class PeacemanRachfordScheme(HeatTransferScheme):
                 self.parameters.delta
                 if self.fixed_delta
                 else get_max_delta(
-                    u=self._iter_u,
-                    u_pt_ref=self.parameters.u_pt_ref,
+                    u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
+                    u_pt=self.parameters.u_pt,
                 )
             )
             self._compute_sweep_y(

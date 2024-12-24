@@ -80,8 +80,8 @@ if __name__ == "__main__":
     print(
         f"Delta for the initial temperature distribution: {
             get_max_delta(
-                u,
-                u_pt_ref=thermal_params.u_pt_ref,
+                u * thermal_params.delta_u + thermal_params.u_ref,
+                u_pt=thermal_params.u_pt,
             )
         }"
     )
