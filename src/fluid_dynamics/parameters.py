@@ -51,7 +51,8 @@ class FluidParameters(BaseModel):
     @property
     def reynolds_number(self) -> float:
         """
-        Calculate the Reynolds number.
+        Calculate the Reynolds number at the reference temperature.
+        Formula: Re = characteristic_length * flow_velocity / kinematic_viscosity
         """
         return (
             self.v
@@ -62,7 +63,8 @@ class FluidParameters(BaseModel):
     @property
     def grashof_number(self) -> float:
         """
-        Calculate the Grashof number.
+        Calculate the Grashof number at the reference temperature.
+        Formula: Gr = g * thermal_expansion_coefficient * delta_u * l^3 / kinematic_viscosity^2
         """
         l = self.domain_geometry.length_scale
         return (

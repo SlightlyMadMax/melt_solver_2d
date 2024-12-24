@@ -91,6 +91,9 @@ class ThermalParameters(BaseModel):
 
     @property
     def volumetric_heat_capacity_ref(self):
+        """
+        Calculate the smoothed volumetric heat capacity at the reference temperature.
+        """
         return c_smoothed(
             u=0.0,
             u_pt_ref=self.u_pt_ref,
@@ -101,7 +104,10 @@ class ThermalParameters(BaseModel):
         )
 
     @property
-    def thermal_diffusivity_ref(self):
+    def thermal_conductivity_ref(self):
+        """
+        Calculate the smoothed thermal conductivity at the reference temperature.
+        """
         return k_smoothed(
             u=0.0,
             u_pt_ref=self.u_pt_ref,
@@ -112,12 +118,16 @@ class ThermalParameters(BaseModel):
         )
 
     @property
-    def pekle_number(self):
+    def peklet_number(self):
+        """
+        Calculate the Péclet  number at the reference temperature.
+        Formula: Pe = characteristic_length * flow_velocity *  volumetric_heat_capacity / thermal_conductivity
+        """
         return (
             self.v
             * self.domain_geometry.length_scale
             * self.volumetric_heat_capacity_ref
-            / self.thermal_diffusivity_ref
+            / self.thermal_conductivity_ref
         )
 
     def __str__(self):
@@ -139,6 +149,6 @@ class ThermalParameters(BaseModel):
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
-            f"  Pekle Number: {self.pekle_number:.2E}\n"
+            f"  Pekle Number: {self.peklet_number:.2E}\n"
         )
         return s
