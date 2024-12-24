@@ -78,7 +78,7 @@ class ExpCentralNavierStokesScheme(BaseScheme):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 result[j, i] = w[j, i] + dt * (
-                    -grashof_number
+                    grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx

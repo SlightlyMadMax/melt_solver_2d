@@ -93,7 +93,7 @@ class ExpUpwindNavierStokesScheme(BaseScheme):
                 advection = advection_y + advection_x
 
                 result[j, i] = w[j, i] + dt * (
-                    -grashof_number
+                    grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx

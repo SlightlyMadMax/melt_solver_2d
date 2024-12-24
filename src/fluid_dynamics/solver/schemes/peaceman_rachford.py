@@ -109,7 +109,7 @@ class PRNavierStokesScheme(Sweep2DScheme):
                 )
 
                 f[i] = w[j, i] + 0.5 * dt * (
-                    -grashof_number
+                    grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx
@@ -197,7 +197,7 @@ class PRNavierStokesScheme(Sweep2DScheme):
                 )
 
                 f[j] = w[j, i] + 0.5 * dt * (
-                    -grashof_number
+                    grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx

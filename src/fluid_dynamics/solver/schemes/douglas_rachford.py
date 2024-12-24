@@ -107,7 +107,7 @@ class DRNavierStokesScheme(Sweep2DScheme):
                 )
 
                 f[i] = w[j, i] + dt * (
-                    -grashof_number
+                    grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx
