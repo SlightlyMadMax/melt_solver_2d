@@ -27,15 +27,15 @@ def init_temperature_with_interface(
     solid_temp: float,
 ) -> NDArray[np.float64]:
     """
-    Initializes the heat_transfer field based on the given interface f.
+    Initializes the temperature field based on the given interface f.
 
     :param geom: An object containing geometry information.
-    :param thermal_parameters: Object containing thermal parameters (phase-transition heat_transfer etc.).
+    :param thermal_parameters: Object containing thermal parameters (phase-transition temperature etc.).
     :param f: 1D array representing the interface position for the phase transition.
     :param liquid_region_height: Height of the liquid region.
     :param liquid_temp: Temperature of the liquid phase.
     :param solid_temp: Temperature of the solid phase.
-    :return: A 2D array of temperatures (derivations from the reference one) initialized based on the interface.
+    :return: A 2D array of nondimensionilized temperatures initialized based on the interface.
     """
     u = np.empty((geom.n_y, geom.n_x))
 
@@ -50,7 +50,7 @@ def init_temperature_with_interface(
             else:
                 u[j, i] = thermal_parameters.u_pt
 
-    u = u - thermal_parameters.u_ref
+    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
 
     return u
 
@@ -58,7 +58,7 @@ def init_temperature_with_interface(
 def init_temperature(
     geom: DomainGeometry,
     shape: DomainShape,
-    reference_temperature: float = 0.0,
+    thermal_parameters: ThermalParameters,
     liquid_temp: Optional[float] = None,
     solid_temp: Optional[float] = None,
     radius: float = 0.25,
@@ -68,20 +68,19 @@ def init_temperature(
     eye_offset: float = 0.6,
 ) -> NDArray[np.float64]:
     """
-    Initializes the heat_transfer field based on a specified domain shape.
+    Initializes the temperature field based on a specified domain shape.
 
     :param geom: An object containing geometry information.
-    :param reference_temperature: The reference heat_transfer, from which deviations are measured.
-    :param shape: The shape of the heat_transfer distribution.
-    :param liquid_temp: The heat_transfer assigned to water regions.
-    :param solid_temp: The heat_transfer assigned to ice regions.
+    :param thermal_parameters: Object containing thermal parameters (phase-transition temperature etc.).
+    :param shape: The shape of the temperature distribution.
+    :param liquid_temp: The temperature assigned to water regions.
+    :param solid_temp: The temperature assigned to ice regions.
     :param radius: The radius used for circular shapes (default: 0.25).
     :param small_radius: A smaller radius for additional features in shapes (default: 0.1).
     :param square_size: The size of the square region (default: 0.5).
     :param eye_radius: The radius of the eye in the Pacman shape (default: 0.05).
     :param eye_offset: The offset for positioning the eye in the Pacman shape (default: 0.6).
-    :return: A 2D array of temperatures (derivations from the reference one) initialized based on the specified shape
-    of the domain.
+    :return: A 2D array of nondimensionilized initialized based on the specified shape of the domain.
     """
     u = np.full((geom.n_y, geom.n_x), solid_temp)
 
@@ -103,7 +102,7 @@ def init_temperature(
         ), f"Both liquid_temp and solid_temp must be specified when shape = {shape}."
 
     if shape == DomainShape.LINEAR:
-        # Linear heat_transfer gradient from bottom (solid phase) to top (liquid phase)
+        # Linear temperature gradient from bottom (solid phase) to top (liquid phase)
         u[:, :] = np.linspace(solid_temp, liquid_temp, geom.n_y).reshape(1, -1)
 
     elif shape == DomainShape.CIRCLE:
@@ -155,7 +154,7 @@ def init_temperature(
     else:
         raise Exception("Unknown shape")
 
-    u = u - reference_temperature
+    u = (u - thermal_parameters.reference_temperature) /  thermal_parameters.delta_u
 
     return u
 
@@ -168,14 +167,14 @@ def init_temperature_lake(
     ice_temp: float,
 ) -> NDArray[np.float64]:
     """
-    Initialize heat_transfer for a lake profile using preloaded thickness data.
+    Initialize temperature for a lake profile using preloaded thickness data.
 
     :param geom: An object containing geometry information.
-    :param thermal_parameters: An object containing thermal parameters (phase transition heat_transfer etc.).
+    :param thermal_parameters: An object containing thermal parameters (phase transition temperature etc.).
     :param lake_data: Preloaded water and ice thickness grids.
-    :param water_temp: The water heat_transfer.
-    :param ice_temp: The ice heat_transfer.
-    :return: A 2D heat_transfer field array.
+    :param water_temp: The water temperature.
+    :param ice_temp: The ice temperature.
+    :return: A 2D nondimensionilized temperature field array.
     """
     water_th_grid, ice_th_grid = lake_data
 
@@ -214,6 +213,6 @@ def init_temperature_lake(
                     thermal_parameters.u_pt - ice_temp
                 )
 
-    u = u - thermal_parameters.u_ref
+    u = (u - thermal_parameters.u_ref)  / thermal_parameters.delta_u
 
     return u
