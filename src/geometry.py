@@ -1,3 +1,5 @@
+from typing import Any
+
 import numpy as np
 from decimal import Decimal
 
@@ -17,43 +19,47 @@ class DomainGeometry:
         self._dt = end_time / n_t
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self._width
 
     @property
-    def height(self):
+    def height(self) -> float:
         return self._height
 
     @property
-    def end_time(self):
+    def end_time(self) -> float:
         return self._end_time
 
     @property
-    def n_x(self):
+    def n_x(self) -> int:
         return self._n_x
 
     @property
-    def n_y(self):
+    def n_y(self) -> int:
         return self._n_y
 
     @property
-    def n_t(self):
+    def n_t(self) -> int:
         return self._n_t
 
     @property
-    def dx(self):
+    def dx(self) -> float:
         return self._dx
 
     @property
-    def dy(self):
+    def dy(self) -> float:
         return self._dy
 
     @property
-    def dt(self):
+    def dt(self) -> float:
         return self._dt
 
     @property
-    def mesh_grid(self):
+    def length_scale(self) -> float:
+        return max(self.width, self.height)
+
+    @property
+    def mesh_grid(self) -> tuple[np.ndarray[Any, np.dtype], ...]:
         x = np.linspace(0, self.width, self.n_x)
         y = np.linspace(0, self.height, self.n_y)
         X, Y = np.meshgrid(x, y)
