@@ -95,12 +95,12 @@ class ThermalParameters(BaseModel):
         Calculate the smoothed volumetric heat capacity at the reference temperature.
         """
         return c_smoothed(
-            u=0.0,
-            u_pt_ref=self.u_pt_ref,
+            u=self.u_ref,
+            u_pt=self.u_pt,
             c_solid=self.specific_heat_solid,
             c_liquid=self.specific_heat_liquid,
             l_solid=self.volumetric_latent_heat_solid,
-            delta=self.delta,
+            delta=self.delta_u,
         )
 
     @property
@@ -109,18 +109,17 @@ class ThermalParameters(BaseModel):
         Calculate the smoothed thermal conductivity at the reference temperature.
         """
         return k_smoothed(
-            u=0.0,
-            u_pt_ref=self.u_pt_ref,
-            c_solid=self.specific_heat_solid,
-            c_liquid=self.specific_heat_liquid,
-            l_solid=self.volumetric_latent_heat_solid,
-            delta=self.delta,
+            u=self.u_ref,
+            u_pt=self.u_pt,
+            k_solid=self.thermal_conductivity_solid,
+            k_liquid=self.thermal_conductivity_liquid,
+            delta=self.delta_u,
         )
 
     @property
-    def peklet_number(self):
+    def peclet_number(self):
         """
-        Calculate the Péclet  number at the reference temperature.
+        Calculate the Péclet number at the reference temperature.
         Formula: Pe = characteristic_length * flow_velocity *  volumetric_heat_capacity / thermal_conductivity
         """
         return (
@@ -143,12 +142,16 @@ class ThermalParameters(BaseModel):
             f"  Density (Solid): {self.density_solid} kg/m^3\n"
             f"  Volumetric Heat Capacity (Liquid): {self.volumetric_heat_capacity_liquid:.2E} J/(m^3⋅K)\n"
             f"  Volumetric Heat Capacity (Solid): {self.volumetric_heat_capacity_solid:.2E} J/(m^3⋅K)\n"
+            f"  Volumetric Heat Capacity at the Reference Temperature: "
+            f"{self.volumetric_heat_capacity_ref:.2E} J/(m^3⋅K)\n"
             f"  Volumetric Latent Heat of Fusion (Solid): {self.volumetric_latent_heat_solid:.2E} J/m^3\n"
             f"  Thermal Conductivity (Liquid): {self.thermal_conductivity_liquid} W/(m⋅K)\n"
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
+            f"  Thermal Conductivity at the Reference Temperature: "
+            f"{self.thermal_conductivity_ref:.2E} W/(m⋅K)\n"
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
-            f"  Pekle Number: {self.peklet_number:.2E}\n"
+            f"  Peclet Number: {self.peclet_number:.2E}\n"
         )
         return s
