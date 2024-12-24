@@ -11,8 +11,8 @@ def get_max_delta(
     """
     Find the smoothing parameter for both axes.
 
-    :param u: A 2D array of dimensionalized temperatures at the current time layer.
-    :param u_pt: Dimensionalized phase transition temperature.
+    :param u: A 2D array of dimensional temperatures at the current time layer.
+    :param u_pt: Dimensional phase transition temperature.
     :return: The maximum temperature interval containing the phase transition boundary.
     """
     n_y, n_x = u.shape
