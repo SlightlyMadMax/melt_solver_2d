@@ -5,18 +5,18 @@ from src.constants import G
 
 
 class FluidParameters(BaseModel):
-    domain_geometry: DomainGeometry
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
     delta_u: float = Field(
-        ..., gte=0.0, description="Characteristic temperature difference [K]."
+        ..., gt=0.0, description="Characteristic temperature difference [K]."
     )
-    v: float = Field(..., gte=0.0, description="Characteristic flow velocity [m/s].")
+    v: float = Field(..., gt=0.0, description="Characteristic flow velocity [m/s].")
     epsilon: float = Field(
         ...,
         gt=0.0,
         description="Parameter of the indicator function used in the fictitious domain method.",
     )
+    domain_geometry: DomainGeometry
 
     @property
     def kinematic_viscosity_at_u_ref(self) -> float:
@@ -81,11 +81,13 @@ class FluidParameters(BaseModel):
             f"  Phase Transition Temperature: {self.u_pt} K\n"
             f"  Reference Temperature: {self.u_ref} K\n"
             f"  Parameter of the Indicator Function (Epsilon): {self.epsilon}\n"
-            f"  Kinematic Viscosity at the Reference Temperature (water): "
-            f"{self.kinematic_viscosity_at_u_ref:2f} m^2/s\n"
-            f"  Volumetric Thermal Expansion Coefficient at the Reference Temperature (water): "
-            f"{self.thermal_exp_coefficient_at_u_ref:2f} 1/K\n"
+            f"  Kinematic Viscosity at the Reference Temperature (Water): "
+            f"{self.kinematic_viscosity_at_u_ref:.2E} m^2/s\n"
+            f"  Volumetric Thermal Expansion Coefficient at the Reference Temperature (Water): "
+            f"{self.thermal_exp_coefficient_at_u_ref:.2E} 1/K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
             f"  Characteristic Temperature Difference {self.delta_u} K\n"
+            f"  The Reynolds number {self.reynolds_number:.2E}\n"
+            f"  The Grashof number {self.grashof_number:.2E}\n"
         )
         return s

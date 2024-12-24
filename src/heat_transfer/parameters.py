@@ -90,13 +90,13 @@ class ThermalParameters(BaseModel):
             f"  Specific Heat (Solid): {self.specific_heat_solid} J/(kg⋅K)\n"
             f"  Density (Liquid): {self.density_liquid} kg/m^3\n"
             f"  Density (Solid): {self.density_solid} kg/m^3\n"
-            f"  Volumetric Heat Capacity (Liquid): {self.volumetric_heat_capacity_liquid} J/(m^3⋅K)\n"
-            f"  Volumetric Heat Capacity (Solid): {self.volumetric_heat_capacity_solid} J/(m^3⋅K)\n"
-            f"  Volumetric Latent Heat of Fusion (Solid): {self.volumetric_latent_heat_solid} J/m^3\n"
+            f"  Volumetric Heat Capacity (Liquid): {self.volumetric_heat_capacity_liquid:.2E} J/(m^3⋅K)\n"
+            f"  Volumetric Heat Capacity (Solid): {self.volumetric_heat_capacity_solid:.2E} J/(m^3⋅K)\n"
+            f"  Volumetric Latent Heat of Fusion (Solid): {self.volumetric_latent_heat_solid:.2E} J/m^3\n"
             f"  Thermal Conductivity (Liquid): {self.thermal_conductivity_liquid} W/(m⋅K)\n"
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
-            f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid} m^2/s\n"
-            f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid} m^2/s\n"
+            f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
+            f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
         )
         return s
