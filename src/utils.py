@@ -95,7 +95,7 @@ def solve_poisson_sor(
     bottom_value: np.ndarray,
 ) -> np.ndarray:
     """
-    Solves the Poisson equation using the finite difference method and Successive Over-relaxation Method.
+    Solve the Poisson equation using the finite difference method and Successive Over-relaxation Method.
 
     :param initial_guess: Initial guess for the solution, a 2D array representing the grid values.
     :param rhs: Right-hand side of the Poisson equation, representing source terms.
