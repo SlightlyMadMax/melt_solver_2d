@@ -9,18 +9,18 @@ from src.utils import solve_poisson_sor
 def test_poisson_solver(
     solve_poisson: Callable,
 ):
-    nx, ny = 300, 300
-    dx = dy = 1.0 / (nx - 1)
+    n_x, n_y = 300, 300
+    dx = dy = 1.0 / (n_x - 1)
 
-    x = np.linspace(0, 1, nx, dtype=np.float64)
-    y = np.linspace(0, 1, ny, dtype=np.float64)
+    x = np.linspace(0, 1, n_x, dtype=np.float64)
+    y = np.linspace(0, 1, n_y, dtype=np.float64)
     X, Y = np.meshgrid(x, y)
 
     # Exact solution
     analytical_solution = -0.5 * (X**2 + Y**2)
 
     # Right-hand side (-2 everywhere in the domain)
-    rhs = -2 * np.ones((ny, nx), dtype=np.float64)
+    rhs = -2 * np.ones((n_y, n_x), dtype=np.float64)
 
     # Boundary conditions
     top_value = -0.5 * x**2
@@ -28,7 +28,10 @@ def test_poisson_solver(
     left_value = -0.5 * y**2
     right_value = -0.5 * (1 + y**2)
 
-    initial_guess = np.zeros((ny, nx), dtype=np.float64)
+    initial_guess = np.zeros((n_y, n_x), dtype=np.float64)
+
+    zeta = ((np.cos(np.pi / (n_x - 1)) + np.cos(np.pi / (n_y - 1))) / 2.0) ** 2
+    omega_opt = 2.0 * (1.0 - np.sqrt(1.0 - zeta)) / zeta
 
     result = solve_poisson(
         initial_guess=initial_guess,
@@ -41,6 +44,7 @@ def test_poisson_solver(
         left_value=left_value,
         top_value=top_value,
         bottom_value=bottom_value,
+        omega=omega_opt,
     )
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
