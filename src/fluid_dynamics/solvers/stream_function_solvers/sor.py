@@ -1,0 +1,162 @@
+import numba
+import numpy as np
+
+from src.base_solver import BaseSolver
+from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.geometry import DomainGeometry
+
+
+class SORPoissonSolver(BaseSolver):
+    """
+    A solver for the Poisson equation using the Successive Over-Relaxation (SOR) method.
+
+    This class extends the BaseSolver to provide functionality for solving the Poisson equation on a
+    two-dimensional domain with specified boundary conditions. The solver uses the SOR method, which
+    accelerates the convergence of the iterative Gauss-Seidel scheme by applying an over-relaxation parameter.
+    """
+
+    def __init__(
+        self,
+        geometry: DomainGeometry,
+        top_bc: BoundaryCondition,
+        right_bc: BoundaryCondition,
+        bottom_bc: BoundaryCondition,
+        left_bc: BoundaryCondition,
+        max_iters: int = 50,
+        stopping_criteria: float = 1e-6,
+    ):
+        """
+        Initialize the SORPoissonSolver with domain geometry and boundary conditions.
+
+        :param geometry: The computational domain's geometry.
+        :param top_bc: Boundary condition at the top of the domain.
+        :param right_bc: Boundary condition on the right side of the domain.
+        :param bottom_bc: Boundary condition at the bottom of the domain.
+        :param left_bc: Boundary condition on the left side of the domain.
+        :param max_iters: Maximum number of iterations for convergence. Default is 50.
+        :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
+        """
+        super().__init__(
+            geometry=geometry,
+            top_bc=top_bc,
+            right_bc=right_bc,
+            bottom_bc=bottom_bc,
+            left_bc=left_bc,
+        )
+        self._optimal_omega = self.calculate_omega()
+        self.max_iters = max_iters
+        self.stopping_criteria = stopping_criteria
+
+        # Pre-allocate some arrays that will be used in the calculations
+        self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
+
+    def calculate_omega(self) -> float:
+        """
+        Calculate the optimal over-relaxation parameter (omega) for the Successive Over-Relaxation (SOR) method.
+
+        The calculation is based on the grid size of the domain, represented by `n_x` and `n_y`, and aims to
+        minimize the number of iterations required for convergence (refer to Frankel S.P. (1950)).
+
+        :return: The optimal over-relaxation parameter (omega) for the SOR method.
+        """
+        zeta = (
+            (
+                np.cos(np.pi / (self.geometry.n_x - 1))
+                + np.cos(np.pi / (self.geometry.n_y - 1))
+            )
+            / 2.0
+        ) ** 2
+        omega_opt = 2.0 * (1.0 - np.sqrt(1.0 - zeta)) / zeta
+
+        return omega_opt
+
+    @staticmethod
+    @numba.jit(nopython=True)
+    def _solve(
+        initial_guess: np.ndarray,
+        rhs: np.ndarray,
+        result: np.ndarray,
+        dx: float,
+        dy: float,
+        max_iters: int,
+        stopping_criteria: float,
+        right_value: np.ndarray,
+        left_value: np.ndarray,
+        top_value: np.ndarray,
+        bottom_value: np.ndarray,
+        omega: float = 1.0,
+    ) -> None:
+        n_y, n_x = initial_guess.shape
+        beta = dx / dy
+        factor = 0.5 * omega / (1.0 + beta * beta)
+
+        result[0, :] = top_value
+        result[n_y - 1, :] = bottom_value
+        result[:, 0] = left_value
+        result[:, n_x - 1] = right_value
+
+        temp = np.copy(result)
+
+        for iteration in range(max_iters):
+            for i in range(1, n_x - 1):
+                for j in range(1, n_y - 1):
+                    result[j, i] = (
+                        factor
+                        * (
+                            temp[j, i + 1]
+                            + result[j, i - 1]
+                            + beta * beta * temp[j + 1, i]
+                            + beta * beta * result[j - 1, i]
+                            + dx * dx * rhs[j, i]
+                        )
+                        + (1.0 - omega) * temp[j, i]
+                    )
+            diff = np.linalg.norm(temp - result, ord=2)
+            if diff < stopping_criteria:
+                break
+            temp = np.copy(result)
+
+    def solve(
+        self, initial_guess: np.ndarray, rhs: np.ndarray, time: float
+    ) -> np.ndarray:
+        """
+        Solve the Poisson equation for a given initial guess and right-hand side.
+
+        :param initial_guess: The initial guess for the solution.
+        :param rhs: The right-hand side of the Poisson equation.
+        :param time: The current time, used to calculate time-dependent boundary conditions.
+        :return: The final solution as a 2D NumPy array.
+        """
+        self._result = np.copy(initial_guess)
+        self._solve(
+            initial_guess=initial_guess,
+            rhs=rhs,
+            result=self._result,
+            omega=self._optimal_omega,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            max_iters=self.max_iters,
+            stopping_criteria=self.stopping_criteria,
+            right_value=(
+                self.right_bc.get_value(t=time)
+                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            left_value=(
+                self.left_bc.get_value(t=time)
+                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            top_value=(
+                self.top_bc.get_value(t=time)
+                if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            bottom_value=(
+                self.bottom_bc.get_value(t=time)
+                if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+        )
+
+        return self._result
