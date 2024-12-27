@@ -93,6 +93,7 @@ def solve_poisson_sor(
     left_value: np.ndarray,
     top_value: np.ndarray,
     bottom_value: np.ndarray,
+    omega: float = 1.0,
 ) -> np.ndarray:
     """
     Solve the Poisson equation using the finite difference method and Successive Over-relaxation Method.
@@ -107,6 +108,7 @@ def solve_poisson_sor(
     :param left_value: Boundary values at the left edge of the domain.
     :param top_value: Boundary values at the top edge of the domain.
     :param bottom_value: Boundary values at the bottom edge of the domain.
+    :param omega: Over-relaxation parameter to accelerate convergence.
 
     :return: The computed solution to the Poisson equation, a 2D array with the same shape as "initial_guess".
 
@@ -114,7 +116,7 @@ def solve_poisson_sor(
     """
     n_y, n_x = initial_guess.shape
     beta = dx / dy
-    factor = 0.5 / (1.0 + beta * beta)
+    factor = 0.5 * omega / (1.0 + beta * beta)
 
     result = np.copy(initial_guess)
 
@@ -124,13 +126,6 @@ def solve_poisson_sor(
     result[:, n_x - 1] = right_value
 
     temp = np.copy(result)
-
-    zeta = (
-        (np.cos(np.pi / (n_x - 1)) + beta * beta * np.cos(np.pi / (n_y - 1)))
-        / (1.0 + beta * beta)
-    ) ** 2
-    omega_opt = 2.0 * (1.0 - np.sqrt(1.0 - zeta)) / zeta
-    factor *= omega_opt
 
     for iteration in range(max_iters):
         for i in range(1, n_x - 1):
@@ -144,7 +139,7 @@ def solve_poisson_sor(
                         + beta * beta * result[j - 1, i]
                         + dx * dx * rhs[j, i]
                     )
-                    + (1.0 - omega_opt) * temp[j, i]
+                    + (1.0 - omega) * temp[j, i]
                 )
         diff = np.linalg.norm(temp - result, ord=2)
         if diff < stopping_criteria:
