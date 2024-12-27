@@ -5,9 +5,8 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
-from src.heat_transfer.solver.registry import HeatTransferSchemeName
+from src.heat_transfer.solver.registry import HeatTransferSchemeName, register_scheme
 from src.heat_transfer.solver.schemes.base import HeatTransferScheme
-from src.heat_transfer.solver.utils import register_scheme
 from src.utils import solve_tridiagonal
 
 

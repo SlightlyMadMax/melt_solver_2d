@@ -8,6 +8,14 @@ class HeatTransferSchemeName(Enum):
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
 
 
+def register_scheme(scheme: HeatTransferSchemeName):
+    def decorator(scheme_class):
+        HeatTransferSchemeRegistry.register_scheme(scheme, scheme_class)
+
+        return scheme_class
+
+    return decorator
+
 class HeatTransferSchemeRegistry:
     _registry = {}
 
