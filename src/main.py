@@ -18,7 +18,7 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.solver import HeatTransferSolver, HeatTransferSchemeName
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSchemeName
 
 
 if __name__ == "__main__":

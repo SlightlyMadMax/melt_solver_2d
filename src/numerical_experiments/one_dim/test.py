@@ -12,7 +12,7 @@ from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
 )
 
 from src.heat_transfer.parameters import ThermalParameters
-from src.heat_transfer.solver import HeatTransferSolver, HeatTransferSchemeName
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSchemeName
 
 if __name__ == "__main__":
     # dir_name = input("Enter a directory name where the data will be stored: ")
