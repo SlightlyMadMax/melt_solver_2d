@@ -10,6 +10,15 @@ class NavierStokesSchemeName(Enum):
     LOC_ONE_DIM = "Local one dimensional"
 
 
+def register_scheme(scheme: NavierStokesSchemeName):
+    def decorator(scheme_class):
+        NavierStokesSchemeRegistry.register_scheme(scheme, scheme_class)
+
+        return scheme_class
+
+    return decorator
+
+
 class NavierStokesSchemeRegistry:
     _registry = {}
 

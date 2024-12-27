@@ -4,8 +4,7 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.solver.registry import NavierStokesSchemeName
-from src.fluid_dynamics.solver.utils import register_scheme
+from src.fluid_dynamics.solver.registry import NavierStokesSchemeName, register_scheme
 from src.geometry import DomainGeometry
 from src.base_solver import BaseScheme
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
