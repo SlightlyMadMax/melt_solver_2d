@@ -6,7 +6,7 @@ from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solver.registry import NavierStokesSchemeName, register_scheme
 from src.geometry import DomainGeometry
-from src.base_solver import BaseScheme
+from src.base_scheme import BaseScheme
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_poisson_sor
 
