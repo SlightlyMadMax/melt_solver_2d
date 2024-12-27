@@ -7,7 +7,7 @@ from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_velocity_field
 from src.fluid_dynamics.utils import calculate_velocity_field
-from src.fluid_dynamics.solver import NavierStokesSolver, NavierStokesSchemeName
+from src.fluid_dynamics.solvers import NavierStokesSolver, NavierStokesSchemeName
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,

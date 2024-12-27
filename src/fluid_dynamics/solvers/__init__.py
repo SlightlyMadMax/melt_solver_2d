@@ -1,0 +1,1 @@
+from src.fluid_dynamics.solvers.solver import NavierStokesSolver, NavierStokesSchemeName

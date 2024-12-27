@@ -4,15 +4,15 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.solver.registry import NavierStokesSchemeName, register_scheme
+from src.fluid_dynamics.solvers.registry import NavierStokesSchemeName, register_scheme
 from src.geometry import DomainGeometry
 from src.base_scheme import BaseScheme
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_poisson_sor
 
 
-@register_scheme(NavierStokesSchemeName.EXPLICIT_UPWIND)
-class ExpUpwindNavierStokesScheme(BaseScheme):
+@register_scheme(NavierStokesSchemeName.EXPLICIT_CENTRAL)
+class ExpCentralNavierStokesScheme(BaseScheme):
     def __init__(
         self,
         geometry: DomainGeometry,
@@ -76,21 +76,6 @@ class ExpUpwindNavierStokesScheme(BaseScheme):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                v_x = (sf[i, j + 1] - sf[i, j - 1]) * 0.5 * inv_dy
-                v_y = -(sf[i + 1, j] - sf[i - 1, j]) * 0.5 * inv_dx
-
-                if v_x > 0:
-                    advection_x = (w[i, j] * v_x - w[i - 1, j] * v_x) * inv_dx
-                else:
-                    advection_x = (w[i + 1, j] * v_x - w[i, j] * v_x) * inv_dx
-
-                if v_y > 0:
-                    advection_y = (w[i, j] * v_y - w[i, j - 1] * v_y) * inv_dy
-                else:
-                    advection_y = (w[i, j + 1] * v_y - w[i, j] * v_y) * inv_dy
-
-                advection = advection_y + advection_x
-
                 result[j, i] = w[j, i] + dt * (
                     grashof_number
                     * inv_re2
@@ -99,7 +84,26 @@ class ExpUpwindNavierStokesScheme(BaseScheme):
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    - advection
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j + 1, i - 1] - sf[j - 1, i - 1])
+                    * w[j, i - 1]
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j - 1, i + 1] - sf[j + 1, i + 1])
+                    * w[j, i + 1]
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
+                    * w[j - 1, i]
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
+                    * w[j + 1, i]
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 

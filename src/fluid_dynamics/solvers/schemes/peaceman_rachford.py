@@ -4,15 +4,15 @@ from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.solver.registry import NavierStokesSchemeName, register_scheme
+from src.fluid_dynamics.solvers.registry import NavierStokesSchemeName, register_scheme
 from src.geometry import DomainGeometry
 from src.base_scheme import Sweep2DScheme
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_tridiagonal, solve_poisson_sor
 
 
-@register_scheme(NavierStokesSchemeName.LOC_ONE_DIM)
-class LODNavierStokesScheme(Sweep2DScheme):
+@register_scheme(NavierStokesSchemeName.PEACEMAN_RACHFORD)
+class PRNavierStokesScheme(Sweep2DScheme):
     def __init__(
         self,
         geometry: DomainGeometry,
@@ -86,7 +86,8 @@ class LODNavierStokesScheme(Sweep2DScheme):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 a_x[i] = (
-                    dt
+                    0.5
+                    * dt
                     * inv_dx
                     * (
                         (sf[j + 1, i + 1] - sf[j - 1, i + 1]) * 0.25 * inv_dy
@@ -94,10 +95,11 @@ class LODNavierStokesScheme(Sweep2DScheme):
                     )
                 )
 
-                b_x[i] = 1.0 + 2.0 * inv_re * dt * inv_dx2
+                b_x[i] = 1.0 + inv_re * dt * inv_dx2
 
                 c_x[i] = (
-                    dt
+                    0.5
+                    * dt
                     * inv_dx
                     * (
                         (sf[j - 1, i - 1] - sf[j + 1, i - 1]) * 0.25 * inv_dy
@@ -105,12 +107,23 @@ class LODNavierStokesScheme(Sweep2DScheme):
                     )
                 )
 
-                f[i] = w[j, i] + dt * (
+                f[i] = w[j, i] + 0.5 * dt * (
                     grashof_number
                     * inv_re2
                     * 0.5
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
+                    + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
+                    * w[j - 1, i]
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
+                    * w[j + 1, i]
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
@@ -161,7 +174,8 @@ class LODNavierStokesScheme(Sweep2DScheme):
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
                 a_y[j] = (
-                    dt
+                    0.5
+                    * dt
                     * inv_dy
                     * (
                         (sf[j + 1, i - 1] - sf[j + 1, i + 1]) * 0.25 * inv_dx
@@ -169,10 +183,11 @@ class LODNavierStokesScheme(Sweep2DScheme):
                     )
                 )
 
-                b_y[j] = 1.0 + 2.0 * inv_re * dt * inv_dy2
+                b_y[j] = 1.0 + inv_re * dt * inv_dy2
 
                 c_y[j] = (
-                    dt
+                    0.5
+                    * dt
                     * inv_dy
                     * (
                         (sf[j - 1, i + 1] - sf[j - 1, i - 1]) * 0.25 * inv_dx
@@ -180,15 +195,25 @@ class LODNavierStokesScheme(Sweep2DScheme):
                     )
                 )
 
-                f[j] = w[j, i]
-                # f[j] = w[j, i] + dt * (
-                #     grashof_number
-                #     * inv_re2
-                #     * 0.5
-                #     * inv_dx
-                #     * (u[j, i + 1] - u[j, i - 1])
-                #     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
-                # )
+                f[j] = w[j, i] + 0.5 * dt * (
+                    grashof_number
+                    * inv_re2
+                    * 0.5
+                    * inv_dx
+                    * (u[j, i + 1] - u[j, i - 1])
+                    + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j + 1, i - 1] - sf[j - 1, i - 1])
+                    * w[j, i - 1]
+                    + 0.25
+                    * inv_dy
+                    * inv_dx
+                    * (sf[j - 1, i + 1] - sf[j + 1, i + 1])
+                    * w[j, i + 1]
+                    # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
+                )
 
             result[:, i] = solve_tridiagonal(
                 a=a_y,
