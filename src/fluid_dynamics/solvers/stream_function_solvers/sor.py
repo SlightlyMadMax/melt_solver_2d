@@ -3,16 +3,21 @@ import numpy as np
 
 from src.base_solver import BaseSolver
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
+    register_sf_solver,
+    StreamFunctionSolverName,
+)
 from src.geometry import DomainGeometry
 
 
+@register_sf_solver(StreamFunctionSolverName.SOR)
 class SORPoissonSolver(BaseSolver):
     """
     A solver for the Poisson equation using the Successive Over-Relaxation (SOR) method.
 
     This class extends the BaseSolver to provide functionality for solving the Poisson equation on a
     two-dimensional domain with specified boundary conditions. The solver uses the SOR method, which
-    accelerates the convergence of the iterative Gauss-Seidel scheme by applying an over-relaxation parameter.
+    accelerates the convergence of the iterative Gauss-Seidel solver_name by applying an over-relaxation parameter.
     """
 
     def __init__(

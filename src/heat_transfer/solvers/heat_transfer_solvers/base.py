@@ -2,11 +2,11 @@ from abc import abstractmethod
 import numpy as np
 from numpy.typing import NDArray
 
-from src.base_scheme import Sweep2DScheme
+from src.base_solver import Sweep2DSolver
 from src.heat_transfer.parameters import ThermalParameters
 
 
-class HeatTransferScheme(Sweep2DScheme):
+class HeatTransferSolver(Sweep2DSolver):
     def __init__(
         self,
         parameters: ThermalParameters,

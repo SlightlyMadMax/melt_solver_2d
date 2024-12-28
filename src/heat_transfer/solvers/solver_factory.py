@@ -4,17 +4,13 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryCondition
 from src.geometry import DomainGeometry
 from src.heat_transfer.parameters import ThermalParameters
-from src.heat_transfer.solvers.registry import (
-    HeatTransferSchemeName,
-    HeatTransferSchemeRegistry,
-)
-from src.heat_transfer.solvers.schemes import *  # noqa, automatically register all of the schemes
+from src.heat_transfer.solvers.heat_transfer_solvers import *
 
 
 class HeatTransferSolver:
     def __init__(
         self,
-        scheme: HeatTransferSchemeName,
+        solver_name: HeatTransferSolverName,
         geometry: DomainGeometry,
         parameters: ThermalParameters,
         top_bc: BoundaryCondition,
@@ -26,10 +22,9 @@ class HeatTransferSolver:
         implicit_lin_stopping_criteria: float = 1e-6,
         implicit_lin_urf: float = 0.5,
     ):
-        self.scheme = scheme
-        scheme_class = HeatTransferSchemeRegistry.get_scheme_class(self.scheme)
+        solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
-        self.solver = scheme_class(
+        self.solver = solver_class(
             geometry=geometry,
             parameters=parameters,
             top_bc=top_bc,

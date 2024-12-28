@@ -1,1 +1,2 @@
-from src.heat_transfer.solvers.solver import HeatTransferSolver, HeatTransferSchemeName
+from .solver_factory import HeatTransferSolver, HeatTransferSolverName
+

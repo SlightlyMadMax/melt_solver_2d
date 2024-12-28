@@ -5,13 +5,13 @@ from numpy.typing import NDArray
 from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
-from src.heat_transfer.solvers.registry import HeatTransferSchemeName, register_scheme
-from src.heat_transfer.solvers.schemes.base import HeatTransferScheme
+from src.heat_transfer.solvers.heat_transfer_solvers.registry import HeatTransferSolverName, register_solver
+from src.heat_transfer.solvers.heat_transfer_solvers.base import HeatTransferSolver
 from src.utils import solve_tridiagonal
 
 
-@register_scheme(HeatTransferSchemeName.DOUGLAS_RACHFORD)
-class DouglasRachfordScheme(HeatTransferScheme):
+@register_solver(HeatTransferSolverName.DOUGLAS_RACHFORD)
+class DouglasRachfordSolver(HeatTransferSolver):
     @staticmethod
     @numba.jit(nopython=True)
     def _compute_sweep_x(

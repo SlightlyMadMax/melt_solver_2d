@@ -1,5 +1,0 @@
-from .douglas_rachford import DRNavierStokesScheme
-from .peaceman_rachford import PRNavierStokesScheme
-from .explicit_upwind import ExpUpwindNavierStokesScheme
-from .explicit_central import ExpCentralNavierStokesScheme
-from .loc_one_dim import LODNavierStokesScheme

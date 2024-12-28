@@ -9,14 +9,7 @@ from src.boundary_conditions import BoundaryCondition
 from src.geometry import DomainGeometry
 
 
-class SchemeType(Enum):
-    EXPLICIT = 1, "Explicit"
-    IMPLICIT = 2, "Implicit"
-    SEMI_IMPLICIT = 3, "Semi-implicit"
-    LINEARIZED_IMPLICIT = 4, "Linearized implicit"
-
-
-class BaseScheme(ABC):
+class BaseSolver(ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
@@ -35,7 +28,7 @@ class BaseScheme(ABC):
     def solve(self, *args, **kwargs) -> NDArray[np.float64]: ...
 
 
-class Sweep2DScheme(BaseScheme, ABC):
+class Sweep2DSolver(BaseSolver, ABC):
     def __init__(
         self,
         geometry: DomainGeometry,

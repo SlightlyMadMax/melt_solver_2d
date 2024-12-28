@@ -7,7 +7,11 @@ from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_velocity_field
 from src.fluid_dynamics.utils import calculate_velocity_field
-from src.fluid_dynamics.solvers import NavierStokesSolver, NavierStokesSchemeName
+from src.fluid_dynamics.solvers import (
+    NavierStokesSolver,
+    VorticitySolverName,
+    StreamFunctionSolverName,
+)
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
@@ -18,7 +22,7 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSchemeName
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 
 
 if __name__ == "__main__":
@@ -159,7 +163,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        scheme=HeatTransferSchemeName.PEACEMAN_RACHFORD,
+        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
         top_bc=u_top_bc,
@@ -172,7 +176,8 @@ if __name__ == "__main__":
         implicit_lin_urf=1.0,
     )
     navier_solver = NavierStokesSolver(
-        scheme=NavierStokesSchemeName.DOUGLAS_RACHFORD,
+        vorticity_solver_name=VorticitySolverName.DOUGLAS_RACHFORD,
+        stream_function_solver_name=StreamFunctionSolverName.SOR,
         geometry=geometry,
         parameters=fluid_params,
         top_bc=sf_top_bc,
@@ -181,9 +186,9 @@ if __name__ == "__main__":
         left_bc=sf_left_bc,
         sf_max_iters=500,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=2,
+        implicit_lin_max_iters=3,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=1.0,
+        implicit_lin_urf=0.5,
     )
 
     start_time = time.process_time()

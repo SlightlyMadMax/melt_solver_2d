@@ -8,7 +8,7 @@ from PIL import Image
 from matplotlib import animation
 from numpy.typing import NDArray
 
-from src.heat_transfer.boundary import get_phase_trans_boundary
+from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.utils import TemperatureUnit
 from src.geometry import DomainGeometry
 import src.constants as cfg
