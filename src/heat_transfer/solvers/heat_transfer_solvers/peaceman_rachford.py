@@ -1,11 +1,14 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
-from src.heat_transfer.solvers.heat_transfer_solvers.registry import HeatTransferSolverName, register_solver
+from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
+    HeatTransferSolverName,
+    register_solver,
+)
 from src.heat_transfer.solvers.heat_transfer_solvers.base import HeatTransferSolver
 from src.utils import solve_tridiagonal
 
@@ -13,12 +16,13 @@ from src.utils import solve_tridiagonal
 @register_solver(HeatTransferSolverName.PEACEMAN_RACHFORD)
 class PeacemanRachfordSolver(HeatTransferSolver):
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_x(
         u: NDArray[np.float64],
         iter_u: NDArray[np.float64],
         sf: NDArray[np.float64],
         result: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         a_x: NDArray[np.float64],
         b_x: NDArray[np.float64],
         c_x: NDArray[np.float64],
@@ -57,8 +61,6 @@ class PeacemanRachfordSolver(HeatTransferSolver):
         inv_k_ref = 1.0 / k_ref
         inv_peclet_number = 1.0 / peclet_number
 
-        rhs = np.empty(n_x)
-
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = c_ref / c_smoothed(
@@ -67,6 +69,34 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     c_solid=c_solid,
                     c_liquid=c_liquid,
                     l_solid=l_solid,
+                    delta=delta,
+                )
+                k_i1j = k_smoothed(
+                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_im1j = k_smoothed(
+                    u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_ij1 = k_smoothed(
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_ijm1 = k_smoothed(
+                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
                     delta=delta,
                 )
 
@@ -84,17 +114,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i + 1]
                             - sf[j - 1, i + 1]
                         )
-                        - k_smoothed(
-                            u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * inv_k_ref
-                        * inv_peclet_number
-                        * inv_c_eff
-                        * inv_dx
+                        - k_i1j * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dx
                     )
                 )
 
@@ -103,22 +123,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     1.0
                     + dt
                     * 0.5
-                    * (
-                        k_smoothed(
-                            u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        + k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                    )
+                    * (k_i1j + k_im1j)
                     * inv_k_ref
                     * inv_peclet_number
                     * inv_c_eff
@@ -139,17 +144,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i - 1]
                             - sf[j - 1, i - 1]
                         )
-                        + k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * inv_k_ref
-                        * inv_peclet_number
-                        * inv_c_eff
-                        * inv_dx
+                        + k_im1j * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dx
                     )
                 )
 
@@ -159,22 +154,8 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     * inv_k_ref
                     * inv_peclet_number
                     * (
-                        k_smoothed(
-                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * (u[j + 1, i] - u[j, i])
-                        - k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * (u[j, i] - u[j - 1, i])
+                        k_ij1 * (u[j + 1, i] - u[j, i])
+                        - k_ijm1 * (u[j, i] - u[j - 1, i])
                     )
                     - 0.125
                     * inv_dx
@@ -219,12 +200,13 @@ class PeacemanRachfordSolver(HeatTransferSolver):
         return result
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_y(
         u: NDArray[np.float64],
         iter_u: NDArray[np.float64],
         sf: NDArray[np.float64],
         result: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         a_y: NDArray[np.float64],
         b_y: NDArray[np.float64],
         c_y: NDArray[np.float64],
@@ -263,8 +245,6 @@ class PeacemanRachfordSolver(HeatTransferSolver):
         inv_k_ref = 1.0 / k_ref
         inv_peclet_number = c_ref / peclet_number
 
-        rhs = np.empty(n_y)
-
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
                 inv_c_eff = 1.0 / c_smoothed(
@@ -273,6 +253,34 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     c_solid=c_solid,
                     c_liquid=c_liquid,
                     l_solid=l_solid,
+                    delta=delta,
+                )
+                k_ij1 = k_smoothed(
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_ijm1 = k_smoothed(
+                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_i1j = k_smoothed(
+                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                )
+                k_im1j = k_smoothed(
+                    u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
+                    u_pt=u_pt,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
                     delta=delta,
                 )
 
@@ -290,17 +298,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i - 1]
                             - sf[j + 1, i + 1]
                         )
-                        - k_smoothed(
-                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * inv_k_ref
-                        * inv_peclet_number
-                        * inv_c_eff
-                        * inv_dy
+                        - k_ij1 * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dy
                     )
                 )
 
@@ -309,22 +307,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     1.0
                     + dt
                     * 0.5
-                    * (
-                        k_smoothed(
-                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        + k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                    )
+                    * (k_ij1 + k_ijm1)
                     * inv_k_ref
                     * inv_peclet_number
                     * inv_c_eff
@@ -345,17 +328,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                             + sf[j - 1, i - 1]
                             - sf[j - 1, i + 1]
                         )
-                        + k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * inv_k_ref
-                        * inv_peclet_number
-                        * inv_c_eff
-                        * inv_dy
+                        + k_ijm1 * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dy
                     )
                 )
 
@@ -365,22 +338,8 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     * inv_k_ref
                     * inv_peclet_number
                     * (
-                        k_smoothed(
-                            u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * (u[j, i + 1] - u[j, i])
-                        - k_smoothed(
-                            u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * (u[j, i] - u[j, i - 1])
+                        k_i1j * (u[j, i + 1] - u[j, i])
+                        - k_im1j * (u[j, i] - u[j, i - 1])
                     )
                     - 0.125
                     * inv_dx
@@ -449,6 +408,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                 iter_u=self._iter_u,
                 sf=sf,
                 result=self._temp_u,
+                rhs=self._rhs_x,
                 a_x=self._a_x,
                 b_x=self._b_x,
                 c_x=self._c_x,
@@ -532,6 +492,7 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                 iter_u=self._iter_u,
                 sf=sf,
                 result=self._new_u,
+                rhs=self._rhs_y,
                 a_y=self._a_y,
                 b_y=self._b_y,
                 c_y=self._c_y,
