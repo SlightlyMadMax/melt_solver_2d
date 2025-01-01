@@ -35,6 +35,8 @@ class HeatTransferSolver(Sweep2DSolver):
         self._new_u: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
+        self._rhs_x: NDArray[np.float64] = np.empty(self.geometry.n_x)
+        self._rhs_y: NDArray[np.float64] = np.empty(self.geometry.n_y)
 
     @abstractmethod
     def solve(
