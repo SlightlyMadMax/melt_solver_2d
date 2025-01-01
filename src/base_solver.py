@@ -1,5 +1,3 @@
-from enum import Enum
-
 import numba
 import numpy as np
 from numpy.typing import NDArray
@@ -52,6 +50,8 @@ class Sweep2DSolver(BaseSolver, ABC):
         self._a_y: NDArray[np.float64] = np.empty((self.geometry.n_y - 1))
         self._b_y: NDArray[np.float64] = np.empty((self.geometry.n_y - 1))
         self._c_y: NDArray[np.float64] = np.empty((self.geometry.n_y - 1))
+        self._rhs_x: NDArray[np.float64] = np.empty(self.geometry.n_x)
+        self._rhs_y: NDArray[np.float64] = np.empty(self.geometry.n_y)
 
     @staticmethod
     @abstractmethod
