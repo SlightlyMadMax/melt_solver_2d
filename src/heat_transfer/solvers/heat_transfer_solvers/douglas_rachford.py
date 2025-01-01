@@ -29,7 +29,9 @@ class DouglasRachfordSolver(HeatTransferSolver):
         dx: float,
         dy: float,
         dt: float,
+        u_ref: float,
         u_pt: float,
+        delta_u: float,
         c_solid: float,
         c_liquid: float,
         l_solid: float,
@@ -56,7 +58,7 @@ class DouglasRachfordSolver(HeatTransferSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c = 1.0 / c_smoothed(
-                    u=iter_u[j, i],
+                    u=iter_u[j, i] + u_ref,
                     u_pt=u_pt,
                     c_solid=c_solid,
                     c_liquid=c_liquid,
@@ -65,28 +67,28 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 )
 
                 k_i1j = k_smoothed(
-                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]),
+                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_im1j = k_smoothed(
-                    u=0.5 * (iter_u[j, i - 1] + iter_u[j, i]),
+                    u=0.5 * (iter_u[j, i - 1] + iter_u[j, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ij1 = k_smoothed(
-                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ijm1 = k_smoothed(
-                    u=0.5 * (iter_u[j - 1, i] + iter_u[j, i]),
+                    u=0.5 * (iter_u[j - 1, i] + iter_u[j, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
@@ -192,7 +194,9 @@ class DouglasRachfordSolver(HeatTransferSolver):
         dx: float,
         dy: float,
         dt: float,
+        u_ref: float,
         u_pt: float,
+        delta_u: float,
         c_solid: float,
         c_liquid: float,
         l_solid: float,
@@ -218,7 +222,7 @@ class DouglasRachfordSolver(HeatTransferSolver):
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
                 inv_c = 1.0 / c_smoothed(
-                    u=iter_u[j, i],
+                    u=iter_u[j, i] + u_ref,
                     u_pt=u_pt,
                     c_solid=c_solid,
                     c_liquid=c_liquid,
@@ -227,14 +231,14 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 )
 
                 k_ij1 = k_smoothed(
-                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ijm1 = k_smoothed(
-                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]),
+                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
@@ -366,7 +370,9 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 dx=self.geometry.dx,
                 dy=self.geometry.dy,
                 dt=self.geometry.dt,
+                u_ref=self.parameters.u_ref,
                 u_pt=self.parameters.u_pt,
+                delta_u=self.parameters.delta_u,
                 c_solid=self.parameters.volumetric_heat_capacity_solid,
                 c_liquid=self.parameters.volumetric_heat_capacity_liquid,
                 l_solid=self.parameters.volumetric_latent_heat_solid,
@@ -445,7 +451,9 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 dx=self.geometry.dx,
                 dy=self.geometry.dy,
                 dt=self.geometry.dt,
+                u_ref=self.parameters.u_ref,
                 u_pt=self.parameters.u_pt,
+                delta_u=self.parameters.delta_u,
                 c_solid=self.parameters.volumetric_heat_capacity_solid,
                 c_liquid=self.parameters.volumetric_heat_capacity_liquid,
                 l_solid=self.parameters.volumetric_latent_heat_solid,
