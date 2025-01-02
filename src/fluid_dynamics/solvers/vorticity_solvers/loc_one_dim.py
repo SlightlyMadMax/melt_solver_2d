@@ -51,6 +51,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         result: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         a_x: NDArray[np.float64],
         b_x: NDArray[np.float64],
         c_x: NDArray[np.float64],
@@ -70,8 +71,6 @@ class LODNavierStokesScheme(Sweep2DSolver):
 
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
-
-        f = np.empty(n_x)
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -95,7 +94,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
                     )
                 )
 
-                f[i] = w[j, i] + dt * (
+                rhs[i] = w[j, i] + dt * (
                     grashof_number
                     * inv_re2
                     * 0.5
@@ -108,7 +107,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
                 a=a_x,
                 b=b_x,
                 c=c_x,
-                f=f,
+                f=rhs,
                 left_type=1,  # Dirichlet
                 left_value=0.5 * inv_dx2 * (sf[j, 2] - 8.0 * sf[j, 1]),
                 right_type=1,  # Dirichlet
@@ -125,6 +124,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         result: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         a_y: NDArray[np.float64],
         b_y: NDArray[np.float64],
         c_y: NDArray[np.float64],
@@ -143,9 +143,6 @@ class LODNavierStokesScheme(Sweep2DSolver):
         inv_dy2 = inv_dy * inv_dy
 
         inv_re = 1.0 / reynolds_number
-        inv_re2 = inv_re * inv_re
-
-        f = np.empty(n_y)
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
@@ -169,21 +166,13 @@ class LODNavierStokesScheme(Sweep2DSolver):
                     )
                 )
 
-                f[j] = w[j, i]
-                # f[j] = w[j, i] + dt * (
-                #     grashof_number
-                #     * inv_re2
-                #     * 0.5
-                #     * inv_dx
-                #     * (u[j, i + 1] - u[j, i - 1])
-                #     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
-                # )
+                rhs[j] = w[j, i]
 
             result[:, i] = solve_tridiagonal(
                 a=a_y,
                 b=b_y,
                 c=c_y,
-                f=f,
+                f=rhs,
                 left_type=1,  # Dirichlet
                 left_value=0.5 * inv_dy2 * (sf[2, i] - 8.0 * sf[1, i]),
                 right_type=1,  # Dirichlet
@@ -207,6 +196,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
             sf=sf,
             u=u,
             result=self._temp_w,
+            rhs=self._rhs_x,
             a_x=self._a_x,
             b_x=self._b_x,
             c_x=self._c_x,
@@ -225,6 +215,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
             sf=sf,
             u=u,
             result=self._new_w,
+            rhs=self._rhs_y,
             a_y=self._a_y,
             b_y=self._b_y,
             c_y=self._c_y,
