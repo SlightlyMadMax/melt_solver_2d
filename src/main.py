@@ -1,5 +1,4 @@
 import time
-
 import numpy as np
 
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
@@ -46,7 +45,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.01,
+        v=0.1,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
         specific_latent_heat_solid=333000.0,
@@ -64,7 +63,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.01,
+        v=0.1,
         epsilon=100000.0,
     )
 
@@ -92,20 +91,20 @@ if __name__ == "__main__":
         }"
     )
 
-    plot_temperature(
-        u=u * thermal_params.delta_u + thermal_params.u_ref,
-        u_pt=thermal_params.u_pt,
-        geom=geometry,
-        time=0.0,
-        graph_id=0,
-        plot_boundary=False,
-        show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        invert_yaxis=False,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-    )
+    # plot_temperature(
+    #     u=u * thermal_params.delta_u + thermal_params.u_ref,
+    #     u_pt=thermal_params.u_pt,
+    #     geom=geometry,
+    #     time=0.0,
+    #     graph_id=0,
+    #     plot_boundary=False,
+    #     show_graph=True,
+    #     min_temp=min_temp + ABS_ZERO,
+    #     max_temp=max_temp + ABS_ZERO,
+    #     invert_yaxis=False,
+    #     actual_temp_units=TemperatureUnit.KELVIN,
+    #     display_temp_units=TemperatureUnit.CELSIUS,
+    # )
 
     # Temperature boundary conditions
     u_top_bc = BoundaryCondition(
@@ -191,7 +190,7 @@ if __name__ == "__main__":
         implicit_lin_urf=0.5,
     )
 
-    start_time = time.process_time()
+    start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
@@ -222,7 +221,7 @@ if __name__ == "__main__":
             #     show_graph=True,
             # )
             print(
-                f"Modelling Time: {n * geometry.dt} s, Execution Time: {time.process_time() - start_time} s.\n"
+                f"Modelling Time: {n * geometry.dt} s, Execution Time: {time.perf_counter() - start_time:.4f} s.\n"
             )
             print(
                 f"Maximum temperature value: {round(np.max(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
