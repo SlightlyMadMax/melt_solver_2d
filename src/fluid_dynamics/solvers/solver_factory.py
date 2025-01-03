@@ -89,11 +89,11 @@ class NavierStokesSolver:
             diff = np.linalg.norm(
                 self._temp_stream_function - self._stream_function, ord=2
             )
-            if diff < self.implicit_lin_stopping_criteria:
-                break
             self._stream_function = self._stream_function + alpha * (
                 self._temp_stream_function - self._stream_function
             )
+            if diff < self.implicit_lin_stopping_criteria:
+                break
 
         return self._stream_function, self._vorticity
 

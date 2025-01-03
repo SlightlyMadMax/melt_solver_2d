@@ -100,9 +100,8 @@ class SORPoissonSolver(BaseSolver):
         result[:, 0] = left_value
         result[:, n_x - 1] = right_value
 
-        temp = np.copy(result)
-
         for iteration in range(max_iters):
+            temp = np.copy(result)
             for i in range(1, n_x - 1):
                 for j in range(1, n_y - 1):
                     result[j, i] = (
@@ -119,7 +118,6 @@ class SORPoissonSolver(BaseSolver):
             diff = np.linalg.norm(temp - result, ord=2)
             if diff < stopping_criteria:
                 break
-            temp = np.copy(result)
 
     def solve(
         self, initial_guess: np.ndarray, rhs: np.ndarray, time: float
