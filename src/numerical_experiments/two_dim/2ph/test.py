@@ -3,87 +3,193 @@ import time
 
 import numpy as np
 
+from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.constants import ABS_ZERO
 from src.geometry import DomainGeometry
-from src.heat_transfer.solvers import solve
-from src.plotting import plot_temperature, animate
-from src.heat_transfer import init_temperature_2f_test
-from src.constants import K_ICE, K_WATER, RHO_ICE, L
+from src.heat_transfer.init_values import init_temperature_with_interface
+from src.heat_transfer.parameters import ThermalParameters
+from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.heat_transfer.utils import TemperatureUnit
 
-T_WATER = 5.0
-T_ICE = -5.0
-end_time = 60.0 * 60.0 * 24.0 * 250.0
-n_t = 24*250
-T_0 = 0.0
+max_temp = 278.15
+min_temp = 268.15
+reference_temperature = 0.5 * (min_temp + max_temp)
 
-b_lim = (K_WATER * L / RHO_ICE) * T_WATER / ((K_WATER * L / RHO_ICE) * T_WATER + (K_ICE * L / RHO_ICE)*abs(T_ICE))
-print(f"Theoretical boundary final position: {1.0 - b_lim}")
-
-geom = DomainGeometry(
+geometry = DomainGeometry(
     width=1.0,
     height=1.0,
-    end_time=end_time,
+    end_time=60.0 * 60.0 * 24.0 * 250.0,
     n_x=500,
     n_y=500,
-    n_t=n_t
+    n_t=24 * 250,
 )
 
-print(geom)
+print(geometry)
 
-F = [geom.height / 2 - 0.2 * math.exp(-(i * geom.dx - geom.width / 4.0) ** 2 / 0.005) + 0.2 * math.exp(-(i * geom.dx - geom.width / 1.5) ** 2 / 0.005) for i in range(geom.n_x)]
-F = np.array(F)
+thermal_params = ThermalParameters(
+    domain_geometry=geometry,
+    u_pt=273.15,
+    u_ref=reference_temperature,
+    delta_u=max_temp - min_temp,
+    v=0.01,
+    specific_heat_liquid=4120.7,
+    specific_heat_solid=2056.8,
+    specific_latent_heat_solid=333000.0,
+    density_liquid=999.84,
+    density_solid=918.9,
+    thermal_conductivity_liquid=0.59,
+    thermal_conductivity_solid=2.21,
+)
 
-T = init_temperature_2f_test(geom=geom, water_temp=T_WATER, ice_temp=T_ICE, F=F)
+print(thermal_params)
+
+b_lim = (
+    (
+        thermal_params.thermal_conductivity_liquid
+        * thermal_params.specific_latent_heat_solid
+        / thermal_params.density_solid
+    )
+    * (max_temp + ABS_ZERO)
+    / (
+        (
+            thermal_params.thermal_conductivity_liquid
+            * thermal_params.specific_latent_heat_solid
+            / thermal_params.density_solid
+        )
+        * (max_temp + ABS_ZERO)
+        + (
+            thermal_params.thermal_conductivity_solid
+            * thermal_params.specific_latent_heat_solid
+            / thermal_params.density_solid
+        )
+        * abs(min_temp + ABS_ZERO)
+    )
+)
+print(f"Theoretical terminal boundary position: {1.0 - b_lim}")
+
+
+f = [
+    geometry.height / 2
+    - 0.2 * math.exp(-((i * geometry.dx - geometry.width / 4.0) ** 2) / 0.005)
+    + 0.2 * math.exp(-((i * geometry.dx - geometry.width / 1.5) ** 2) / 0.005)
+    for i in range(geometry.n_x)
+]
+f = np.array(f)
+
+u = init_temperature_with_interface(
+    geom=geometry,
+    thermal_parameters=thermal_params,
+    liquid_temp=max_temp,
+    solid_temp=min_temp,
+    f=f,
+    liquid_region_height=0.0,
+)
 
 plot_temperature(
-    T=T,
-    geom=geom,
+    u=u * thermal_params.delta_u + thermal_params.u_ref,
+    u_pt=thermal_params.u_pt,
+    geom=geometry,
     time=0.0,
     graph_id=0,
     plot_boundary=True,
     show_graph=True,
-    min_temp=T_ICE,
-    max_temp=T_WATER,
-    directory="./results/"
+    min_temp=min_temp + ABS_ZERO,
+    max_temp=max_temp + ABS_ZERO,
+    invert_yaxis=False,
+    actual_temp_units=TemperatureUnit.KELVIN,
+    display_temp_units=TemperatureUnit.CELSIUS,
+    directory="./results/",
 )
 
-T_full = [T]
-times = [0]
+u_top_bc = BoundaryCondition(
+    boundary_type=BoundaryConditionType.DIRICHLET,
+    n=geometry.n_x,
+    value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+    / thermal_params.delta_u
+    * np.ones(geometry.n_x),
+)
+u_right_bc = BoundaryCondition(
+    boundary_type=BoundaryConditionType.NEUMANN,
+    n=geometry.n_y,
+    flux_func=lambda t, n: np.zeros(geometry.n_y),
+)
+u_bottom_bc = BoundaryCondition(
+    boundary_type=BoundaryConditionType.DIRICHLET,
+    n=geometry.n_x,
+    value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+    / thermal_params.delta_u
+    * np.ones(geometry.n_x),
+)
+u_left_bc = BoundaryCondition(
+    boundary_type=BoundaryConditionType.NEUMANN,
+    n=geometry.n_y,
+    flux_func=lambda t, n: np.zeros(geometry.n_y),
+)
 
-start_time = time.process_time()
+heat_transfer_solver = HeatTransferSolver(
+    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
+    geometry=geometry,
+    parameters=thermal_params,
+    top_bc=u_top_bc,
+    right_bc=u_right_bc,
+    bottom_bc=u_bottom_bc,
+    left_bc=u_left_bc,
+    fixed_delta=False,
+    implicit_lin_max_iters=2,
+    implicit_lin_stopping_criteria=1e-6,
+    implicit_lin_urf=1.0,
+)
 
-for i in range(1, n_t+1):
-    t = i * geom.dt
-    T = solve(T,
-              top_cond_type=1,
-              right_cond_type=2,
-              bottom_cond_type=1,
-              left_cond_type=2,
-              dx=geom.dx,
-              dy=geom.dy,
-              dt=geom.dt,
-              time=t,
-              fixed_delta=False
-              )
+sf = np.zeros_like(u)
+start_time = time.perf_counter()
+
+for i in range(1, geometry.n_t + 1):
+    t = i * geometry.dt
+    u = heat_transfer_solver.solve(u, sf, time=t)
     if i % 24 == 0:
-        T_full.append(T)
-        times.append(t)
-        print(f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, ВРЕМЯ ВЫПОЛНЕНИЯ: {time.process_time() - start_time}")
+        print(
+            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, ВРЕМЯ ВЫПОЛНЕНИЯ: {time.perf_counter() - start_time}"
+        )
+        plot_temperature(
+            u=u * thermal_params.delta_u + thermal_params.u_ref,
+            u_pt=thermal_params.u_pt,
+            geom=geometry,
+            time=t,
+            graph_id=i,
+            plot_boundary=True,
+            show_graph=False,
+            min_temp=min_temp + ABS_ZERO,
+            max_temp=max_temp + ABS_ZERO,
+            invert_yaxis=False,
+            actual_temp_units=TemperatureUnit.KELVIN,
+            display_temp_units=TemperatureUnit.CELSIUS,
+            directory="./results/",
+        )
 
-for j in range(1, geom.n_y - 1):
-    if (T[j, 250] - T_0) * (T[j + 1, 250] - T_0) < 0.0:
-        y_0 = abs((T[j, 250] * (j + 1) * geom.dy - T[j + 1, 250] * j * geom.dy) / (T[j, 250] - T[j + 1, 250]))
+for j in range(1, geometry.n_y - 1):
+    if (
+        u[j, int(geometry.n_x / 2)] * thermal_params.delta_u - thermal_params.u_pt_ref
+    ) * (
+        u[j + 1, int(geometry.n_x / 2)] * thermal_params.delta_u
+        - thermal_params.u_pt_ref
+    ) < 0.0:
+        y_0 = abs(
+            (
+                u[j, int(geometry.n_x / 2)] * (j + 1) * geometry.dy
+                - u[j + 1, int(geometry.n_x / 2)] * j * geometry.dy
+            )
+            / (u[j, int(geometry.n_x / 2)] - u[j + 1, int(geometry.n_x / 2)])
+        )
         print(f"Calculated final location of the boundary: {y_0}")
-        print(f"Absolute error: {abs(y_0 - 1 + b_lim)}, relative: {round(abs(y_0 - 1 + b_lim) * 100/ b_lim, 2)}%")
+        print(
+            f"Absolute error: {abs(y_0 - 1 + b_lim)}, relative: {round(abs(y_0 - 1 + b_lim) * 100 / b_lim, 2)}%"
+        )
         break
 
 print("СОЗДАНИЕ АНИМАЦИИ...")
-animate(
-    T_full=T_full,
-    geom=geom,
-    times=times,
-    t_step=60*60*24,
-    directory="./results/",
-    filename="test_animation",
-    min_temp=T_ICE,
-    max_temp=T_WATER
+create_gif_from_images(
+    output_filename="test_animation",
+    source_directory="./results/",
+    output_directory="./results/",
 )
