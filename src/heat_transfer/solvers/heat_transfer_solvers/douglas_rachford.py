@@ -32,11 +32,14 @@ class DouglasRachfordSolver(HeatTransferSolver):
         u_ref: float,
         u_pt: float,
         delta_u: float,
+        c_ref: float,
         c_solid: float,
         c_liquid: float,
         l_solid: float,
+        k_ref: float,
         k_solid: float,
         k_liquid: float,
+        peclet_number: float,
         delta: float,
         rbc_type: int,
         lbc_type: int,
@@ -51,44 +54,46 @@ class DouglasRachfordSolver(HeatTransferSolver):
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
-        inv_dx2 = 1.0 / (dx * dx)
         inv_dy = 1.0 / dy
-        inv_dy2 = 1.0 / (dy * dy)
+        inv_dx2 = inv_dx * inv_dx
+        inv_dy2 = inv_dy * inv_dy
+
+        inv_k_ref = 1.0 / k_ref
+        inv_peclet_number = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                inv_c = 1.0 / c_smoothed(
-                    u=iter_u[j, i] + u_ref,
+                inv_c_eff = c_ref / c_smoothed(
+                    u=iter_u[j, i] * delta_u + u_ref,
                     u_pt=u_pt,
                     c_solid=c_solid,
                     c_liquid=c_liquid,
                     l_solid=l_solid,
                     delta=delta,
                 )
-
                 k_i1j = k_smoothed(
-                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) + u_ref,
+                    u=0.5 * (iter_u[j, i + 1] + iter_u[j, i]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_im1j = k_smoothed(
-                    u=0.5 * (iter_u[j, i - 1] + iter_u[j, i]) + u_ref,
+                    u=0.5 * (iter_u[j, i] + iter_u[j, i - 1]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ij1 = k_smoothed(
-                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) + u_ref,
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ijm1 = k_smoothed(
-                    u=0.5 * (iter_u[j - 1, i] + iter_u[j, i]) + u_ref,
+                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
@@ -108,12 +113,20 @@ class DouglasRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i + 1]
                             - sf[j - 1, i + 1]
                         )
-                        - k_i1j * inv_c * inv_dx
+                        - k_i1j * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dx
                     )
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[i] = 1.0 + dt * (k_i1j + k_im1j) * inv_c * inv_dx2
+                b_x[i] = (
+                    1.0
+                    + dt
+                    * (k_i1j + k_im1j)
+                    * inv_k_ref
+                    * inv_peclet_number
+                    * inv_c_eff
+                    * inv_dx2
+                )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
                 c_x[i] = (
@@ -128,12 +141,14 @@ class DouglasRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i - 1]
                             - sf[j - 1, i - 1]
                         )
-                        + k_im1j * inv_c * inv_dx
+                        + k_im1j * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dx
                     )
                 )
 
-                rhs[i] = u[j, i] + dt * 0.5 * inv_c * (
+                rhs[i] = u[j, i] + dt * 0.5 * inv_c_eff * (
                     inv_dy2
+                    * inv_k_ref
+                    * inv_peclet_number
                     * (
                         k_ij1 * (u[j + 1, i] - u[j, i])
                         - k_ijm1 * (u[j, i] - u[j - 1, i])
@@ -197,11 +212,14 @@ class DouglasRachfordSolver(HeatTransferSolver):
         u_ref: float,
         u_pt: float,
         delta_u: float,
+        c_ref: float,
         c_solid: float,
         c_liquid: float,
         l_solid: float,
+        k_ref: float,
         k_solid: float,
         k_liquid: float,
+        peclet_number: float,
         delta: float,
         tbc_type: int,
         bbc_type: int,
@@ -215,30 +233,32 @@ class DouglasRachfordSolver(HeatTransferSolver):
         bottom_phi: NDArray[np.float64] = None,
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
-        inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
-        inv_dy2 = 1.0 / (dy * dy)
+        inv_dx = 1.0 / dx
+        inv_dy2 = inv_dy * inv_dy
+
+        inv_k_ref = 1.0 / k_ref
+        inv_peclet_number = c_ref / peclet_number
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                inv_c = 1.0 / c_smoothed(
-                    u=iter_u[j, i] + u_ref,
+                inv_c_eff = 1.0 / c_smoothed(
+                    u=iter_u[j, i] * delta_u + u_ref,
                     u_pt=u_pt,
                     c_solid=c_solid,
                     c_liquid=c_liquid,
                     l_solid=l_solid,
                     delta=delta,
                 )
-
                 k_ij1 = k_smoothed(
-                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) + u_ref,
+                    u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
                     delta=delta,
                 )
                 k_ijm1 = k_smoothed(
-                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) + u_ref,
+                    u=0.5 * (iter_u[j, i] + iter_u[j - 1, i]) * delta_u + u_ref,
                     u_pt=u_pt,
                     k_solid=k_solid,
                     k_liquid=k_liquid,
@@ -258,12 +278,20 @@ class DouglasRachfordSolver(HeatTransferSolver):
                             + sf[j + 1, i - 1]
                             - sf[j + 1, i + 1]
                         )
-                        - k_ij1 * inv_c * inv_dy
+                        - k_ij1 * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dy
                     )
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[j] = 1.0 + dt * (k_ij1 + k_ijm1) * inv_c * inv_dy2
+                b_y[j] = (
+                    1.0
+                    + dt
+                    * (k_ij1 + k_ijm1)
+                    * inv_k_ref
+                    * inv_peclet_number
+                    * inv_c_eff
+                    * inv_dy2
+                )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
                 c_y[j] = (
@@ -278,22 +306,17 @@ class DouglasRachfordSolver(HeatTransferSolver):
                             + sf[j - 1, i - 1]
                             - sf[j - 1, i + 1]
                         )
-                        + k_ijm1 * inv_c * inv_dy
+                        + k_ijm1 * inv_k_ref * inv_peclet_number * inv_c_eff * inv_dy
                     )
                 )
 
                 # Right-hand side of the equation
-                rhs[j] = u[j, i] - dt * inv_c * (
+                rhs[j] = u[j, i] - dt * inv_c_eff * (
                     inv_dy2
+                    * inv_k_ref
+                    * inv_peclet_number
                     * (
-                        k_smoothed(
-                            u=0.5 * (iter_u[j + 1, i] + iter_u[j, i]),
-                            u_pt=u_pt,
-                            k_solid=k_solid,
-                            k_liquid=k_liquid,
-                            delta=delta,
-                        )
-                        * (u[j + 1, i] - u[j, i])
+                        k_ij1 * (u[j + 1, i] - u[j, i])
                         - k_ijm1 * (u[j, i] - u[j - 1, i])
                     )
                     + 0.125
@@ -367,17 +390,20 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 a_x=self._a_x,
                 b_x=self._b_x,
                 c_x=self._c_x,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                dt=self.geometry.dt,
-                u_ref=self.parameters.u_ref,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
                 u_pt=self.parameters.u_pt,
+                u_ref=self.parameters.u_ref,
                 delta_u=self.parameters.delta_u,
+                c_ref=self.parameters.volumetric_heat_capacity_ref,
                 c_solid=self.parameters.volumetric_heat_capacity_solid,
                 c_liquid=self.parameters.volumetric_heat_capacity_liquid,
                 l_solid=self.parameters.volumetric_latent_heat_solid,
+                k_ref=self.parameters.thermal_conductivity_ref,
                 k_solid=self.parameters.thermal_conductivity_solid,
                 k_liquid=self.parameters.thermal_conductivity_liquid,
+                peclet_number=self.parameters.peclet_number,
                 delta=delta,
                 rbc_type=self.right_bc.boundary_type.value,
                 lbc_type=self.left_bc.boundary_type.value,
@@ -448,17 +474,20 @@ class DouglasRachfordSolver(HeatTransferSolver):
                 a_y=self._a_y,
                 b_y=self._b_y,
                 c_y=self._c_y,
-                dx=self.geometry.dx,
-                dy=self.geometry.dy,
-                dt=self.geometry.dt,
-                u_ref=self.parameters.u_ref,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
                 u_pt=self.parameters.u_pt,
+                u_ref=self.parameters.u_ref,
                 delta_u=self.parameters.delta_u,
+                c_ref=self.parameters.volumetric_heat_capacity_ref,
                 c_solid=self.parameters.volumetric_heat_capacity_solid,
                 c_liquid=self.parameters.volumetric_heat_capacity_liquid,
                 l_solid=self.parameters.volumetric_latent_heat_solid,
+                k_ref=self.parameters.thermal_conductivity_ref,
                 k_solid=self.parameters.thermal_conductivity_solid,
                 k_liquid=self.parameters.thermal_conductivity_liquid,
+                peclet_number=self.parameters.peclet_number,
                 delta=delta,
                 tbc_type=self.top_bc.boundary_type.value,
                 bbc_type=self.bottom_bc.boundary_type.value,

@@ -29,7 +29,7 @@ geometry = DomainGeometry(
     end_time=60.0 * 60.0 * 24.0 * 300.0,  # 300 days
     n_x=21,
     n_y=1001,
-    n_t=7200,
+    n_t=300 * 24,
 )
 
 print(geometry)
