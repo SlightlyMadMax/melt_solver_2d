@@ -78,7 +78,6 @@ class SORPoissonSolver(BaseSolver):
     @staticmethod
     @numba.jit(nopython=True)
     def _solve(
-        initial_guess: np.ndarray,
         rhs: np.ndarray,
         result: np.ndarray,
         dx: float,
@@ -91,7 +90,7 @@ class SORPoissonSolver(BaseSolver):
         bottom_value: np.ndarray,
         omega: float = 1.0,
     ) -> None:
-        n_y, n_x = initial_guess.shape
+        n_y, n_x = result.shape
         beta = dx / dy
         factor = 0.5 * omega / (1.0 + beta * beta)
 
@@ -132,7 +131,6 @@ class SORPoissonSolver(BaseSolver):
         """
         self._result = np.copy(initial_guess)
         self._solve(
-            initial_guess=initial_guess,
             rhs=rhs,
             result=self._result,
             omega=self._optimal_omega,
