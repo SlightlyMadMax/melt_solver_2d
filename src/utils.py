@@ -1,8 +1,8 @@
-import numba
 import numpy as np
+from numba import njit
 
 
-@numba.jit(nopython=True)
+@njit
 def solve_tridiagonal(
     a: np.ndarray,
     b: np.ndarray,
