@@ -1,8 +1,8 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
@@ -10,7 +10,10 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
 )
 from src.geometry import DomainGeometry
 from src.base_solver import Sweep2DSolver
-from src.fluid_dynamics.utils import get_indicator_function as c_ind
+from src.fluid_dynamics.utils import (
+    get_indicator_function as c_ind,
+    compute_velocity_from_sf,
+)
 from src.utils import solve_tridiagonal
 
 
@@ -44,13 +47,21 @@ class PRNavierStokesScheme(Sweep2DSolver):
         self._new_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
+        self._v_x: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x)
+        )
+        self._v_y: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x)
+        )
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_x(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
         result: NDArray[np.float64],
         rhs: NDArray[np.float64],
         a_x: NDArray[np.float64],
@@ -76,26 +87,22 @@ class PRNavierStokesScheme(Sweep2DSolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
+                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
+                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
+                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
+
                 a_x[i] = (
-                    0.5
-                    * dt
-                    * inv_dx
-                    * (
-                        (sf[j + 1, i + 1] - sf[j - 1, i + 1]) * 0.25 * inv_dy
-                        - inv_re * inv_dx
-                    )
+                    0.5 * dt * inv_dx * (0.5 * (v_x_p - abs(v_x_p)) - inv_re * inv_dx)
                 )
 
-                b_x[i] = 1.0 + inv_re * dt * inv_dx2
+                b_x[i] = 1.0 + dt * inv_dx * (
+                    0.25 * ((v_x_p + abs(v_x_p)) - (v_x_m - abs(v_x_m)))
+                    + inv_re * inv_dx
+                )
 
                 c_x[i] = (
-                    0.5
-                    * dt
-                    * inv_dx
-                    * (
-                        (sf[j - 1, i - 1] - sf[j + 1, i - 1]) * 0.25 * inv_dy
-                        - inv_re * inv_dx
-                    )
+                    -0.5 * dt * inv_dx * (0.5 * (v_x_m + abs(v_x_m)) + inv_re * inv_dx)
                 )
 
                 rhs[i] = w[j, i] + 0.5 * dt * (
@@ -105,16 +112,13 @@ class PRNavierStokesScheme(Sweep2DSolver):
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
-                    * w[j - 1, i]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
-                    * w[j + 1, i]
+                    - inv_dy
+                    * (
+                        (0.5 * (v_y_p + abs(v_y_p)) - 0.5 * (v_y_m - abs(v_y_m)))
+                        * w[j, i]
+                        + 0.5 * (v_y_p - abs(v_y_p)) * w[j + 1, i]
+                        - 0.5 * (v_y_m + abs(v_y_m)) * w[j - 1, i]
+                    )
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
@@ -133,11 +137,13 @@ class PRNavierStokesScheme(Sweep2DSolver):
         return result
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_y(
         w: NDArray[np.float64],
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
         result: NDArray[np.float64],
         rhs: NDArray[np.float64],
         a_y: NDArray[np.float64],
@@ -163,26 +169,22 @@ class PRNavierStokesScheme(Sweep2DSolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
+                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
+                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
+                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
+                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
+
                 a_y[j] = (
-                    0.5
-                    * dt
-                    * inv_dy
-                    * (
-                        (sf[j + 1, i - 1] - sf[j + 1, i + 1]) * 0.25 * inv_dx
-                        - inv_re * inv_dy
-                    )
+                    0.5 * dt * inv_dy * (0.5 * (v_y_p - abs(v_y_p)) - inv_re * inv_dy)
                 )
 
-                b_y[j] = 1.0 + inv_re * dt * inv_dy2
+                b_y[j] = 1.0 + dt * inv_dy * (
+                    0.25 * ((v_y_p + abs(v_y_p)) - (v_y_m - abs(v_y_m)))
+                    + inv_re * inv_dy
+                )
 
                 c_y[j] = (
-                    0.5
-                    * dt
-                    * inv_dy
-                    * (
-                        (sf[j - 1, i + 1] - sf[j - 1, i - 1]) * 0.25 * inv_dx
-                        - inv_re * inv_dy
-                    )
+                    -0.5 * dt * inv_dy * (0.5 * (v_y_m + abs(v_y_m)) + inv_re * inv_dy)
                 )
 
                 rhs[j] = w[j, i] + 0.5 * dt * (
@@ -192,16 +194,13 @@ class PRNavierStokesScheme(Sweep2DSolver):
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i - 1] - sf[j - 1, i - 1])
-                    * w[j, i - 1]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i + 1] - sf[j + 1, i + 1])
-                    * w[j, i + 1]
+                    - inv_dx
+                    * (
+                        (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m)))
+                        * w[j, i]
+                        + 0.5 * (v_x_p - abs(v_x_p)) * w[j + 1, i]
+                        - 0.5 * (v_x_m + abs(v_x_m)) * w[j - 1, i]
+                    )
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
@@ -225,13 +224,19 @@ class PRNavierStokesScheme(Sweep2DSolver):
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         time: float = 0.0,
-    ) -> (NDArray[np.float64], NDArray[np.float64]):
+    ) -> NDArray[np.float64]:
         self._temp_w = np.copy(w)
-
+        self._v_x, self._v_y = compute_velocity_from_sf(
+            sf=sf,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
         self._compute_sweep_x(
             w=w,
             sf=sf,
             u=u,
+            v_x=self._v_x,
+            v_y=self._v_y,
             result=self._temp_w,
             rhs=self._rhs_x,
             a_x=self._a_x,
@@ -251,6 +256,8 @@ class PRNavierStokesScheme(Sweep2DSolver):
             w=self._temp_w,
             sf=sf,
             u=u,
+            v_x=self._v_x,
+            v_y=self._v_y,
             result=self._new_w,
             rhs=self._rhs_y,
             a_y=self._a_y,
