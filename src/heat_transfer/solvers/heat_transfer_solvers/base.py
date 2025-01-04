@@ -40,6 +40,7 @@ class HeatTransferSolver(Sweep2DSolver):
     def solve(
         self,
         u: NDArray[np.float64],
-        sf: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]: ...

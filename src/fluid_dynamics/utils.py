@@ -1,9 +1,11 @@
-import numba
+from typing import Tuple
+
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
 
-@numba.jit(nopython=True)
+@njit
 def get_indicator_function(
     u: float, u_pt_ref: float, delta_u: float, eps: float
 ) -> float:
@@ -22,30 +24,25 @@ def get_indicator_function(
     return 1.0 / (eps * eps)
 
 
-@numba.jit(nopython=True)
-def calculate_velocity_field(sf: NDArray[np.float64], dx: float, dy: float):
+@njit
+def compute_velocity_from_sf(
+    sf: NDArray[np.float64],
+    dx: float,
+    dy: float,
+) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
-    Calculate the velocity field based on the values of the stream function using finite differences.
-
-    :param sf: A 2D array of stream function values.
-    :param dx: X-axis grid step.
-    :param dy: Y-axis grid step.
-    :return: v_x, v_y 2D arrays.
+    Compute velocity components v_x and v_y from the stream function.
     """
-    inv_dy = 1.0 / dy
+    n_y, n_x = sf.shape
     inv_dx = 1.0 / dx
+    inv_dy = 1.0 / dy
 
     v_x = np.zeros_like(sf)
     v_y = np.zeros_like(sf)
 
-    # Interior points: central difference
-    v_x[1:-1, :] = 0.5 * inv_dy * (sf[2:, :] - sf[:-2, :])
-    v_y[:, 1:-1] = -0.5 * inv_dx * (sf[:, 2:] - sf[:, :-2])
-
-    # Boundary points: forward/backward difference
-    v_x[0, :] = (sf[1, :] - sf[0, :]) * inv_dy
-    v_x[-1, :] = (sf[-1, :] - sf[-2, :]) * inv_dy
-    v_y[:, 0] = -(sf[:, 1] - sf[:, 0]) * inv_dx
-    v_y[:, -1] = -(sf[:, -1] - sf[:, -2]) * inv_dx
+    for j in range(1, n_y - 1):
+        for i in range(1, n_x - 1):
+            v_x[j, i] = (sf[j + 1, i] - sf[j - 1, i]) * 0.5 * inv_dy
+            v_y[j, i] = -(sf[j, i + 1] - sf[j, i - 1]) * 0.5 * inv_dx
 
     return v_x, v_y

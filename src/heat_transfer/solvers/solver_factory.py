@@ -40,7 +40,8 @@ class HeatTransferSolver:
     def solve(
         self,
         u: NDArray[np.float64],
-        sf: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
         time: float = 0.0,
     ):
-        return self.solver.solve(u, sf, time)
+        return self.solver.solve(u, v_x, v_y, time)

@@ -7,6 +7,7 @@ from src.boundary_conditions import BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
+from src.fluid_dynamics.utils import compute_velocity_from_sf
 from src.geometry import DomainGeometry
 
 
@@ -27,6 +28,7 @@ class NavierStokesSolver:
         implicit_lin_stopping_criteria: float = 1e-6,
         implicit_lin_urf: float = 0.5,
     ):
+        self.geometry = geometry
         self.implicit_lin_max_iters = implicit_lin_max_iters
         self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
         self.implicit_lin_urf = implicit_lin_urf
@@ -70,7 +72,7 @@ class NavierStokesSolver:
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         time: float = 0.0,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         alpha = self.implicit_lin_urf
         self._stream_function = np.copy(sf)
 
@@ -95,7 +97,12 @@ class NavierStokesSolver:
             if diff < self.implicit_lin_stopping_criteria:
                 break
 
-        return self._stream_function, self._vorticity
+        v_x, v_y = compute_velocity_from_sf(
+            sf=self._stream_function,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
+        return self._stream_function, self._vorticity, v_x, v_y
 
     def _solve_vorticity(
         self,
