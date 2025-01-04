@@ -127,7 +127,9 @@ i = int(geometry.n_x / 2)
 
 for n in range(1, geometry.n_t):
     t = n * geometry.dt
-    u = heat_transfer_solver.solve(u=u, sf=np.zeros(u.shape), time=t)
+    u = heat_transfer_solver.solve(
+        u=u, v_x=np.zeros_like(u), v_y=np.zeros_like(u), time=t
+    )
     if n % 24 == 0:
         times.append(t)
         print(f"ДЕНЬ: {int(n / 24)}")
@@ -137,10 +139,7 @@ for n in range(1, geometry.n_t):
             ) < 0.0:
                 y_0 = (
                     j * geometry.dy
-                    + (
-                        (thermal_params.u_pt_ref - u[j, i])
-                        / (u[j + 1, i] - u[j, i])
-                    )
+                    + ((thermal_params.u_pt_ref - u[j, i]) / (u[j + 1, i] - u[j, i]))
                     * geometry.dy
                 )
                 boundary.append(y_0)
