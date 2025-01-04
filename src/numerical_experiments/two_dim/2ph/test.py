@@ -141,12 +141,11 @@ heat_transfer_solver = HeatTransferSolver(
     implicit_lin_urf=1.0,
 )
 
-sf = np.zeros_like(u)
 start_time = time.perf_counter()
 
 for i in range(1, geometry.n_t + 1):
     t = i * geometry.dt
-    u = heat_transfer_solver.solve(u, sf, time=t)
+    u = heat_transfer_solver.solve(u, v_x=np.zeros_like(u), v_y=np.zeros_like(u), time=t)
     if i % 24 == 0:
         print(
             f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, ВРЕМЯ ВЫПОЛНЕНИЯ: {time.perf_counter() - start_time}"
