@@ -198,8 +198,8 @@ class PRNavierStokesScheme(Sweep2DSolver):
                     * (
                         (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m)))
                         * w[j, i]
-                        + 0.5 * (v_x_p - abs(v_x_p)) * w[j + 1, i]
-                        - 0.5 * (v_x_m + abs(v_x_m)) * w[j - 1, i]
+                        + 0.5 * (v_x_p - abs(v_x_p)) * w[j, i + 1]
+                        - 0.5 * (v_x_m + abs(v_x_m)) * w[j, i - 1]
                     )
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
