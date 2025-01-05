@@ -1,0 +1,219 @@
+import numpy as np
+from numba import njit
+from numpy.typing import NDArray
+
+from src.base_solver import BaseSolver
+from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
+from src.geometry import DomainGeometry
+from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.parameters import ThermalParameters
+from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
+    HeatTransferSolverName,
+    register_solver,
+)
+from src.utils import solve_tridiagonal
+
+
+@register_solver(HeatTransferSolverName.EXPLICIT)
+class ExplicitHeatSolver(BaseSolver):
+    def __init__(
+        self,
+        geometry: DomainGeometry,
+        parameters: ThermalParameters,
+        top_bc: BoundaryCondition,
+        right_bc: BoundaryCondition,
+        bottom_bc: BoundaryCondition,
+        left_bc: BoundaryCondition,
+        fixed_delta: bool = True,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(
+            geometry=geometry,
+            top_bc=top_bc,
+            right_bc=right_bc,
+            bottom_bc=bottom_bc,
+            left_bc=left_bc,
+        )
+        self.fixed_delta = fixed_delta
+        self.parameters = parameters
+
+        # Pre-allocate some arrays that will be used in the calculations
+        self._new_u: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x)
+        )
+
+    @staticmethod
+    @njit
+    def _compute_temperature(
+        u: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
+        result: NDArray[np.float64],
+        dx: float,
+        dy: float,
+        dt: float,
+        u_ref: float,
+        u_pt: float,
+        delta_u: float,
+        c_ref: float,
+        c_solid: float,
+        c_liquid: float,
+        l_solid: float,
+        k_ref: float,
+        k_solid: float,
+        k_liquid: float,
+        peclet_number: float,
+        delta: float,
+        right_value: NDArray[np.float64] = None,
+        left_value: NDArray[np.float64] = None,
+    ) -> NDArray[np.float64]:
+        n_y, n_x = u.shape
+        inv_dx = 1.0 / dx
+        inv_dy = 1.0 / dy
+
+        inv_k_ref = 1.0 / k_ref
+        inv_peclet_number = 1.0 / peclet_number
+
+        result[0, :] = result[1, :]  # Adiabatic top wall
+        result[-1, :] = result[-2, :]  # Adiabatic bottom wall
+        result[:, 0] = left_value  # Cold right wall
+        result[:, -1] = right_value  # Hot left wall
+
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
+                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
+                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
+                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
+                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
+
+                inv_c_eff = c_ref / c_smoothed(
+                    u=u[j, i] * delta_u + u_ref,
+                    u_pt=u_pt,
+                    c_solid=c_solid,
+                    c_liquid=c_liquid,
+                    l_solid=l_solid,
+                    delta=delta,
+                )
+                k_i1j = (
+                    k_smoothed(
+                        u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta,
+                    )
+                    * inv_k_ref
+                )
+                k_im1j = (
+                    k_smoothed(
+                        u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta,
+                    )
+                    * inv_k_ref
+                )
+                k_ij1 = (
+                    k_smoothed(
+                        u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta,
+                    )
+                    * inv_k_ref
+                )
+                k_ijm1 = (
+                    k_smoothed(
+                        u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta,
+                    )
+                    * inv_k_ref
+                )
+
+                advection_x = inv_dx * (
+                    (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m))) * u[j, i]
+                    + 0.5 * (v_x_p - abs(v_x_p)) * u[j, i + 1]
+                    - 0.5 * (v_x_m + abs(v_x_m)) * u[j, i - 1]
+                )
+                advection_y = inv_dy * (
+                    (0.5 * (v_y_p + abs(v_y_p)) - 0.5 * (v_y_m - abs(v_y_m))) * u[j, i]
+                    + 0.5 * (v_y_p - abs(v_y_p)) * u[j + 1, i]
+                    - 0.5 * (v_y_m + abs(v_y_m)) * u[j - 1, i]
+                )
+
+                diffusion = (
+                    inv_c_eff
+                    * inv_peclet_number
+                    * (
+                        inv_dx
+                        * (
+                            k_i1j * inv_dx * (u[j, i + 1] - u[j, i])
+                            - k_im1j * inv_dx * (u[j, i] - u[j, i - 1])
+                        )
+                        + inv_dy
+                        * (
+                            k_ij1 * inv_dy * (u[j + 1, i] - u[j, i])
+                            - k_ijm1 * inv_dy * (u[j - 1, i] - u[j, i])
+                        )
+                    )
+                )
+
+                result[j, i] = u[j, i] + dt * (-advection_x - advection_y + diffusion)
+
+        return result
+
+    def solve(
+        self,
+        u: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
+        time: float = 0.0,
+    ) -> NDArray[np.float64]:
+        delta = (
+            self.parameters.delta
+            if self.fixed_delta
+            else get_max_delta(
+                u=u * self.parameters.delta_u + self.parameters.u_ref,
+                u_pt=self.parameters.u_pt,
+            )
+        )
+        self._compute_temperature(
+            u=u,
+            v_x=v_x,
+            v_y=v_y,
+            result=self._new_u,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            u_pt=self.parameters.u_pt,
+            u_ref=self.parameters.u_ref,
+            delta_u=self.parameters.delta_u,
+            c_ref=self.parameters.volumetric_heat_capacity_ref,
+            c_solid=self.parameters.volumetric_heat_capacity_solid,
+            c_liquid=self.parameters.volumetric_heat_capacity_liquid,
+            l_solid=self.parameters.volumetric_latent_heat_solid,
+            k_ref=self.parameters.thermal_conductivity_ref,
+            k_solid=self.parameters.thermal_conductivity_solid,
+            k_liquid=self.parameters.thermal_conductivity_liquid,
+            peclet_number=self.parameters.peclet_number,
+            delta=delta,
+            right_value=(
+                self.right_bc.get_value(t=time)
+                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            left_value=(
+                self.left_bc.get_value(t=time)
+                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+        )
+
+        return self._new_u
