@@ -75,7 +75,7 @@ def plot_temperature(
         X,
         Y,
         disp_u,
-        30,
+        50,
         cmap="viridis",
         # extend="both",
     )
@@ -95,10 +95,10 @@ def plot_temperature(
         plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
         ax.legend()
 
-    ax.set_title(
-        f"t = {int(time/(24*60))} ч.\n dx = {round(geom.dx, 3)} м, "
-        f"dy = {round(geom.dy, 3)} м, dt = {round(geom.dt/3600)} ч"
-    )
+    # ax.set_title(
+    #     f"t = {time:.1E} с.\n dx = {geom.dx:.1E} м, "
+    #     f"dy = {geom.dy:.1E} м, dt = {geom.dt:.1E} с"
+    # )
 
     if invert_xaxis:
         labels = [item.get_text() for item in ax.get_xticklabels()]

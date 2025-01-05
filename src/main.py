@@ -4,8 +4,8 @@ import numpy as np
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.plotting import plot_velocity_field
-from src.fluid_dynamics.utils import calculate_velocity_field
+from src.fluid_dynamics.plotting import plot_velocity_field, plot_stream_function
+from src.fluid_dynamics.utils import compute_velocity_from_sf
 from src.fluid_dynamics.solvers import (
     NavierStokesSolver,
     VorticitySolverName,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     print(geometry)
 
     min_temp = 274.15
-    max_temp = 283.15
+    max_temp = 277.15
     reference_temperature = 0.5 * (min_temp + max_temp)
 
     thermal_params = ThermalParameters(
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.1,
+        v=0.02,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
         specific_latent_heat_solid=333000.0,
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.1,
+        v=0.02,
         epsilon=100000.0,
     )
 
@@ -91,28 +91,26 @@ if __name__ == "__main__":
         }"
     )
 
-    # plot_temperature(
-    #     u=u * thermal_params.delta_u + thermal_params.u_ref,
-    #     u_pt=thermal_params.u_pt,
-    #     geom=geometry,
-    #     time=0.0,
-    #     graph_id=0,
-    #     plot_boundary=False,
-    #     show_graph=True,
-    #     min_temp=min_temp + ABS_ZERO,
-    #     max_temp=max_temp + ABS_ZERO,
-    #     invert_yaxis=False,
-    #     actual_temp_units=TemperatureUnit.KELVIN,
-    #     display_temp_units=TemperatureUnit.CELSIUS,
-    # )
+    plot_temperature(
+        u=u * thermal_params.delta_u + thermal_params.u_ref,
+        u_pt=thermal_params.u_pt,
+        geom=geometry,
+        time=0.0,
+        graph_id=0,
+        plot_boundary=False,
+        show_graph=True,
+        min_temp=min_temp + ABS_ZERO,
+        max_temp=max_temp + ABS_ZERO,
+        invert_yaxis=False,
+        actual_temp_units=TemperatureUnit.KELVIN,
+        display_temp_units=TemperatureUnit.CELSIUS,
+    )
 
     # Temperature boundary conditions
     u_top_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
+        boundary_type=BoundaryConditionType.NEUMANN,
         n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(geometry.n_x),
+        flux_func=lambda t, n: np.zeros(geometry.n_x),
     )
     u_right_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
@@ -122,11 +120,9 @@ if __name__ == "__main__":
         * np.ones(geometry.n_y),
     )
     u_bottom_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
+        boundary_type=BoundaryConditionType.NEUMANN,
         n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(geometry.n_x),
+        flux_func=lambda t, n: np.zeros(geometry.n_x),
     )
     u_left_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
@@ -170,12 +166,12 @@ if __name__ == "__main__":
         bottom_bc=u_bottom_bc,
         left_bc=u_left_bc,
         fixed_delta=False,
-        implicit_lin_max_iters=2,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=1.0,
+        implicit_lin_urf=0.5,
     )
     navier_solver = NavierStokesSolver(
-        vorticity_solver_name=VorticitySolverName.DOUGLAS_RACHFORD,
+        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.SOR,
         geometry=geometry,
         parameters=fluid_params,
@@ -190,36 +186,41 @@ if __name__ == "__main__":
         implicit_lin_urf=0.5,
     )
 
+    v_x, v_y = compute_velocity_from_sf(
+        sf=sf,
+        dx=geometry.dx / geometry.length_scale,
+        dy=geometry.dy / geometry.length_scale,
+    )
+
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
-        u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
-        sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
+        u = heat_transfer_solver.solve(u=u, v_x=v_x, v_y=v_y, time=t)
+        sf, w, v_x, v_y = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 100 == 0:
+        if n % 600 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
                 geom=geometry,
                 time=t,
                 graph_id=n,
-                plot_boundary=True,
-                show_graph=True,
+                plot_boundary=False,
+                show_graph=False,
                 min_temp=min_temp + ABS_ZERO,
                 max_temp=max_temp + ABS_ZERO,
                 invert_yaxis=False,
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
-            # v_x, v_y = calculate_velocity_field(sf=sf, dx=geometry.dx, dy=geometry.dy)
-            # plot_velocity_field(
-            #     v_x=v_x,
-            #     v_y=v_y,
-            #     geometry=geometry,
-            #     graph_id=n,
-            #     show_graph=True,
-            # )
+
+            plot_stream_function(
+                stream_function=sf,
+                geometry=geometry,
+                graph_id=n,
+                show_graph=False,
+            )
             print(
                 f"Modelling Time: {n * geometry.dt} s, Execution Time: {time.perf_counter() - start_time:.4f} s.\n"
             )
