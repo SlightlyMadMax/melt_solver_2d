@@ -56,7 +56,6 @@ class PeacemanRachfordSolver(HeatTransferSolver):
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
-        inv_dx2 = inv_dx * inv_dx
         inv_dy2 = inv_dy * inv_dy
 
         inv_k_ref = 1.0 / k_ref
@@ -130,9 +129,9 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[i] = 1.0 + dt * inv_dx * (
-                    0.25 * ((v_x_p + abs(v_x_p)) - (v_x_m - abs(v_x_m)))
-                    + 0.5 * (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx
+                b_x[i] = 1.0 + dt * inv_dx * 0.5 * (
+                    0.5 * ((v_x_p + abs(v_x_p)) - (v_x_m - abs(v_x_m)))
+                    + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
@@ -297,9 +296,9 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[j] = 1.0 + dt * inv_dy * (
-                    0.25 * ((v_y_p + abs(v_y_p)) - (v_y_m - abs(v_y_m)))
-                    + 0.5 * (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy
+                b_y[j] = 1.0 + dt * inv_dy * 0.5 * (
+                    0.5 * ((v_y_p + abs(v_y_p)) - (v_y_m - abs(v_y_m)))
+                    + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
