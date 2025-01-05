@@ -325,8 +325,8 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     * (
                         (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m)))
                         * u[j, i]
-                        + 0.5 * (v_x_p - abs(v_x_p)) * u[j + 1, i]
-                        - 0.5 * (v_x_m + abs(v_x_m)) * u[j - 1, i]
+                        + 0.5 * (v_x_p - abs(v_x_p)) * u[j, i + 1]
+                        - 0.5 * (v_x_m + abs(v_x_m)) * u[j, i - 1]
                     )
                 )
 
