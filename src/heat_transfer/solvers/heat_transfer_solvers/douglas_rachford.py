@@ -56,7 +56,6 @@ class DouglasRachfordSolver(HeatTransferSolver):
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
-        inv_dx2 = inv_dx * inv_dx
         inv_dy2 = inv_dy * inv_dy
 
         inv_k_ref = 1.0 / k_ref
