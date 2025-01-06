@@ -11,7 +11,7 @@ def get_indicator_function(
 ) -> float:
     """
     Indicator function for the fictitious domain method.
-    Is equal to 1 for liquid phase and 1 / eps^2 for solid phase.
+    Is equal to 0 for liquid phase and 1 / eps^2 for solid phase.
 
     :param u: The temperature value (deviation from the reference temperature).
     :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
@@ -20,7 +20,7 @@ def get_indicator_function(
     :return: The value of the indicator function at u.
     """
     if u * delta_u - u_pt_ref > 0.0:
-        return 1.0
+        return 0.0
     return 1.0 / (eps * eps)
 
 
