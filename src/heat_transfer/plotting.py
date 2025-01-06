@@ -61,7 +61,7 @@ def plot_temperature(
 
         matplotlib.use("Agg")
 
-    plt.rcParams["figure.figsize"] = (16, 9)
+    plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
         xlim=(0, geom.width), ylim=(0, geom.height), xlabel="x, м", ylabel="y, м"
@@ -84,7 +84,7 @@ def plot_temperature(
         min_temp = disp_u.min()
         max_temp = disp_u.max()
     cbar.set_ticks(np.linspace(min_temp, max_temp, num=7))
-    cbar.set_label("Температура", rotation=270, labelpad=15)
+    cbar.set_label("Температура, °С", rotation=270, labelpad=15)
 
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(
