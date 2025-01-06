@@ -223,8 +223,10 @@ def create_gif_from_images(
     :param duration: Duration of each frame in milliseconds. Default is 500ms.
     :param loop: Number of loops. 0 means infinite looping. Default is 0.
     """
+    # Sort files by the numeric part of the filename (e.g., T_1.png -> 1)
     image_files = sorted(
-        [file for file in os.listdir(source_directory) if file.endswith(".png")]
+        [file for file in os.listdir(source_directory) if file.endswith(".png")],
+        key=lambda x: int(x.split('_')[1].split('.')[0])  # Extract the number after 'T_' and before '.png'
     )
 
     if not image_files:
