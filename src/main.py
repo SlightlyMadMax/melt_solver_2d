@@ -64,7 +64,7 @@ if __name__ == "__main__":
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
         v=0.02,
-        epsilon=100000.0,
+        epsilon=1e-5,
     )
 
     print(fluid_params)
