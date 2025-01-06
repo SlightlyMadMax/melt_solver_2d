@@ -74,6 +74,7 @@ class PRNavierStokesScheme(Sweep2DSolver):
         grashof_number: float,
         u_ref: float,
         u_pt_ref: float,
+        delta_u: float,
         epsilon: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
@@ -87,6 +88,8 @@ class PRNavierStokesScheme(Sweep2DSolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                # if u[j, i] * delta_u - u_pt_ref < 0.0:
+                #     grashof_number = 0.0
                 v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
                 v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
                 v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
@@ -119,7 +122,9 @@ class PRNavierStokesScheme(Sweep2DSolver):
                         + 0.5 * (v_y_p - abs(v_y_p)) * w[j + 1, i]
                         - 0.5 * (v_y_m + abs(v_y_m)) * w[j - 1, i]
                     )
-                    # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
+                    # - inv_re
+                    # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
+                    # * sf[j, i]
                 )
 
             result[j, :] = solve_tridiagonal(
@@ -156,6 +161,7 @@ class PRNavierStokesScheme(Sweep2DSolver):
         grashof_number: float,
         u_ref: float,
         u_pt_ref: float,
+        delta_u: float,
         epsilon: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
@@ -169,6 +175,8 @@ class PRNavierStokesScheme(Sweep2DSolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
+                # if u[j, i] * delta_u - u_pt_ref < 0.0:
+                #     grashof_number = 0.0
                 v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
                 v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
                 v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
@@ -201,7 +209,9 @@ class PRNavierStokesScheme(Sweep2DSolver):
                         + 0.5 * (v_x_p - abs(v_x_p)) * w[j, i + 1]
                         - 0.5 * (v_x_m + abs(v_x_m)) * w[j, i - 1]
                     )
-                    # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
+                    # - inv_re
+                    # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
+                    # * sf[j, i]
                 )
 
             result[:, i] = solve_tridiagonal(
@@ -247,6 +257,7 @@ class PRNavierStokesScheme(Sweep2DSolver):
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             u_ref=self.parameters.u_ref,
             u_pt_ref=self.parameters.u_pt_ref,
+            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             epsilon=self.parameters.epsilon,
@@ -268,6 +279,7 @@ class PRNavierStokesScheme(Sweep2DSolver):
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             u_ref=self.parameters.u_ref,
             u_pt_ref=self.parameters.u_pt_ref,
+            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             epsilon=self.parameters.epsilon,
