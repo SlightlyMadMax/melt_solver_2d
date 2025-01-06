@@ -31,7 +31,7 @@ if __name__ == "__main__":
         end_time=60.0 * 60.0 * 24.0 * 7.0,
         n_x=101,
         n_y=101,
-        n_t=60 * 60 * 24 * 70,
+        n_t=60 * 60 * 24 * 7,
     )
 
     print(geometry)
@@ -72,15 +72,16 @@ if __name__ == "__main__":
     u = init_temperature(
         geom=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.UNIFORM_LIQUID,
-        liquid_temp=min_temp,
+        shape=DomainShape.LINEAR,
+        liquid_temp=max_temp,
+        solid_temp=min_temp,
     )
 
-    u[:, geometry.n_x - 1] = (
-        (max_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(geometry.n_y)
-    )
+    # u[:, geometry.n_x - 1] = (
+    #     (max_temp - thermal_params.u_ref)
+    #     / thermal_params.delta_u
+    #     * np.ones(geometry.n_y)
+    # )
 
     print(
         f"Delta for the initial temperature distribution: {
@@ -199,7 +200,7 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, v_x=v_x, v_y=v_y, time=t)
         sf, w, v_x, v_y = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 600 == 0:
+        if n % 10 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
