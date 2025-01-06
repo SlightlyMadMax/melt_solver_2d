@@ -59,7 +59,7 @@ def plot_stream_function(
     X, Y = np.meshgrid(x, y)
 
     plt.figure(figsize=(8, 6))
-    cp = plt.contour(X, Y, stream_function, levels=10, cmap='viridis')
+    cp = plt.contour(X, Y, stream_function, levels=15, cmap='viridis')
     plt.clabel(cp, inline=True, fontsize=10)
 
     plt.xlabel("x, м")
