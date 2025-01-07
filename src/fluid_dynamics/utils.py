@@ -31,7 +31,21 @@ def compute_velocity_from_sf(
     dy: float,
 ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
     """
-    Compute velocity components v_x and v_y from the stream function.
+    Compute the velocity components (v_x and v_y) from the stream function.
+
+    This function calculates the velocity field using the relationship between
+    the stream function and velocity components in 2D incompressible flow:
+        v_x = ∂(stream function) / ∂y
+        v_y = -∂(stream function) / ∂x
+
+    The velocity is computed using central differences for interior points.
+    At the boundary points, the velocity components are set to zero to enforce the no-slip boundary condition.
+    :param sf: A 2D numpy array representing the stream function values
+               over the computational grid.
+    :param dx: Grid spacing in the x-direction.
+    :param dy: Grid spacing in the y-direction.
+    :return: A tuple of two 2D numpy arrays (v_x, v_y) representing the x and y
+             components of velocity, respectively.
     """
     n_y, n_x = sf.shape
     inv_dx = 1.0 / dx
