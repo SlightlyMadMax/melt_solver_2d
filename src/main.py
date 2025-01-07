@@ -72,16 +72,15 @@ if __name__ == "__main__":
     u = init_temperature(
         geom=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.LINEAR,
-        liquid_temp=max_temp,
-        solid_temp=min_temp,
+        shape=DomainShape.UNIFORM_LIQUID,
+        liquid_temp=min_temp,
     )
 
-    # u[:, geometry.n_x - 1] = (
-    #     (max_temp - thermal_params.u_ref)
-    #     / thermal_params.delta_u
-    #     * np.ones(geometry.n_y)
-    # )
+    u[:, geometry.n_x - 1] = (
+        (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(geometry.n_y)
+    )
 
     print(
         f"Delta for the initial temperature distribution: {
@@ -159,7 +158,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+        solver_name=HeatTransferSolverName.LOC_ONE_DIM,
         geometry=geometry,
         parameters=thermal_params,
         top_bc=u_top_bc,
@@ -180,9 +179,9 @@ if __name__ == "__main__":
         right_bc=sf_right_bc,
         bottom_bc=sf_bottom_bc,
         left_bc=sf_left_bc,
-        sf_max_iters=500,
+        sf_max_iters=1000,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=3,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=0.5,
     )
@@ -200,7 +199,7 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, v_x=v_x, v_y=v_y, time=t)
         sf, w, v_x, v_y = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 10 == 0:
+        if n % 60 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,

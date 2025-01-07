@@ -6,7 +6,6 @@ from scipy.optimize import fsolve
 from scipy.special import erf
 
 from src.constants import ABS_ZERO
-from src.geometry import DomainGeometry
 from src.heat_transfer.parameters import ThermalParameters
 
 
@@ -43,7 +42,6 @@ def compare_num_with_analytic(
 
     :param min_temp: Initial temperature of the solid phase region.
     :param max_temp: Initial temperature of the liquid phase region.
-    :param geometry: Object containing the domain geometry information.
     :param params: Object containing parameters of the problem like thermal conductivity etc.
     :param num: Array containing positions of the boundary throughout the modelling time.
     :param s_0: Initial position of the boundary.
