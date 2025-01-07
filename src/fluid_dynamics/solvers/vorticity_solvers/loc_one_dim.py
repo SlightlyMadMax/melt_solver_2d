@@ -2,7 +2,7 @@ import numba
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import BoundaryCondition
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
