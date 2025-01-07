@@ -4,7 +4,7 @@ import numpy as np
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.plotting import plot_velocity_field, plot_stream_function
+from src.fluid_dynamics.plotting import plot_stream_function
 from src.fluid_dynamics.utils import compute_velocity_from_sf
 from src.fluid_dynamics.solvers import (
     NavierStokesSolver,
