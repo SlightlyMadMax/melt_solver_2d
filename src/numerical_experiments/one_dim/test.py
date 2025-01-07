@@ -5,8 +5,6 @@ from compare_boundary import compare_num_with_analytic
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
 from src.geometry import DomainGeometry
-from src.heat_transfer.plotting import plot_temperature
-from src.heat_transfer.utils import TemperatureUnit
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
 )
@@ -14,8 +12,7 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 
 
-# dir_name = input("Enter a directory name where the data will be stored: ")
-dir_name = "douglas_rachford"
+dir_name = input("Enter a directory name where the data will be stored: ")
 dir_path = f"./results/{dir_name}"
 
 try:
@@ -94,13 +91,9 @@ heat_transfer_solver = HeatTransferSolver(
     implicit_lin_urf=1.0,
 )
 
-# s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
+s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
 
-s_0 = 0.3
-
-# delta = input("Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: ")
-
-delta = ""
+delta = input("Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: ")
 
 if delta == "":
     delta = None
@@ -144,8 +137,6 @@ for n in range(1, geometry.n_t):
                 )
                 boundary.append(y_0)
                 break
-
-# np.savez_compressed(f"{dir_path}/1d_2f_boundary", boundary=boundary)
 
 compare_num_with_analytic(
     num=boundary,
