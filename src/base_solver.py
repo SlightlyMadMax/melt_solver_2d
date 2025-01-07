@@ -1,5 +1,5 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 
@@ -55,10 +55,10 @@ class Sweep2DSolver(BaseSolver, ABC):
 
     @staticmethod
     @abstractmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_x(*args, **kwargs) -> NDArray[np.float64]: ...
 
     @staticmethod
     @abstractmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_y(*args, **kwargs) -> NDArray[np.float64]: ...

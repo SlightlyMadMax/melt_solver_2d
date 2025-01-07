@@ -1,6 +1,7 @@
-import numba
 import numpy as np
 from enum import Enum
+
+from numba import njit
 from numpy.typing import NDArray
 from math import sin, cos, pi
 
@@ -12,7 +13,7 @@ class TemperatureUnit(Enum):
     KELVIN = 2, "Kelvin"
 
 
-@numba.jit(nopython=True)
+@njit
 def is_frozen(T: NDArray[np.float64]) -> bool:
     """
     Определяет, произошло ли замерзание всей воды (отсутствие границы фазового перехода).
@@ -30,26 +31,12 @@ def is_frozen(T: NDArray[np.float64]) -> bool:
     return True
 
 
-@numba.jit(nopython=True)
-def get_water_thickness(T: NDArray[np.float64], dy: float) -> float:
-    n_y, n_x = T.shape
-    bottom, top = 0.0, 0.0
-    for j in range(n_y - 1):
-        if T[j + 1, n_x // 2] > cfg.T_0 and T[j, n_x // 2] <= cfg.T_0:
-            bottom = j * dy
-            continue
-        if T[j + 1, n_x // 2] <= cfg.T_0 and T[j, n_x // 2] > cfg.T_0:
-            top = j * dy
-            break
-    return top - bottom
-
-
 ###
 # Robin boundary condition with solar radiation
 ###
 
 
-@numba.jit(nopython=True)
+@njit
 def get_psi(time: float, n: int) -> np.ndarray:
     # Определяем температуру воздуха у поверхности
     T_air_t = air_temperature(time)
@@ -81,7 +68,7 @@ def get_psi(time: float, n: int) -> np.ndarray:
     return psi * np.ones(n)
 
 
-@numba.jit(nopython=True)
+@njit
 def get_phi(time: float, n: int) -> np.ndarray:
     # Определяем температуру воздуха у поверхности
     T_air_t = air_temperature(time)
@@ -97,7 +84,7 @@ def get_phi(time: float, n: int) -> np.ndarray:
     return phi * np.ones(n)
 
 
-@numba.jit(nopython=True)
+@njit
 def solar_heat(t: float):
     """
     Функция для вычисления потока солнечной радиации.
@@ -115,7 +102,7 @@ def solar_heat(t: float):
     )
 
 
-@numba.jit(nopython=True)
+@njit
 def air_temperature(t: float):
     """
     Функция изменения температуры воздуха.
@@ -130,6 +117,6 @@ def air_temperature(t: float):
     )
 
 
-@numba.jit(nopython=True)
+@njit
 def conv_coef(wind_speed: float):
     return wind_speed**0.5 * (7.0 + 7.2 / wind_speed**2)

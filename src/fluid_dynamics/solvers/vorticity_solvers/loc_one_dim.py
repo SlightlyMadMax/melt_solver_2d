@@ -1,5 +1,5 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition
@@ -45,7 +45,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
         )
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_x(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
@@ -118,7 +118,7 @@ class LODNavierStokesScheme(Sweep2DSolver):
         return result
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_sweep_y(
         w: NDArray[np.float64],
         u: NDArray[np.float64],

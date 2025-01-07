@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 from src.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed

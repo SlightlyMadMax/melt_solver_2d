@@ -1,9 +1,9 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
 
-@numba.jit(nopython=True)
+@njit
 def get_max_delta(
     u: NDArray[np.float64],
     u_pt: float,

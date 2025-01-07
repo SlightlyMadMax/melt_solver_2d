@@ -1,5 +1,5 @@
-import numba
 import numpy as np
+from numba import njit
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition
@@ -42,7 +42,7 @@ class ExpCentralNavierStokesSolver(BaseSolver):
         )
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _compute_vorticity(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],

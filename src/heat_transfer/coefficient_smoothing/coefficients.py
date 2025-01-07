@@ -1,8 +1,9 @@
 import math
-import numba
+
+from numba import njit
 
 
-@numba.jit(nopython=True)
+@njit
 def delta_function(u: float, u_0: float, delta: float) -> float:
     """
     Smoothed approximation of the delta function, centered at u_0.
@@ -17,7 +18,7 @@ def delta_function(u: float, u_0: float, delta: float) -> float:
     )
 
 
-@numba.jit(nopython=True)
+@njit
 def c_smoothed(
     u: float,
     u_pt: float,
@@ -47,7 +48,7 @@ def c_smoothed(
     )
 
 
-@numba.jit(nopython=True)
+@njit
 def k_smoothed(
     u: float,
     u_pt: float,
@@ -74,21 +75,21 @@ def k_smoothed(
     )
 
 
-@numba.jit(nopython=True)
+@njit
 def delta_parabolic(u: float, u_0: float, delta: float) -> float:
     if abs(u - u_0) <= delta:
         return 0.75 * (1.0 - u * u / (delta * delta)) / delta
     return 0.0
 
 
-@numba.jit(nopython=True)
+@njit
 def delta_const(u: float, u_pt: float, delta: float) -> float:
     if abs(u - u_pt) <= delta:
         return 0.5 / delta
     return 0.0
 
 
-@numba.jit(nopython=True)
+@njit
 def c_simple(
     u: float,
     u_pt: float,
@@ -105,7 +106,7 @@ def c_simple(
         return c_liquid
 
 
-@numba.jit(nopython=True)
+@njit
 def k_simple(
     u: float,
     u_pt: float,

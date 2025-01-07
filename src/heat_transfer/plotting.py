@@ -2,10 +2,9 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from typing import Optional, List
+from typing import Optional
 
 from PIL import Image
-from matplotlib import animation
 from numpy.typing import NDArray
 
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
@@ -54,6 +53,36 @@ def plot_temperature(
     invert_xaxis: Optional[bool] = False,
     invert_yaxis: Optional[bool] = False,
 ) -> None:
+    """
+    Plot and save a temperature field visualization for a 2D domain.
+
+    This function visualizes the temperature distribution in a 2D domain using
+    a filled contour plot. It supports various customization options, including
+    displaying phase transition boundaries, grid points, axis inversion, and
+    aspect ratio adjustment.
+
+    :param u: A 2D numpy array of temperature values across the computational domain.
+    :param u_pt: The phase transition temperature.
+    :param geom: DomainGeometry object defining the mesh grid and dimensions.
+    :param time: The simulation time at which the temperature is being plotted.
+    :param graph_id: Unique identifier for the graph, used in the saved file name.
+    :param actual_temp_units: The unit of the temperature values in `u` (default is Kelvin).
+    :param display_temp_units: The unit to display in the plot (default is Celsius).
+    :param plot_boundary: Whether to plot the phase transition boundary (default is False).
+    :param show_graph: Whether to display the graph interactively (default is True).
+                       If False, the graph is saved without display.
+    :param show_grid: Whether to display the grid points on the plot (default is False).
+    :param directory: Directory path where the plot will be saved (default is "../graphs/temperature/").
+    :param min_temp: Minimum temperature value for the color scale (default is None, auto-scaled).
+    :param max_temp: Maximum temperature value for the color scale (default is None, auto-scaled).
+    :param equal_aspect: Whether to enforce an equal aspect ratio for the plot (default is True).
+    :param invert_xaxis: Whether to invert the x-axis (default is False).
+    :param invert_yaxis: Whether to invert the y-axis (default is False).
+
+    :return: None. The function saves the plot to the specified directory and optionally
+             displays it if `show_graph` is True.
+    """
+
     X, Y = geom.mesh_grid
 
     if not show_graph:
@@ -124,89 +153,6 @@ def plot_temperature(
         plt.close()
 
 
-def animate(
-    u_full: List[NDArray[np.float64]],
-    u_pt: float,
-    geom: DomainGeometry,
-    times: List[float],
-    t_step: int,
-    filename: str,
-    actual_temp_units: TemperatureUnit = TemperatureUnit.KELVIN,
-    display_temp_units: TemperatureUnit = TemperatureUnit.CELSIUS,
-    directory: str = "../graphs/animations/",
-    min_temp: Optional[float] = None,
-    max_temp: Optional[float] = None,
-    equal_aspect: Optional[bool] = True,
-):
-    # plt.rcParams["animation.ffmpeg_path"] = r"C:\Users\ZZZ\ffmpeg\ffmpeg.exe"
-    plt.rcParams["animation.convert_path"] = (
-        r"C:\Program Files\ImageMagick-7.1.1-Q16-HDRI\magick.exe"
-    )
-
-    fig = plt.figure()
-    ax = plt.axes(
-        xlim=(0, geom.width), ylim=(0, geom.height), xlabel="x, м", ylabel="y, м"
-    )
-
-    if equal_aspect:
-        ax.set_aspect("equal")
-
-    B = []
-    for u in u_full:
-        B.append(
-            get_phase_trans_boundary(
-                u=u,
-                geom=geom,
-                u_pt=u_pt,
-            )
-        )
-
-    X, Y = geom.mesh_grid
-
-    # define the first frame
-    cont = plt.contourf(
-        X,
-        Y,
-        _convert_temp_in_display_units(
-            u_full[0], actual_temp_units, display_temp_units
-        ),
-        30,
-        cmap="viridis",
-        vmin=min_temp,
-        vmax=max_temp,
-    )
-    plt.title("t = 0 мин")
-    plt.colorbar()
-    plt.clim(min_temp, max_temp)
-    plt.scatter(B[0][0], B[0][1], s=1, linewidths=0.1, color="r", label="Граница ф.п.")
-    plt.legend()
-
-    def update(i):
-        cont = plt.contourf(
-            X,
-            Y,
-            _convert_temp_in_display_units(
-                u_full[i], actual_temp_units, display_temp_units
-            ),
-            50,
-            cmap="viridis",
-        )
-        plt.scatter(
-            B[i][0], B[i][1], s=1, linewidths=0.1, color="r", label="Граница ф.п."
-        )
-        plt.title(f"t = {round(i * t_step)} мин")
-        return cont
-
-    anim = animation.FuncAnimation(
-        fig, update, frames=len(times), interval=100, blit=False, repeat=True
-    )
-
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    anim.save(f"{directory}{filename}.gif", dpi=100, writer="imagemagick")
-
-
 def create_gif_from_images(
     output_filename: str,
     source_directory: str = "../graphs/temperature/",
@@ -226,7 +172,9 @@ def create_gif_from_images(
     # Sort files by the numeric part of the filename (e.g., T_1.png -> 1)
     image_files = sorted(
         [file for file in os.listdir(source_directory) if file.endswith(".png")],
-        key=lambda x: int(x.split('_')[1].split('.')[0])  # Extract the number after 'T_' and before '.png'
+        key=lambda x: int(
+            x.split("_")[1].split(".")[0]
+        ),  # Extract the number after 'T_' and before '.png'
     )
 
     if not image_files:

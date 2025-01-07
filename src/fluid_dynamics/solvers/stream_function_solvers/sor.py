@@ -1,5 +1,5 @@
-import numba
 import numpy as np
+from numba import njit
 
 from src.base_solver import BaseSolver
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
@@ -76,7 +76,7 @@ class SORPoissonSolver(BaseSolver):
         return omega_opt
 
     @staticmethod
-    @numba.jit(nopython=True)
+    @njit
     def _solve(
         rhs: np.ndarray,
         result: np.ndarray,
