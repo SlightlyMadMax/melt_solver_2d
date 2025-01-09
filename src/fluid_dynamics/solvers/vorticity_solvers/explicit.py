@@ -12,14 +12,16 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 
 
-@register_solver(VorticitySolverName.EXPLICIT_CENTRAL)
-class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
+@register_solver(VorticitySolverName.EXPLICIT)
+class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
     @staticmethod
     @njit
     def _compute_vorticity(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         left_bc: NDArray[np.float64],
         right_bc: NDArray[np.float64],
         top_bc: NDArray[np.float64],
@@ -50,6 +52,19 @@ class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                convection_x = (
+                    conv_x[j][i][0] * w[j, i + 1]
+                    + conv_x[j][i][1] * w[j, i]
+                    + conv_x[j][i][2] * w[j, i - 1]
+                )
+                convection_y = (
+                    conv_y[j][i][0] * w[j + 1, i]
+                    + conv_y[j][i][1] * w[j, i]
+                    + conv_y[j][i][2] * w[j - 1, i]
+                )
+
+                convection = convection_x + convection_y
+
                 result[j, i] = w[j, i] + dt * (
                     grashof_number
                     * inv_re2
@@ -58,26 +73,7 @@ class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i - 1] - sf[j - 1, i - 1])
-                    * w[j, i - 1]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i + 1] - sf[j + 1, i + 1])
-                    * w[j, i + 1]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
-                    * w[j - 1, i]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
-                    * w[j + 1, i]
+                    - convection
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
@@ -90,6 +86,7 @@ class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
+        convection_x, convection_y = self.convective_operator(sf=sf)
         self._new_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,
@@ -105,6 +102,8 @@ class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
+            conv_x=convection_x,
+            conv_y=convection_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             top_bc=self.top_bc,

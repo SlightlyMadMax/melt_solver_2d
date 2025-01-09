@@ -1,6 +1,5 @@
 from .douglas_rachford import DRNavierStokesScheme
 from .peaceman_rachford import PRNavierStokesScheme
-from .explicit_upwind import ExpUpwindNavierStokesSolver
-from .explicit_central import ExpCentralNavierStokesSolver
+from .explicit import ExplicitNavierStokesSolver
 from .loc_one_dim import LODNavierStokesScheme
 from .registry import VorticitySolverName, VorticitySolverRegistry

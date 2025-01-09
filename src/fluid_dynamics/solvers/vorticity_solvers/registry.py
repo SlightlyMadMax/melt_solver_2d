@@ -3,8 +3,7 @@ from enum import Enum
 
 
 class VorticitySolverName(Enum):
-    EXPLICIT_CENTRAL = "Explicit central differences"
-    EXPLICIT_UPWIND = "Explicit upwind"
+    EXPLICIT = "Explicit"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
     LOC_ONE_DIM = "Local one dimensional"
