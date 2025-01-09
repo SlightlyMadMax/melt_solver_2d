@@ -2,12 +2,12 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryConditionType, BoundaryCondition
-from src.geometry import DomainGeometry
+from src.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
-from src.heat_transfer.parameters import ThermalParameters
+from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+    ExplicitHeatTransferSolver,
+)
 from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
@@ -15,40 +15,13 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
 
 
 @register_solver(HeatTransferSolverName.EXPLICIT)
-class ExplicitHeatSolver(BaseSolver):
-    def __init__(
-        self,
-        geometry: DomainGeometry,
-        parameters: ThermalParameters,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
-        fixed_delta: bool = True,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(
-            geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
-        )
-        self.fixed_delta = fixed_delta
-        self.parameters = parameters
-
-        # Pre-allocate some arrays that will be used in the calculations
-        self._new_u: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-
+class ExplicitHeatSolver(ExplicitHeatTransferSolver):
     @staticmethod
     @njit
     def _compute_temperature(
         u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         result: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -82,11 +55,6 @@ class ExplicitHeatSolver(BaseSolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
-                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
-                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
-                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
-
                 inv_c_eff = c_ref / c_smoothed(
                     u=u[j, i] * delta_u + u_ref,
                     u_pt=u_pt,
@@ -136,15 +104,16 @@ class ExplicitHeatSolver(BaseSolver):
                     * inv_k_ref
                 )
 
-                advection_x = inv_dx * (
-                    (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m))) * u[j, i]
-                    + 0.5 * (v_x_p - abs(v_x_p)) * u[j, i + 1]
-                    - 0.5 * (v_x_m + abs(v_x_m)) * u[j, i - 1]
+                advection_x = (
+                    conv_x[j, i, 0] * u[j, i + 1]
+                    + conv_x[j, i, 1] * u[j, i]
+                    + conv_x[j, i, 2] * u[j, i - 1]
                 )
-                advection_y = inv_dy * (
-                    (0.5 * (v_y_p + abs(v_y_p)) - 0.5 * (v_y_m - abs(v_y_m))) * u[j, i]
-                    + 0.5 * (v_y_p - abs(v_y_p)) * u[j + 1, i]
-                    - 0.5 * (v_y_m + abs(v_y_m)) * u[j - 1, i]
+
+                advection_y = (
+                    conv_y[j, i, 0] * u[j + 1, i]
+                    + conv_y[j, i, 1] * u[j, i]
+                    + conv_y[j, i, 2] * u[j - 1, i]
                 )
 
                 diffusion = (
@@ -171,10 +140,10 @@ class ExplicitHeatSolver(BaseSolver):
     def solve(
         self,
         u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        sf: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
+        convection_x, convection_y = self.convective_operator(sf=sf)
         delta = (
             self.parameters.delta
             if self.fixed_delta
@@ -185,8 +154,8 @@ class ExplicitHeatSolver(BaseSolver):
         )
         self._compute_temperature(
             u=u,
-            v_x=v_x,
-            v_y=v_y,
+            conv_x=convection_x,
+            conv_y=convection_y,
             result=self._new_u,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,

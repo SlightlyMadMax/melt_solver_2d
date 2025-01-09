@@ -9,12 +9,12 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.heat_transfer.solvers.heat_transfer_solvers.base import HeatTransferSolver
+from src.heat_transfer.solvers.heat_transfer_solvers.base import ImplicitHeatTransferSolver
 from src.utils import solve_tridiagonal
 
 
 @register_solver(HeatTransferSolverName.PEACEMAN_RACHFORD)
-class PeacemanRachfordSolver(HeatTransferSolver):
+class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
     @staticmethod
     @njit
     def _compute_sweep_x(

@@ -31,7 +31,7 @@ if __name__ == "__main__":
         end_time=60.0 * 60.0 * 24.0 * 7.0,
         n_x=101,
         n_y=101,
-        n_t=60 * 60 * 24 * 70,
+        n_t=60 * 60 * 24 * 7,
     )
 
     print(geometry)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+        solver_name=HeatTransferSolverName.EXPLICIT,
         geometry=geometry,
         parameters=thermal_params,
         convective_term_form=ConvectiveTermForm.UPWIND,
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         stream_function_solver_name=StreamFunctionSolverName.SOR,
         geometry=geometry,
         parameters=fluid_params,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        convective_term_form=ConvectiveTermForm.UPWIND,
         sf_top_bc=sf_top_bc,
         sf_right_bc=sf_right_bc,
         sf_bottom_bc=sf_bottom_bc,
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 100 == 0:
+        if n % 10 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
