@@ -20,8 +20,8 @@ class LocOneDimSolver(HeatTransferSolver):
     def _compute_sweep_x(
         u: NDArray[np.float64],
         iter_u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         result: NDArray[np.float64],
         a_x: NDArray[np.float64],
         b_x: NDArray[np.float64],
@@ -54,15 +54,12 @@ class LocOneDimSolver(HeatTransferSolver):
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
-
+        inv_dx2 = inv_dx * inv_dx
         inv_k_ref = 1.0 / k_ref
         inv_peclet_number = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
-                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
-
                 inv_c_eff = c_ref / c_smoothed(
                     u=iter_u[j, i] * delta_u + u_ref,
                     u_pt=u_pt,
@@ -93,29 +90,19 @@ class LocOneDimSolver(HeatTransferSolver):
                 )
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a_x[i] = (
-                    dt
-                    * inv_dx
-                    * (
-                        0.5 * (v_x_p - abs(v_x_p))
-                        - k_i1j * inv_peclet_number * inv_c_eff * inv_dx
-                    )
+                a_x[i] = dt * (
+                    conv_x[j, i, 0] - k_i1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[i] = 1.0 + dt * inv_dx * (
-                    0.5 * ((v_x_p + abs(v_x_p)) - (v_x_m - abs(v_x_m)))
-                    + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx
+                b_x[i] = 1.0 + dt * (
+                    conv_x[j, i, 1]
+                    + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c_x[i] = (
-                    -dt
-                    * inv_dx
-                    * (
-                        0.5 * (v_x_m + abs(v_x_m))
-                        + k_im1j * inv_peclet_number * inv_c_eff * inv_dx
-                    )
+                c_x[i] = dt * (
+                    conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
             # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
@@ -155,8 +142,8 @@ class LocOneDimSolver(HeatTransferSolver):
     def _compute_sweep_y(
         u: NDArray[np.float64],
         iter_u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         result: NDArray[np.float64],
         a_y: NDArray[np.float64],
         b_y: NDArray[np.float64],
@@ -189,14 +176,13 @@ class LocOneDimSolver(HeatTransferSolver):
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
         inv_dy = 1.0 / dy
+        inv_dy2 = inv_dy * inv_dy
 
         inv_k_ref = 1.0 / k_ref
         inv_peclet_number = 1.0 / peclet_number
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
-                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
                 inv_c_eff = c_ref / c_smoothed(
                     u=iter_u[j, i] * delta_u + u_ref,
                     u_pt=u_pt,
@@ -227,29 +213,19 @@ class LocOneDimSolver(HeatTransferSolver):
                 )
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a_y[j] = (
-                    dt
-                    * inv_dy
-                    * (
-                        0.5 * (v_y_p - abs(v_y_p))
-                        - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy
-                    )
+                a_y[j] = dt * (
+                    conv_y[j, i, 0] - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[j] = 1.0 + dt * inv_dy * (
-                    0.5 * ((v_y_p + abs(v_y_p)) - (v_y_m - abs(v_y_m)))
-                    + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy
+                b_y[j] = 1.0 + dt * (
+                    conv_y[j, i, 1]
+                    + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c_y[j] = (
-                    -dt
-                    * inv_dy
-                    * (
-                        0.5 * (v_y_m + abs(v_y_m))
-                        + k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy
-                    )
+                c_y[j] = dt * (
+                    conv_y[j, i, 2] - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
             # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
@@ -287,10 +263,10 @@ class LocOneDimSolver(HeatTransferSolver):
     def solve(
         self,
         u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        sf: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
+        convection_x, convection_y = self.convective_operator(sf=sf)
         alpha = self.implicit_lin_urf
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
@@ -308,8 +284,8 @@ class LocOneDimSolver(HeatTransferSolver):
             self._compute_sweep_x(
                 u=u,
                 iter_u=self._iter_u,
-                v_x=v_x,
-                v_y=v_y,
+                conv_x=convection_x,
+                conv_y=convection_y,
                 result=self._temp_u,
                 a_x=self._a_x,
                 b_x=self._b_x,
@@ -392,8 +368,8 @@ class LocOneDimSolver(HeatTransferSolver):
             self._compute_sweep_y(
                 u=self._temp_u,
                 iter_u=self._iter_u,
-                v_x=v_x,
-                v_y=v_y,
+                conv_x=convection_x,
+                conv_y=convection_y,
                 result=self._new_u,
                 a_y=self._a_y,
                 b_y=self._b_y,
