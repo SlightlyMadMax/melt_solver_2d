@@ -21,6 +21,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         left_bc: NDArray[np.float64],
         right_bc: NDArray[np.float64],
         result: NDArray[np.float64],
@@ -48,25 +50,11 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                a_x[i] = (
-                    dt
-                    * inv_dx
-                    * (
-                        (sf[j + 1, i + 1] - sf[j - 1, i + 1]) * 0.25 * inv_dy
-                        - inv_re * inv_dx
-                    )
-                )
+                a_x[i] = dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
-                b_x[i] = 1.0 + 2.0 * inv_re * dt * inv_dx2
+                b_x[i] = 1.0 + dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
 
-                c_x[i] = (
-                    dt
-                    * inv_dx
-                    * (
-                        (sf[j - 1, i - 1] - sf[j + 1, i - 1]) * 0.25 * inv_dy
-                        - inv_re * inv_dx
-                    )
-                )
+                c_x[i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[i] = w[j, i] + dt * (
                     grashof_number
@@ -75,16 +63,11 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
-                    * w[j - 1, i]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
-                    * w[j + 1, i]
+                    - (
+                        conv_y[j, i, 0] * w[j + 1, i]
+                        + conv_y[j, i, 1] * w[j, i]
+                        + conv_y[j, i, 2] * w[j - 1, i]
+                    )
                     # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
                 )
 
@@ -107,8 +90,10 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
     @njit
     def _compute_sweep_y(
         w: NDArray[np.float64],
-        u: NDArray[np.float64],
         sf: NDArray[np.float64],
+        u: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         top_bc: NDArray[np.float64],
         bottom_bc: NDArray[np.float64],
         result: NDArray[np.float64],
@@ -126,7 +111,6 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         epsilon: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
-        inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
 
@@ -134,38 +118,19 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                a_y[j] = (
-                    dt
-                    * inv_dy
-                    * (
-                        (sf[j + 1, i - 1] - sf[j + 1, i + 1]) * 0.25 * inv_dx
-                        - inv_re * inv_dy
-                    )
-                )
+                a_y[j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
                 b_y[j] = 1.0 + 2.0 * inv_re * dt * inv_dy2
 
-                c_y[j] = (
-                    dt
-                    * inv_dy
-                    * (
-                        (sf[j - 1, i + 1] - sf[j - 1, i - 1]) * 0.25 * inv_dx
-                        - inv_re * inv_dy
-                    )
-                )
+                c_y[j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[j] = w[j, i] - dt * (
                     inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j - 1, i - 1] - sf[j - 1, i + 1])
-                    * w[j - 1, i]
-                    + 0.25
-                    * inv_dy
-                    * inv_dx
-                    * (sf[j + 1, i + 1] - sf[j + 1, i - 1])
-                    * w[j + 1, i]
+                    - (
+                        conv_y[j, i, 0] * w[j + 1, i]
+                        + conv_y[j, i, 1] * w[j, i]
+                        + conv_y[j, i, 2] * w[j - 1, i]
+                    )
                     # + inv_re * c_ind(u[j, i]) * sf[j, i]
                 )
 
@@ -191,6 +156,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
+        convection_x, convection_y = self.convective_operator(sf=sf)
         self._temp_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,
@@ -206,6 +172,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
+            conv_x=convection_x,
+            conv_y=convection_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             result=self._temp_w,
@@ -227,6 +195,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             w=self._temp_w,
             sf=sf,
             u=u,
+            conv_x=convection_x,
+            conv_y=convection_y,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
             result=self._new_w,
