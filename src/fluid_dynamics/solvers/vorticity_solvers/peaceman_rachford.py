@@ -72,9 +72,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    # - inv_re
-                    # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
-                    # * sf[j, i]
+                    # - c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
+                    # * sf[j, i] / 0.01
                 )
 
             solve_tridiagonal(
@@ -149,9 +148,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    # - inv_re
-                    # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
-                    # * sf[j, i]
+                    # - c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
+                    # * sf[j, i] / 0.01
                 )
 
             solve_tridiagonal(

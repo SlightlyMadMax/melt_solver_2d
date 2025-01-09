@@ -12,7 +12,7 @@ def get_indicator_function(
     :param u: The temperature value (deviation from the reference temperature).
     :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
     :param delta_u: The characteristic temperature difference.
-    :param eps: A big parameter.
+    :param eps: A small parameter.
     :return: The value of the indicator function at u.
     """
     if u * delta_u - u_pt_ref > 0.0:
