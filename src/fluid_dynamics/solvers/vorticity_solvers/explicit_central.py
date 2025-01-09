@@ -19,19 +19,11 @@ class ExpCentralNavierStokesSolver(BaseSolver):
         self,
         geometry: DomainGeometry,
         parameters: FluidParameters,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
         *args,
         **kwargs,
     ):
         super().__init__(
             geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
         )
 
         self.parameters = parameters

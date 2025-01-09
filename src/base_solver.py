@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
@@ -11,10 +13,10 @@ class BaseSolver(ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        top_bc: Optional[BoundaryCondition] = None,
+        right_bc: Optional[BoundaryCondition] = None,
+        bottom_bc: Optional[BoundaryCondition] = None,
+        left_bc: Optional[BoundaryCondition] = None,
     ):
         self.geometry = geometry
         self.top_bc = top_bc
@@ -30,10 +32,10 @@ class Sweep2DSolver(BaseSolver, ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        top_bc: Optional[BoundaryCondition] = None,
+        right_bc: Optional[BoundaryCondition] = None,
+        bottom_bc: Optional[BoundaryCondition] = None,
+        left_bc: Optional[BoundaryCondition] = None,
     ):
         super().__init__(
             geometry=geometry,

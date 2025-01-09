@@ -18,10 +18,10 @@ class NavierStokesSolver:
         stream_function_solver_name: StreamFunctionSolverName,
         geometry: DomainGeometry,
         parameters: FluidParameters,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        sf_top_bc: BoundaryCondition,
+        sf_right_bc: BoundaryCondition,
+        sf_bottom_bc: BoundaryCondition,
+        sf_left_bc: BoundaryCondition,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
         implicit_lin_max_iters: int = 5,
@@ -43,19 +43,15 @@ class NavierStokesSolver:
         self.vorticity_solver = vorticity_solver_class(
             geometry=geometry,
             parameters=parameters,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
             max_iters=sf_max_iters,
             stopping_criteria=sf_stopping_criteria,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
+            top_bc=sf_top_bc,
+            right_bc=sf_right_bc,
+            bottom_bc=sf_bottom_bc,
+            left_bc=sf_left_bc,
         )
 
         self._vorticity: NDArray[np.float64] = np.empty((geometry.n_y, geometry.n_x))
