@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from src.geometry import DomainGeometry
@@ -36,7 +38,7 @@ class ThermalParameters(BaseModel):
     thermal_conductivity_solid: float = Field(
         ..., gt=0, description="Thermal conductivity of the solid phase [W/(m⋅K)]."
     )
-    delta: float = Field(
+    delta: Optional[float] = Field(
         None, gt=0.0, description="Default smoothing parameter (delta)."
     )
     domain_geometry: DomainGeometry
