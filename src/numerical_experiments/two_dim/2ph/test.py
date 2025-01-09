@@ -5,6 +5,7 @@ import numpy as np
 
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
+from src.convective_operator import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.heat_transfer.init_values import init_temperature_with_interface
 from src.heat_transfer.parameters import ThermalParameters
@@ -128,9 +129,10 @@ u_left_bc = BoundaryCondition(
 )
 
 heat_transfer_solver = HeatTransferSolver(
-    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
+    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     geometry=geometry,
     parameters=thermal_params,
+    convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     top_bc=u_top_bc,
     right_bc=u_right_bc,
     bottom_bc=u_bottom_bc,
@@ -145,7 +147,7 @@ start_time = time.perf_counter()
 
 for i in range(1, geometry.n_t + 1):
     t = i * geometry.dt
-    u = heat_transfer_solver.solve(u, v_x=np.zeros_like(u), v_y=np.zeros_like(u), time=t)
+    u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t)
     if i % 24 == 0:
         print(
             f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, ВРЕМЯ ВЫПОЛНЕНИЯ: {time.perf_counter() - start_time}"

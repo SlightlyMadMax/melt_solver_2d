@@ -4,6 +4,7 @@ import os
 from compare_boundary import compare_num_with_analytic
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
+from src.convective_operator import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
@@ -92,9 +93,10 @@ left_bc = BoundaryCondition(
 )
 
 heat_transfer_solver = HeatTransferSolver(
-    solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
+    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     geometry=geometry,
     parameters=thermal_params,
+    convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     top_bc=top_bc,
     right_bc=right_bc,
     bottom_bc=bottom_bc,
@@ -123,9 +125,7 @@ i = int(geometry.n_x / 2)
 
 for n in range(1, geometry.n_t):
     t = n * geometry.dt
-    u = heat_transfer_solver.solve(
-        u=u, v_x=np.zeros_like(u), v_y=np.zeros_like(u), time=t
-    )
+    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t)
     if n % 24 == 0:
         times.append(t)
         print(f"ДЕНЬ: {int(n / 24)}")
