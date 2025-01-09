@@ -27,11 +27,18 @@ class NavierStokesSolver:
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,
         implicit_lin_urf: float = 0.5,
+        vorticity_bc_order: int = 2,
     ):
         self.geometry = geometry
         self.implicit_lin_max_iters = implicit_lin_max_iters
         self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
         self.implicit_lin_urf = implicit_lin_urf
+
+        if vorticity_bc_order < 1 or vorticity_bc_order > 2:
+            raise NotImplementedError(
+                "Only 1st and 2nd order accuracy boundary conditions are available at the moment for the vorticity "
+                "transport equation."
+            )
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
             solver_name=vorticity_solver_name
@@ -45,6 +52,7 @@ class NavierStokesSolver:
             parameters=parameters,
             max_iters=sf_max_iters,
             stopping_criteria=sf_stopping_criteria,
+            bc_order=vorticity_bc_order,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,

@@ -2,43 +2,28 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition
-from src.fluid_dynamics.parameters import FluidParameters
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
+    ExplicitVorticitySolver,
+)
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.geometry import DomainGeometry
-from src.base_solver import BaseSolver
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 
 
 @register_solver(VorticitySolverName.EXPLICIT_CENTRAL)
-class ExpCentralNavierStokesSolver(BaseSolver):
-    def __init__(
-        self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(
-            geometry=geometry,
-        )
-
-        self.parameters = parameters
-
-        # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-
+class ExpCentralNavierStokesSolver(ExplicitVorticitySolver):
     @staticmethod
     @njit
     def _compute_vorticity(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        left_bc: NDArray[np.float64],
+        right_bc: NDArray[np.float64],
+        top_bc: NDArray[np.float64],
+        bottom_bc: NDArray[np.float64],
         result: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -58,10 +43,10 @@ class ExpCentralNavierStokesSolver(BaseSolver):
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
 
-        result[0, :] = -2.0 * inv_dy2 * sf[1, :]
-        result[n_y - 1, :] = -2.0 * inv_dy2 * sf[n_y - 2, :]
-        result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
-        result[:, n_x - 1] = -2.0 * inv_dx2 * sf[:, n_x - 2]
+        result[0, :] = bottom_bc[:]
+        result[n_y - 1, :] = top_bc[:]
+        result[:, 0] = left_bc[:]
+        result[:, n_x - 1] = right_bc[:]
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -106,10 +91,24 @@ class ExpCentralNavierStokesSolver(BaseSolver):
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
         self._new_w = np.copy(w)
+        self.calculate_boundary_conditions(
+            sf=sf,
+            top_bc=self.top_bc,
+            right_bc=self.right_bc,
+            bottom_bc=self.bottom_bc,
+            left_bc=self.left_bc,
+            order=self.bc_order,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
         self._compute_vorticity(
             w=w,
             sf=sf,
             u=u,
+            left_bc=self.left_bc,
+            right_bc=self.right_bc,
+            top_bc=self.top_bc,
+            bottom_bc=self.bottom_bc,
             result=self._new_w,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,

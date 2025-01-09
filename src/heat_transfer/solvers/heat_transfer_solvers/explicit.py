@@ -12,7 +12,6 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.utils import solve_tridiagonal
 
 
 @register_solver(HeatTransferSolverName.EXPLICIT)

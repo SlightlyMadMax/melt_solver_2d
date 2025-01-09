@@ -2,47 +2,27 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition
-from src.fluid_dynamics.parameters import FluidParameters
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
+    ImplicitVorticitySolver,
+)
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.geometry import DomainGeometry
-from src.base_solver import Sweep2DSolver
 from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_tridiagonal
 
 
 @register_solver(VorticitySolverName.DOUGLAS_RACHFORD)
-class DRNavierStokesScheme(Sweep2DSolver):
-    def __init__(
-        self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
-        *args,
-        **kwargs,
-    ):
-        super().__init__(
-            geometry=geometry,
-        )
-
-        self.parameters = parameters
-
-        # Pre-allocate some arrays that will be used in the calculations
-        self._temp_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._new_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-
+class DRNavierStokesScheme(ImplicitVorticitySolver):
     @staticmethod
     @njit
     def _compute_sweep_x(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        left_bc: NDArray[np.float64],
+        right_bc: NDArray[np.float64],
         result: NDArray[np.float64],
         rhs: NDArray[np.float64],
         a_x: NDArray[np.float64],
@@ -129,6 +109,8 @@ class DRNavierStokesScheme(Sweep2DSolver):
         w: NDArray[np.float64],
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
+        top_bc: NDArray[np.float64],
+        bottom_bc: NDArray[np.float64],
         result: NDArray[np.float64],
         rhs: NDArray[np.float64],
         a_y: NDArray[np.float64],
@@ -210,11 +192,22 @@ class DRNavierStokesScheme(Sweep2DSolver):
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
         self._temp_w = np.copy(w)
-
+        self.calculate_boundary_conditions(
+            sf=sf,
+            top_bc=self.top_bc,
+            right_bc=self.right_bc,
+            bottom_bc=self.bottom_bc,
+            left_bc=self.left_bc,
+            order=self.bc_order,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
         self._compute_sweep_x(
             w=w,
             sf=sf,
             u=u,
+            left_bc=self.left_bc,
+            right_bc=self.right_bc,
             result=self._temp_w,
             rhs=self._rhs_x,
             a_x=self._a_x,
@@ -234,6 +227,8 @@ class DRNavierStokesScheme(Sweep2DSolver):
             w=self._temp_w,
             sf=sf,
             u=u,
+            top_bc=self.top_bc,
+            bottom_bc=self.bottom_bc,
             result=self._new_w,
             rhs=self._rhs_y,
             a_y=self._a_y,
