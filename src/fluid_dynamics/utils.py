@@ -1,8 +1,4 @@
-from typing import Tuple
-
-import numpy as np
 from numba import njit
-from numpy.typing import NDArray
 
 
 @njit
@@ -22,41 +18,3 @@ def get_indicator_function(
     if u * delta_u - u_pt_ref > 0.0:
         return 0.0
     return 1.0 / (eps * eps)
-
-
-@njit
-def compute_velocity_from_sf(
-    sf: NDArray[np.float64],
-    dx: float,
-    dy: float,
-) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """
-    Compute the velocity components (v_x and v_y) from the stream function.
-
-    This function calculates the velocity field using the relationship between
-    the stream function and velocity components in 2D incompressible flow:
-        v_x = ∂(stream function) / ∂y
-        v_y = -∂(stream function) / ∂x
-
-    The velocity is computed using central differences for interior points.
-    At the boundary points, the velocity components are set to zero to enforce the no-slip boundary condition.
-    :param sf: A 2D numpy array representing the stream function values
-               over the computational grid.
-    :param dx: Grid spacing in the x-direction.
-    :param dy: Grid spacing in the y-direction.
-    :return: A tuple of two 2D numpy arrays (v_x, v_y) representing the x and y
-             components of velocity, respectively.
-    """
-    n_y, n_x = sf.shape
-    inv_dx = 1.0 / dx
-    inv_dy = 1.0 / dy
-
-    v_x = np.zeros_like(sf)
-    v_y = np.zeros_like(sf)
-
-    for j in range(1, n_y - 1):
-        for i in range(1, n_x - 1):
-            v_x[j, i] = (sf[j + 1, i] - sf[j - 1, i]) * 0.5 * inv_dy
-            v_y[j, i] = -(sf[j, i + 1] - sf[j, i - 1]) * 0.5 * inv_dx
-
-    return v_x, v_y

@@ -9,10 +9,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import (
-    get_indicator_function as c_ind,
-    compute_velocity_from_sf,
-)
+from src.fluid_dynamics.utils import get_indicator_function as c_ind
 
 
 @register_solver(VorticitySolverName.EXPLICIT_UPWIND)

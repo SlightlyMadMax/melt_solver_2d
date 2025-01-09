@@ -2,15 +2,14 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import ImplicitVorticitySolver
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
+    ImplicitVorticitySolver,
+)
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import (
-    get_indicator_function as c_ind,
-    compute_velocity_from_sf,
-)
+from src.fluid_dynamics.utils import get_indicator_function as c_ind
 from src.utils import solve_tridiagonal
 
 
@@ -22,8 +21,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         left_bc: NDArray[np.float64],
         right_bc: NDArray[np.float64],
         result: NDArray[np.float64],
@@ -43,6 +42,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
+        inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
 
@@ -53,23 +53,12 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             for i in range(1, n_x - 1):
                 # if u[j, i] * delta_u - u_pt_ref < 0.0:
                 #     grashof_number = 0.0
-                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
-                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
-                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
-                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
 
-                a_x[i] = (
-                    0.5 * dt * inv_dx * (0.5 * (v_x_p - abs(v_x_p)) - inv_re * inv_dx)
-                )
+                a_x[i] = 0.5 * dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
-                b_x[i] = 1.0 + dt * inv_dx * (
-                    0.25 * ((v_x_p + abs(v_x_p)) - (v_x_m - abs(v_x_m)))
-                    + inv_re * inv_dx
-                )
+                b_x[i] = 1.0 + 0.5 * dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
 
-                c_x[i] = (
-                    -0.5 * dt * inv_dx * (0.5 * (v_x_m + abs(v_x_m)) + inv_re * inv_dx)
-                )
+                c_x[i] = 0.5 * dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[i] = w[j, i] + 0.5 * dt * (
                     grashof_number
@@ -78,12 +67,10 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    - inv_dy
-                    * (
-                        (0.5 * (v_y_p + abs(v_y_p)) - 0.5 * (v_y_m - abs(v_y_m)))
-                        * w[j, i]
-                        + 0.5 * (v_y_p - abs(v_y_p)) * w[j + 1, i]
-                        - 0.5 * (v_y_m + abs(v_y_m)) * w[j - 1, i]
+                    - (
+                        conv_y[j, i, 0] * w[j + 1, i]
+                        + conv_y[j, i, 1] * w[j, i]
+                        + conv_y[j, i, 2] * w[j - 1, i]
                     )
                     # - inv_re
                     # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
@@ -111,8 +98,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
         top_bc: NDArray[np.float64],
         bottom_bc: NDArray[np.float64],
         result: NDArray[np.float64],
@@ -134,6 +121,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_dx = 1.0 / dx
         inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
+        inv_dy2 = inv_dy * inv_dy
 
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
@@ -142,23 +130,12 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             for j in range(1, n_y - 1):
                 # if u[j, i] * delta_u - u_pt_ref < 0.0:
                 #     grashof_number = 0.0
-                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
-                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
-                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
-                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
 
-                a_y[j] = (
-                    0.5 * dt * inv_dy * (0.5 * (v_y_p - abs(v_y_p)) - inv_re * inv_dy)
-                )
+                a_y[j] = 0.5 * dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
-                b_y[j] = 1.0 + dt * inv_dy * (
-                    0.25 * ((v_y_p + abs(v_y_p)) - (v_y_m - abs(v_y_m)))
-                    + inv_re * inv_dy
-                )
+                b_y[j] = 1.0 + 0.5 * dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
 
-                c_y[j] = (
-                    -0.5 * dt * inv_dy * (0.5 * (v_y_m + abs(v_y_m)) + inv_re * inv_dy)
-                )
+                c_y[j] = 0.5 * dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[j] = w[j, i] + 0.5 * dt * (
                     grashof_number
@@ -167,12 +144,10 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
-                    - inv_dx
-                    * (
-                        (0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m)))
-                        * w[j, i]
-                        + 0.5 * (v_x_p - abs(v_x_p)) * w[j, i + 1]
-                        - 0.5 * (v_x_m + abs(v_x_m)) * w[j, i - 1]
+                    - (
+                        conv_x[j, i, 0] * w[j, i + 1]
+                        + conv_x[j, i, 1] * w[j, i]
+                        + conv_x[j, i, 2] * w[j, i - 1]
                     )
                     # - inv_re
                     # * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, delta_u=delta_u, eps=epsilon)
@@ -201,12 +176,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
+        convection_x, convection_y = self.convective_operator(sf=sf)
         self._temp_w = np.copy(w)
-        self._v_x, self._v_y = compute_velocity_from_sf(
-            sf=sf,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-        )
         self.calculate_boundary_conditions(
             sf=sf,
             top_bc=self.top_bc,
@@ -221,8 +192,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
-            v_x=self._v_x,
-            v_y=self._v_y,
+            conv_x=convection_x,
+            conv_y=convection_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             result=self._temp_w,
@@ -245,8 +216,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             w=self._temp_w,
             sf=sf,
             u=u,
-            v_x=self._v_x,
-            v_y=self._v_y,
+            conv_x=convection_y,
+            conv_y=convection_y,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
             result=self._new_w,

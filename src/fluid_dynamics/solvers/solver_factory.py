@@ -4,10 +4,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryCondition
+from src.convective_operator import ConvectiveTermForm, ConvectionOperator
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
-from src.fluid_dynamics.utils import compute_velocity_from_sf
 from src.geometry import DomainGeometry
 
 
@@ -18,6 +18,7 @@ class NavierStokesSolver:
         stream_function_solver_name: StreamFunctionSolverName,
         geometry: DomainGeometry,
         parameters: FluidParameters,
+        convective_term_form: ConvectiveTermForm,
         sf_top_bc: BoundaryCondition,
         sf_right_bc: BoundaryCondition,
         sf_bottom_bc: BoundaryCondition,
@@ -40,6 +41,10 @@ class NavierStokesSolver:
                 "transport equation."
             )
 
+        self.convective_operator = ConvectionOperator(
+            form=convective_term_form, geometry=geometry
+        )
+
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
             solver_name=vorticity_solver_name
         )
@@ -50,6 +55,7 @@ class NavierStokesSolver:
         self.vorticity_solver = vorticity_solver_class(
             geometry=geometry,
             parameters=parameters,
+            convective_operator=self.convective_operator,
             max_iters=sf_max_iters,
             stopping_criteria=sf_stopping_criteria,
             bc_order=vorticity_bc_order,
@@ -76,7 +82,7 @@ class NavierStokesSolver:
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         time: float = 0.0,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         alpha = self.implicit_lin_urf
         self._stream_function = np.copy(sf)
 
@@ -101,12 +107,7 @@ class NavierStokesSolver:
             if diff < self.implicit_lin_stopping_criteria:
                 break
 
-        v_x, v_y = compute_velocity_from_sf(
-            sf=self._stream_function,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-        )
-        return self._stream_function, self._vorticity, v_x, v_y
+        return self._stream_function, self._vorticity
 
     def _solve_vorticity(
         self,

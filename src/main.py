@@ -3,9 +3,9 @@ import numpy as np
 
 from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
 from src.constants import ABS_ZERO
+from src.convective_operator import ConvectiveTermForm
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_stream_function
-from src.fluid_dynamics.utils import compute_velocity_from_sf
 from src.fluid_dynamics.solvers import (
     NavierStokesSolver,
     VorticitySolverName,
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         end_time=60.0 * 60.0 * 24.0 * 7.0,
         n_x=101,
         n_y=101,
-        n_t=60 * 60 * 24 * 7,
+        n_t=60 * 60 * 24 * 70,
     )
 
     print(geometry)
@@ -161,6 +161,7 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
+        convective_term_form=ConvectiveTermForm.UPWIND,
         top_bc=u_top_bc,
         right_bc=u_right_bc,
         bottom_bc=u_bottom_bc,
@@ -171,10 +172,11 @@ if __name__ == "__main__":
         implicit_lin_urf=1.0,
     )
     navier_solver = NavierStokesSolver(
-        vorticity_solver_name=VorticitySolverName.DOUGLAS_RACHFORD,
+        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.SOR,
         geometry=geometry,
         parameters=fluid_params,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         sf_top_bc=sf_top_bc,
         sf_right_bc=sf_right_bc,
         sf_bottom_bc=sf_bottom_bc,
@@ -187,20 +189,14 @@ if __name__ == "__main__":
         vorticity_bc_order=2,
     )
 
-    v_x, v_y = compute_velocity_from_sf(
-        sf=sf,
-        dx=geometry.dx / geometry.length_scale,
-        dy=geometry.dy / geometry.length_scale,
-    )
-
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
-        u = heat_transfer_solver.solve(u=u, v_x=v_x, v_y=v_y, time=t)
-        sf, w, v_x, v_y = navier_solver.solve(w=w, sf=sf, u=u, time=t)
+        u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
+        sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 10 == 0:
+        if n % 100 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
