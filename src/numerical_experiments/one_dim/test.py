@@ -20,6 +20,19 @@ try:
 except FileExistsError:
     pass
 
+s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
+
+delta = input(
+    "Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: "
+)
+
+if delta == "":
+    delta = None
+    fixed_delta = False
+else:
+    delta = float(delta)
+    fixed_delta = True
+
 geometry = DomainGeometry(
     width=1.0,
     height=8.0,
@@ -48,6 +61,7 @@ thermal_params = ThermalParameters(
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
+    delta=delta,
 )
 
 print(thermal_params)
@@ -78,29 +92,18 @@ left_bc = BoundaryCondition(
 )
 
 heat_transfer_solver = HeatTransferSolver(
-    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+    solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
     geometry=geometry,
     parameters=thermal_params,
     top_bc=top_bc,
     right_bc=right_bc,
     bottom_bc=bottom_bc,
     left_bc=left_bc,
-    fixed_delta=False,
+    fixed_delta=fixed_delta,
     implicit_lin_max_iters=1,
     implicit_lin_stopping_criteria=1e-6,
     implicit_lin_urf=1.0,
 )
-
-s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
-
-delta = input("Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: ")
-
-if delta == "":
-    delta = None
-    fixed_delta = False
-else:
-    delta = float(delta)
-    fixed_delta = True
 
 u = (
     get_analytic_solution(
