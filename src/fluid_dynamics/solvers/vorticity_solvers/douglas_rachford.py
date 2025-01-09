@@ -120,7 +120,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             for j in range(1, n_y - 1):
                 a_y[j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
-                b_y[j] = 1.0 + 2.0 * inv_re * dt * inv_dy2
+                b_y[j] = 1.0 + dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
 
                 c_y[j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
