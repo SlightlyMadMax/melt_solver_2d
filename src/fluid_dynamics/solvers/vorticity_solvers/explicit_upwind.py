@@ -9,7 +9,10 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import get_indicator_function as c_ind
+from src.fluid_dynamics.utils import (
+    get_indicator_function as c_ind,
+    compute_velocity_from_sf,
+)
 
 
 @register_solver(VorticitySolverName.EXPLICIT_UPWIND)
@@ -20,6 +23,8 @@ class ExpUpwindNavierStokesSolver(ExplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
         left_bc: NDArray[np.float64],
         right_bc: NDArray[np.float64],
         top_bc: NDArray[np.float64],
@@ -50,18 +55,15 @@ class ExpUpwindNavierStokesSolver(ExplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                v_x = (sf[i, j + 1] - sf[i, j - 1]) * 0.5 * inv_dy
-                v_y = -(sf[i + 1, j] - sf[i - 1, j]) * 0.5 * inv_dx
-
-                if v_x > 0:
-                    advection_x = (w[i, j] * v_x - w[i - 1, j] * v_x) * inv_dx
+                if v_x[j, i] > 0:
+                    advection_x = (w[j, i] * v_x[j, i] - w[j, i - 1] * v_x[j, i]) * inv_dx
                 else:
-                    advection_x = (w[i + 1, j] * v_x - w[i, j] * v_x) * inv_dx
+                    advection_x = (w[j, i + 1] * v_x[j, i] - w[j, i] * v_x[j, i]) * inv_dx
 
-                if v_y > 0:
-                    advection_y = (w[i, j] * v_y - w[i, j - 1] * v_y) * inv_dy
+                if v_y[j, i] > 0:
+                    advection_y = (w[j, i] * v_y[j, i] - w[j - 1, i] * v_y[j, i]) * inv_dy
                 else:
-                    advection_y = (w[i, j + 1] * v_y - w[i, j] * v_y) * inv_dy
+                    advection_y = (w[j + 1, i] * v_y[j, i] - w[j, i] * v_y[j, i]) * inv_dy
 
                 advection = advection_y + advection_x
 
@@ -97,10 +99,17 @@ class ExpUpwindNavierStokesSolver(ExplicitVorticitySolver):
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
         )
+        self._v_x, self._v_y = compute_velocity_from_sf(
+            sf=sf,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
         self._compute_vorticity(
             w=w,
             sf=sf,
             u=u,
+            v_x=self._v_x,
+            v_y=self._v_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             top_bc=self.top_bc,
