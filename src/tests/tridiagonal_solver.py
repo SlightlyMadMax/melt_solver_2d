@@ -17,16 +17,18 @@ def test_solve_tridiagonal():
     left_value = 2.5
     right_value = 2.5
 
-    u = solve_tridiagonal(a, b, c, f, left_type, right_type, left_value, right_value)
+    result = np.zeros_like(f)
+
+    solve_tridiagonal(a, b, c, f, result, left_type, right_type, left_value, right_value)
 
     A = np.zeros((n, n), dtype=np.float64)
     np.fill_diagonal(A, b)
     np.fill_diagonal(A[1:], a)
     np.fill_diagonal(A[:, 1:], c)
 
-    expected_u = np.linalg.solve(A, f)
+    expected_result = np.linalg.solve(A, f)
 
-    assert_almost_equal(u, expected_u, decimal=6)
+    assert_almost_equal(result, expected_result, decimal=6)
     print("Test passed!")
 
 

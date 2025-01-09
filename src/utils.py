@@ -8,6 +8,7 @@ def solve_tridiagonal(
     b: np.ndarray,
     c: np.ndarray,
     f: np.ndarray,
+    result: np.ndarray,
     left_type: int,
     right_type: int,
     left_value: float = 0.0,
@@ -28,6 +29,7 @@ def solve_tridiagonal(
     :param b: Diagonal elements of the tridiagonal matrix.
     :param c: Super-diagonal elements of the tridiagonal matrix.
     :param f: Right-hand side vector.
+    :param result: Link to the array where the result will be stored.
     :param left_type: Type of left boundary condition (0: Dirichlet, 1: Neumann, 2: Robin).
     :param left_value: Value for the left boundary condition (optional).
     :param left_flux: Flux value for Neumann condition on the left (optional).
@@ -39,13 +41,11 @@ def solve_tridiagonal(
     :param right_psi: Psi parameter for Robin condition on the right (optional).
     :param right_phi: Phi parameter for Robin condition on the right (optional).
     :param h: The grid step size (dx for x-direction, dy for y-direction) (optional).
-    :return: Solution vector of the tridiagonal system.
+    :return: None.
     """
     n = len(f)
     alpha = np.zeros(n - 1)
     beta = np.zeros(n - 1)
-
-    u = np.zeros(n)
 
     if left_type != 1 or right_type != 1:
         assert h != 0.0, "Please, set the grid step size"
@@ -68,14 +68,12 @@ def solve_tridiagonal(
 
     # Boundary condition handling for the right side
     if right_type == 1:  # Dirichlet
-        u[n - 1] = right_value
+        result[n - 1] = right_value
     elif right_type == 2:  # Neumann
-        u[n - 1] = (h * right_flux + beta[n - 2]) / (1 - alpha[n - 2])
+        result[n - 1] = (h * right_flux + beta[n - 2]) / (1 - alpha[n - 2])
     else:  # Robin
-        u[n - 1] = (h * right_psi + beta[n - 2]) / (1 - alpha[n - 2] - h * right_phi)
+        result[n - 1] = (h * right_psi + beta[n - 2]) / (1 - alpha[n - 2] - h * right_phi)
 
     # Backward substitution to find the solution
     for j in range(n - 2, -1, -1):
-        u[j] = alpha[j] * u[j + 1] + beta[j]
-
-    return u
+        result[j] = alpha[j] * result[j + 1] + beta[j]

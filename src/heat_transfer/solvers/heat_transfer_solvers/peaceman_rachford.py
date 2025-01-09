@@ -162,21 +162,33 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     )
                 )
 
-            result[j, :] = solve_tridiagonal(
+            # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
+            # "CALL_FUNCTION_EX with **kwargs not supported"
+            lv: float = left_value[j] if left_value is not None else 0.0
+            lf: float = left_flux[j] if left_flux is not None else 0.0
+            lpsi: float = left_psi[j] if left_psi is not None else 0.0
+            lphi: float = left_phi[j] if left_phi is not None else 0.0
+            rv: float = right_value[j] if right_value is not None else 0.0
+            rf: float = right_flux[j] if right_flux is not None else 0.0
+            rpsi: float = right_psi[j] if right_psi is not None else 0.0
+            rphi: float = right_phi[j] if right_phi is not None else 0.0
+
+            solve_tridiagonal(
                 a=a_x,
                 b=b_x,
                 c=c_x,
                 f=rhs,
+                result=result[j, :],
                 left_type=lbc_type,
-                left_value=left_value[j] if left_value is not None else 0.0,
-                left_flux=left_flux[j] if left_flux is not None else 0.0,
-                left_psi=left_psi[j] if left_psi is not None else 0.0,
-                left_phi=left_phi[j] if left_phi is not None else 0.0,
+                left_value=lv,
+                left_flux=lf,
+                left_psi=lpsi,
+                left_phi=lphi,
                 right_type=rbc_type,
-                right_value=right_value[j] if right_value is not None else 0.0,
-                right_flux=right_flux[j] if right_flux is not None else 0.0,
-                right_psi=right_psi[j] if right_psi is not None else 0.0,
-                right_phi=right_phi[j] if right_phi is not None else 0.0,
+                right_value=rv,
+                right_flux=rf,
+                right_psi=rpsi,
+                right_phi=rphi,
                 h=dx,
             )
 
@@ -329,21 +341,33 @@ class PeacemanRachfordSolver(HeatTransferSolver):
                     )
                 )
 
-            result[:, i] = solve_tridiagonal(
+            # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
+            # "CALL_FUNCTION_EX with **kwargs not supported"
+            lv: float = bottom_value[i] if bottom_value is not None else 0.0
+            lf: float = bottom_flux[i] if bottom_flux is not None else 0.0
+            lpsi: float = bottom_psi[i] if bottom_psi is not None else 0.0
+            lphi: float = bottom_phi[i] if bottom_phi is not None else 0.0
+            rv: float = top_value[i] if top_value is not None else 0.0
+            rf: float = top_flux[i] if top_flux is not None else 0.0
+            rpsi: float = top_psi[i] if top_psi is not None else 0.0
+            rphi: float = top_phi[i] if top_phi is not None else 0.0
+
+            solve_tridiagonal(
                 a=a_y,
                 b=b_y,
                 c=c_y,
                 f=rhs,
+                result=result[:, i],
                 left_type=bbc_type,
-                left_value=bottom_value[i] if bottom_value is not None else 0.0,
-                left_flux=bottom_flux[i] if bottom_flux is not None else 0.0,
-                left_psi=bottom_psi[i] if bottom_psi is not None else 0.0,
-                left_phi=bottom_phi[i] if bottom_phi is not None else 0.0,
+                left_value=lv,
+                left_flux=lf,
+                left_psi=lpsi,
+                left_phi=lphi,
                 right_type=tbc_type,
-                right_value=top_value[i] if top_value is not None else 0.0,
-                right_flux=top_flux[i] if top_flux is not None else 0.0,
-                right_psi=top_psi[i] if top_psi is not None else 0.0,
-                right_phi=top_phi[i] if top_phi is not None else 0.0,
+                right_value=rv,
+                right_flux=rf,
+                right_psi=rpsi,
+                right_phi=rphi,
                 h=dy,
             )
 
