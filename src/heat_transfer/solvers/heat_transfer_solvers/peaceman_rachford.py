@@ -9,7 +9,9 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.heat_transfer.solvers.heat_transfer_solvers.base import ImplicitHeatTransferSolver
+from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+    ImplicitHeatTransferSolver,
+)
 from src.utils import solve_tridiagonal
 
 
@@ -363,7 +365,11 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         sf: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        convection_x, convection_y = self.convective_operator(sf=sf)
+        convection_x, convection_y = self.convective_operator(
+            sf=sf,
+            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u_pt=self.parameters.u_pt,
+        )
         alpha = self.implicit_lin_urf
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)

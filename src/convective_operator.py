@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 from numba import njit
@@ -33,7 +33,12 @@ class ConvectionOperator:
         )
 
     def __call__(
-        self, sf: NDArray[np.float64], *args, **kwargs
+        self,
+        sf: NDArray[np.float64],
+        u: Optional[NDArray[np.float64]] = None,
+        u_pt: Optional[float] = None,
+        *args,
+        **kwargs
     ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
         self.compute_velocity_from_sf(
             sf=sf,
@@ -71,6 +76,9 @@ class ConvectionOperator:
             )
         else:
             raise NotImplementedError
+
+        if u is not None and u_pt is not None:
+            self._restrict(conv_x=self._result_x, conv_y=self._result_y, u=u, u_pt=u_pt)
 
         return self._result_x, self._result_y
 
@@ -193,3 +201,19 @@ class ConvectionOperator:
                 result_y[j, i, 0] = 0.5 * inv_dy * v_y[j, i]
                 result_y[j, i, 1] = 0.0
                 result_y[j, i, 2] = -0.5 * inv_dy * v_y[j, i]
+
+    @staticmethod
+    @njit
+    def _restrict(
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
+        u: NDArray[np.float64],
+        u_pt: float,
+    ):
+        n_y, n_x = u.shape
+
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
+                if u[j, i] < u_pt:
+                    conv_x[j, i, :] = 0.0
+                    conv_y[j, i, :] = 0.0

@@ -143,7 +143,11 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
         sf: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        convection_x, convection_y = self.convective_operator(sf=sf)
+        convection_x, convection_y = self.convective_operator(
+            sf=sf,
+            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u_pt=self.parameters.u_pt,
+        )
         delta = (
             self.parameters.delta
             if self.fixed_delta
