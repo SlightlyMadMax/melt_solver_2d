@@ -9,6 +9,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
+from src.fluid_dynamics.utils import calculate_indicator_function
 from src.utils import solve_tridiagonal
 
 
@@ -34,9 +35,9 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         dt: float,
         reynolds_number: float,
         grashof_number: float,
-        u_ref: float,
         u_pt_ref: float,
-        epsilon: float,
+        delta_u: float,
+        c_ind: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -47,6 +48,9 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                if u[j, i] * delta_u - u_pt_ref < 0.0:
+                    grashof_number = 0.0
+
                 a_x[i] = dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
                 b_x[i] = 1.0 + dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
@@ -59,7 +63,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
                     * 0.5
                     * inv_dx
                     * (u[j, i + 1] - u[j, i - 1])
-                    # + inv_re * c_ind(u=u[j, i], u_pt_ref=u_pt_ref, eps=epsilon) * sf[j, i]
+                    - c_ind[j, i] * sf[j, i]
                 )
 
             solve_tridiagonal(
@@ -97,9 +101,9 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         dt: float,
         reynolds_number: float,
         grashof_number: float,
-        u_ref: float,
         u_pt_ref: float,
-        epsilon: float,
+        delta_u: float,
+        c_ind: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dy = 1.0 / dy
@@ -109,6 +113,9 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
+                if u[j, i] * delta_u - u_pt_ref < 0.0:
+                    grashof_number = 0.0
+
                 a_y[j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
                 b_y[j] = 1.0 + 2.0 * dt * (conv_y[j, i, 1] + inv_re * inv_dy2)
@@ -140,6 +147,13 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         time: float = 0.0,
     ) -> (NDArray[np.float64], NDArray[np.float64]):
         convection_x, convection_y = self.convective_operator(sf=sf)
+        calculate_indicator_function(
+            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u_pt=self.parameters.u_pt,
+            eps=self.parameters.epsilon,
+            result=self.c_ind,
+        )
+        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
         self._temp_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,
@@ -167,11 +181,11 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            u_ref=self.parameters.u_ref,
             u_pt_ref=self.parameters.u_pt_ref,
+            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            epsilon=self.parameters.epsilon,
+            c_ind=self.c_ind,
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
@@ -190,11 +204,11 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            u_ref=self.parameters.u_ref,
             u_pt_ref=self.parameters.u_pt_ref,
+            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            epsilon=self.parameters.epsilon,
+            c_ind=self.c_ind,
         )
 
         return self._new_w

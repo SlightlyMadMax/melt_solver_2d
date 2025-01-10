@@ -31,13 +31,13 @@ if __name__ == "__main__":
         end_time=60.0 * 60.0 * 24.0 * 7.0,
         n_x=101,
         n_y=101,
-        n_t=60 * 60 * 24 * 7,
+        n_t=60 * 60 * 24 * 70,
     )
 
     print(geometry)
 
-    min_temp = 274.15
-    max_temp = 277.15
+    min_temp = 272.15
+    max_temp = 274.15
     reference_temperature = 0.5 * (min_temp + max_temp)
 
     thermal_params = ThermalParameters(
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
         v=0.01,
-        epsilon=1e-5,
+        epsilon=1e-3,
     )
 
     print(fluid_params)
@@ -72,14 +72,9 @@ if __name__ == "__main__":
     u = init_temperature(
         geom=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.UNIFORM_LIQUID,
+        shape=DomainShape.LINEAR,
+        solid_temp=max_temp,
         liquid_temp=min_temp,
-    )
-
-    u[:, geometry.n_x - 1] = (
-        (max_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(geometry.n_y)
     )
 
     print(
@@ -115,7 +110,7 @@ if __name__ == "__main__":
     u_right_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
-        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
         / thermal_params.delta_u
         * np.ones(geometry.n_y),
     )
@@ -127,7 +122,7 @@ if __name__ == "__main__":
     u_left_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
         / thermal_params.delta_u
         * np.ones(geometry.n_y),
     )
@@ -158,7 +153,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        solver_name=HeatTransferSolverName.EXPLICIT,
+        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
         convective_term_form=ConvectiveTermForm.UPWIND,
@@ -186,7 +181,7 @@ if __name__ == "__main__":
         implicit_lin_max_iters=1,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=1.0,
-        vorticity_bc_order=2,
+        vorticity_bc_order=1,
     )
 
     start_time = time.perf_counter()
@@ -196,7 +191,7 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 10 == 0:
+        if n % 100 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,

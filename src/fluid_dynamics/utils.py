@@ -1,20 +1,30 @@
+import numpy as np
 from numba import njit
+from numpy.typing import NDArray
 
 
 @njit
-def get_indicator_function(
-    u: float, u_pt_ref: float, delta_u: float, eps: float
-) -> float:
+def calculate_indicator_function(
+    u: NDArray[np.float64],
+    u_pt: float,
+    eps: float,
+    result: NDArray[np.float64],
+) -> None:
     """
     Indicator function for the fictitious domain method.
     Is equal to 0 for liquid phase and 1 / eps^2 for solid phase.
 
-    :param u: The temperature value (deviation from the reference temperature).
-    :param u_pt_ref: The phase transition temperature (deviation from the reference temperature).
-    :param delta_u: The characteristic temperature difference.
+    :param u: The dimensional temperature value.
+    :param u_pt: The phase transition temperature.
     :param eps: A small parameter.
-    :return: The value of the indicator function at u.
+    :param result: A ndarray for storing the calculated indicator function values.
+    :return: None.
     """
-    if u * delta_u - u_pt_ref > 0.0:
-        return 0.0
-    return 1.0 / (eps * eps)
+    n_y, n_x = u.shape
+
+    result[:, :] = 0.0
+
+    for j in range(1, n_y - 1):
+        for i in range(1, n_x - 1):
+            if u[j, i] - u_pt < 0.0:
+                result[j, i] = 1.0 / (eps * eps)
