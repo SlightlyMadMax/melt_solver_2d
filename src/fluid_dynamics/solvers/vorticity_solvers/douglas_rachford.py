@@ -158,7 +158,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         time: float = 0.0,
-    ) -> (NDArray[np.float64], NDArray[np.float64]):
+    ) -> NDArray[np.float64]:
         convection_x, convection_y = self.convective_operator(sf=sf)
         calculate_indicator_function(
             u=u * self.parameters.delta_u + self.parameters.u_ref,
