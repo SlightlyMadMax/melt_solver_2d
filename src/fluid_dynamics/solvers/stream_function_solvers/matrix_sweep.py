@@ -27,6 +27,8 @@ class MatrixSweepPoissonSolver(BaseSolver):
         right_bc: BoundaryCondition,
         bottom_bc: BoundaryCondition,
         left_bc: BoundaryCondition,
+        *args,
+        **kwargs,
     ):
         """
         Initialize the MatrixSweepPoissonSolver with domain geometry and boundary conditions.
