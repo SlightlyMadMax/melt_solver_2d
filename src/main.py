@@ -168,7 +168,7 @@ if __name__ == "__main__":
     )
     navier_solver = NavierStokesSolver(
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.SOR,
+        stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
         geometry=geometry,
         parameters=fluid_params,
         convective_term_form=ConvectiveTermForm.UPWIND,
