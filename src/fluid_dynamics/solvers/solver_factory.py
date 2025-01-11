@@ -56,8 +56,6 @@ class NavierStokesSolver:
             geometry=geometry,
             parameters=parameters,
             convective_operator=self.convective_operator,
-            max_iters=sf_max_iters,
-            stopping_criteria=sf_stopping_criteria,
             bc_order=vorticity_bc_order,
         )
         self.stream_function_solver = stream_function_solver_class(
@@ -66,6 +64,8 @@ class NavierStokesSolver:
             right_bc=sf_right_bc,
             bottom_bc=sf_bottom_bc,
             left_bc=sf_left_bc,
+            max_iters=sf_max_iters,
+            stopping_criteria=sf_stopping_criteria,
         )
 
         self._vorticity: NDArray[np.float64] = np.empty((geometry.n_y, geometry.n_x))
