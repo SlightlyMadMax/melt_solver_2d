@@ -8,7 +8,7 @@ from src.fluid_dynamics.solvers.stream_function_solvers.sor import SORPoissonSol
 from src.geometry import DomainGeometry
 
 
-def test_poisson_solver():
+def test_sor_poisson_solver():
     geometry = DomainGeometry(
         width=1.0,
         height=1.0,
@@ -55,9 +55,9 @@ def test_poisson_solver():
 
     initial_guess = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
 
-    start_time = time.process_time()
+    start_time = time.perf_counter()
     result = solver.solve(initial_guess=initial_guess, rhs=-rhs, time=0.0)
-    print(f"Elapsed time: {time.process_time() - start_time} s.")
+    print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
     print(f"L-2 error: {error}")
@@ -80,4 +80,4 @@ def test_poisson_solver():
     plt.show()
 
 
-test_poisson_solver()
+test_sor_poisson_solver()
