@@ -136,7 +136,7 @@ class ThermalParameters(BaseModel):
             f"Heat Transfer Parameters:\n"
             f"  Phase Transition Temperature: {self.u_pt} K\n"
             f"  Reference Temperature: {self.u_ref} K\n"
-            f"  Characteristic Temperature Difference {self.delta_u} K\n"
+            f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
             f"  Specific Heat (Liquid): {self.specific_heat_liquid} J/(kg⋅K)\n"
             f"  Specific Heat (Solid): {self.specific_heat_solid} J/(kg⋅K)\n"

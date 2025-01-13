@@ -88,7 +88,7 @@ class FluidParameters(BaseModel):
             f"  Volumetric Thermal Expansion Coefficient at the Reference Temperature (Water): "
             f"{self.thermal_exp_coefficient_at_u_ref:.2E} 1/K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
-            f"  Characteristic Temperature Difference {self.delta_u} K\n"
+            f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
             f"  Reynolds number {self.reynolds_number:.2E}\n"
             f"  Grashof number {self.grashof_number:.2E}\n"
         )
