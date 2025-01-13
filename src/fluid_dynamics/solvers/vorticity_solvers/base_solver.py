@@ -39,7 +39,7 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
         self.right_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
         self.bottom_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
         self.left_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
-        self.c_ind: NDArray[np.float64] = np.empty(
+        self._c_ind: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
 

@@ -164,9 +164,9 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
-            result=self.c_ind,
+            result=self._c_ind,
         )
-        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
+        self._c_ind *= self.geometry.length_scale ** 3 / self.parameters.v
         self._temp_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,
@@ -198,7 +198,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
+            c_ind=self._c_ind,
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
@@ -221,7 +221,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
+            c_ind=self._c_ind,
         )
 
         return self._new_w
