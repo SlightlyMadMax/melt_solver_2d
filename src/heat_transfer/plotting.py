@@ -104,7 +104,7 @@ def plot_temperature(
         X,
         Y,
         disp_u,
-        50,
+        25,
         cmap="viridis",
         # extend="both",
     )
