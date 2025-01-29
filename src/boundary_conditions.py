@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 import numpy as np
 from typing import Callable
@@ -124,3 +125,11 @@ class BoundaryCondition:
         :return: ndarray of phi values for Robin condition.
         """
         return self.psi(t, self.n)
+
+
+@dataclass
+class BoundaryConditions:
+    top: BoundaryCondition
+    right: BoundaryCondition
+    bottom: BoundaryCondition
+    left: BoundaryCondition
