@@ -105,48 +105,48 @@ if __name__ == "__main__":
     u_top_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
         n=geometry.n_x,
-        flux_func=lambda t, n: np.zeros(geometry.n_x),
+        flux_func=lambda t, n: np.zeros(n),
     )
     u_right_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
         value_func=lambda t, n: (min_temp - thermal_params.u_ref)
         / thermal_params.delta_u
-        * np.ones(geometry.n_y),
+        * np.ones(n),
     )
     u_bottom_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
         n=geometry.n_x,
-        flux_func=lambda t, n: np.zeros(geometry.n_x),
+        flux_func=lambda t, n: np.zeros(n),
     )
     u_left_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
         value_func=lambda t, n: (max_temp - thermal_params.u_ref)
         / thermal_params.delta_u
-        * np.ones(geometry.n_y),
+        * np.ones(n),
     )
 
     # Stream function boundary conditions
     sf_top_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: np.zeros(geometry.n_x),
+        value_func=lambda t, n: np.zeros(n),
     )
     sf_right_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
-        value_func=lambda t, n: np.zeros(geometry.n_y),
+        value_func=lambda t, n: np.zeros(n),
     )
     sf_bottom_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: np.zeros(geometry.n_x),
+        value_func=lambda t, n: np.zeros(n),
     )
     sf_left_bc = BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_y,
-        value_func=lambda t, n: np.zeros(geometry.n_y),
+        value_func=lambda t, n: np.zeros(n),
     )
 
     sf = initialize_stream_function(geom=geometry)

@@ -164,22 +164,22 @@ def test_cg_elliptic_solver_2():
         top_bc=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_x,
-            value_func=lambda t, n: np.zeros(geometry.n_x),
+            value_func=lambda t, n: np.zeros(n),
         ),
         right_bc=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
-            value_func=lambda t, n: np.zeros(geometry.n_y),
+            value_func=lambda t, n: np.zeros(n),
         ),
         bottom_bc=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_x,
-            value_func=lambda t, n: np.zeros(geometry.n_x),
+            value_func=lambda t, n: np.zeros(n),
         ),
         left_bc=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
-            value_func=lambda t, n: np.zeros(geometry.n_y),
+            value_func=lambda t, n: np.zeros(n),
         ),
         max_iters=10000,
         stopping_criteria=1e-8,

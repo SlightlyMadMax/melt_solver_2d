@@ -108,24 +108,24 @@ u_top_bc = BoundaryCondition(
     n=geometry.n_x,
     value_func=lambda t, n: (max_temp - thermal_params.u_ref)
     / thermal_params.delta_u
-    * np.ones(geometry.n_x),
+    * np.ones(n),
 )
 u_right_bc = BoundaryCondition(
     boundary_type=BoundaryConditionType.NEUMANN,
     n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(geometry.n_y),
+    flux_func=lambda t, n: np.zeros(n),
 )
 u_bottom_bc = BoundaryCondition(
     boundary_type=BoundaryConditionType.DIRICHLET,
     n=geometry.n_x,
     value_func=lambda t, n: (min_temp - thermal_params.u_ref)
     / thermal_params.delta_u
-    * np.ones(geometry.n_x),
+    * np.ones(n),
 )
 u_left_bc = BoundaryCondition(
     boundary_type=BoundaryConditionType.NEUMANN,
     n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(geometry.n_y),
+    flux_func=lambda t, n: np.zeros(n),
 )
 
 heat_transfer_solver = HeatTransferSolver(
