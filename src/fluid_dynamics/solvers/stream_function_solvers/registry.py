@@ -3,8 +3,9 @@ from enum import Enum
 
 
 class StreamFunctionSolverName(Enum):
-    SOR = "Successive over-relaxation"
-    MATRIX_SWEEP = "Matrix sweep (2D Thomas algorithm)"
+    SOR = "Successive Over-Relaxation"
+    MATRIX_SWEEP = "Matrix Sweep (2D Thomas algorithm)"
+    CG = "Conjugate Gradient"
 
 
 def register_sf_solver(solver_name: StreamFunctionSolverName):
