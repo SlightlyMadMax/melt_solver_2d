@@ -67,20 +67,20 @@ class BoundaryCondition:
             and self.value_func is None
         ):
             raise ValueError(
-                "Dirichlet boundary requires a value_func to provide boundary values."
+                "Dirichlet boundary condition requires 'value_func' to provide boundary values."
             )
         if (
             self.boundary_type == BoundaryConditionType.NEUMANN
             and self.flux_func is None
         ):
             raise ValueError(
-                "Neumann boundary requires a flux_func to provide flux values."
+                "Neumann boundary condition requires 'flux_func' to provide flux values."
             )
         if self.boundary_type == BoundaryConditionType.ROBIN and (
             self.phi is None or self.psi is None
         ):
             raise ValueError(
-                "Robin boundary requires phi and psi to define the boundary behavior."
+                "Robin boundary condition requires 'phi' and 'psi' to define the boundary behavior."
             )
 
     def get_value(self, t: float) -> np.ndarray:
