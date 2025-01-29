@@ -35,11 +35,8 @@ class NavierStokesSolver:
         self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
         self.implicit_lin_urf = implicit_lin_urf
 
-        if vorticity_bc_order < 1 or vorticity_bc_order > 2:
-            raise NotImplementedError(
-                "Only 1st and 2nd order accuracy boundary conditions are available at the moment for the vorticity "
-                "transport equation."
-            )
+        if vorticity_bc_order not in (1, 2):
+            raise NotImplementedError("Only 1st and 2nd order accuracy BCs are supported for vorticity.")
 
         self.convective_operator = ConvectionOperator(
             form=convective_term_form, geometry=geometry
