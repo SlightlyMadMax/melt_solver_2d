@@ -118,7 +118,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
         """
         self._result = np.copy(initial_guess)
         self._matrix_sweep(
-            f=-rhs,
+            f=rhs,
             right_value=(
                 self.right_bc.get_value(t=time)
                 if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET

@@ -130,5 +130,5 @@ class NavierStokesSolver:
         time: float,
     ) -> np.ndarray:
         return self.stream_function_solver.solve(
-            initial_guess=initial_guess, rhs=vorticity, time=time
+            initial_guess=initial_guess, rhs=-vorticity, time=time
         )

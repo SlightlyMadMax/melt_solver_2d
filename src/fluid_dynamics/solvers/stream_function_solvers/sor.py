@@ -110,7 +110,7 @@ class SORPoissonSolver(BaseSolver):
                             + result[j, i - 1]
                             + beta * beta * temp[j + 1, i]
                             + beta * beta * result[j - 1, i]
-                            + dx * dx * rhs[j, i]
+                            - dx * dx * rhs[j, i]
                         )
                         + (1.0 - omega) * temp[j, i]
                     )

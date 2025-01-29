@@ -56,7 +56,7 @@ def test_sor_poisson_solver():
     initial_guess = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, rhs=-rhs, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, rhs=rhs, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
