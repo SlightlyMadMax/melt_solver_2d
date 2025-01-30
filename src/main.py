@@ -56,7 +56,6 @@ if __name__ == "__main__":
         density_solid=918.9,
         thermal_conductivity_liquid=0.59,
         thermal_conductivity_solid=2.21,
-        delta=0.3,
     )
 
     print(thermal_params)
