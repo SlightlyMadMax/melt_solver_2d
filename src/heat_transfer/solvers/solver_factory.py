@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition
+from src.boundary_conditions import BoundaryConditions
 from src.convective_operator import ConvectiveTermForm, ConvectionOperator
 from src.geometry import DomainGeometry
 from src.heat_transfer.parameters import ThermalParameters
@@ -15,10 +15,7 @@ class HeatTransferSolver:
         geometry: DomainGeometry,
         parameters: ThermalParameters,
         convective_term_form: ConvectiveTermForm,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        bcs: BoundaryConditions,
         fixed_delta: bool = False,
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,
@@ -34,10 +31,7 @@ class HeatTransferSolver:
             geometry=geometry,
             parameters=parameters,
             convective_operator=self.convective_operator,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
+            bcs=bcs,
             fixed_delta=fixed_delta,
             implicit_lin_max_iters=implicit_lin_max_iters,
             implicit_lin_stopping_criteria=implicit_lin_stopping_criteria,

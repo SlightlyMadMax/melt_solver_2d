@@ -5,7 +5,7 @@ from numba import njit
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 
-from src.boundary_conditions import BoundaryCondition
+from src.boundary_conditions import BoundaryConditions
 from src.geometry import DomainGeometry
 
 
@@ -13,16 +13,10 @@ class BaseSolver(ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: Optional[BoundaryCondition] = None,
-        right_bc: Optional[BoundaryCondition] = None,
-        bottom_bc: Optional[BoundaryCondition] = None,
-        left_bc: Optional[BoundaryCondition] = None,
+        bcs: Optional[BoundaryConditions] = None,
     ):
         self.geometry = geometry
-        self.top_bc = top_bc
-        self.right_bc = right_bc
-        self.bottom_bc = bottom_bc
-        self.left_bc = left_bc
+        self.bcs = bcs
 
     @abstractmethod
     def solve(self, *args, **kwargs) -> NDArray[np.float64]: ...
@@ -32,17 +26,11 @@ class Sweep2DSolver(BaseSolver, ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: Optional[BoundaryCondition] = None,
-        right_bc: Optional[BoundaryCondition] = None,
-        bottom_bc: Optional[BoundaryCondition] = None,
-        left_bc: Optional[BoundaryCondition] = None,
+        bcs: Optional[BoundaryConditions] = None,
     ):
         super().__init__(
             geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
+            bcs=bcs,
         )
 
         # Pre-allocate some arrays that will be used for calculations

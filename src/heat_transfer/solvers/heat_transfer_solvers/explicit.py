@@ -177,13 +177,13 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             peclet_number=self.parameters.peclet_number,
             delta=delta,
             right_value=(
-                self.right_bc.get_value(t=time)
-                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.right.get_value(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             left_value=(
-                self.left_bc.get_value(t=time)
-                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.left.get_value(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
         )

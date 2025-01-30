@@ -311,46 +311,46 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
                 k_liquid=self.parameters.thermal_conductivity_liquid,
                 peclet_number=self.parameters.peclet_number,
                 delta=delta,
-                rbc_type=self.right_bc.boundary_type.value,
-                lbc_type=self.left_bc.boundary_type.value,
+                rbc_type=self.bcs.right.boundary_type.value,
+                lbc_type=self.bcs.left.boundary_type.value,
                 right_value=(
-                    self.right_bc.get_value(t=time)
-                    if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                    self.bcs.right.get_value(t=time)
+                    if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 left_value=(
-                    self.left_bc.get_value(t=time)
-                    if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                    self.bcs.left.get_value(t=time)
+                    if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 right_flux=(
-                    self.right_bc.get_flux(t=time)
-                    if self.right_bc.boundary_type == BoundaryConditionType.NEUMANN
+                    self.bcs.right.get_flux(t=time)
+                    if self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 left_flux=(
-                    self.left_bc.get_flux(t=time)
-                    if self.left_bc.boundary_type == BoundaryConditionType.NEUMANN
+                    self.bcs.left.get_flux(t=time)
+                    if self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 right_psi=(
-                    self.right_bc.get_psi(t=time)
-                    if self.right_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.right.get_psi(t=time)
+                    if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 left_psi=(
-                    self.left_bc.get_psi(t=time)
-                    if self.left_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.left.get_psi(t=time)
+                    if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 right_phi=(
-                    self.right_bc.get_phi(t=time)
-                    if self.right_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.right.get_phi(t=time)
+                    if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 left_phi=(
-                    self.left_bc.get_phi(t=time)
-                    if self.left_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.left.get_phi(t=time)
+                    if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
             )
@@ -395,46 +395,46 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
                 k_liquid=self.parameters.thermal_conductivity_liquid,
                 peclet_number=self.parameters.peclet_number,
                 delta=delta,
-                tbc_type=self.top_bc.boundary_type.value,
-                bbc_type=self.bottom_bc.boundary_type.value,
+                tbc_type=self.bcs.top.boundary_type.value,
+                bbc_type=self.bcs.bottom.boundary_type.value,
                 top_value=(
-                    self.top_bc.get_value(t=time)
-                    if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                    self.bcs.top.get_value(t=time)
+                    if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 bottom_value=(
-                    self.bottom_bc.get_value(t=time)
-                    if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                    self.bcs.bottom.get_value(t=time)
+                    if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
                     else None
                 ),
                 top_flux=(
-                    self.top_bc.get_flux(t=time)
-                    if self.top_bc.boundary_type == BoundaryConditionType.NEUMANN
+                    self.bcs.top.get_flux(t=time)
+                    if self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 bottom_flux=(
-                    self.bottom_bc.get_flux(t=time)
-                    if self.bottom_bc.boundary_type == BoundaryConditionType.NEUMANN
+                    self.bcs.bottom.get_flux(t=time)
+                    if self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN
                     else None
                 ),
                 top_psi=(
-                    self.top_bc.get_psi(t=time)
-                    if self.top_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.top.get_psi(t=time)
+                    if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 bottom_psi=(
-                    self.bottom_bc.get_psi(t=time)
-                    if self.bottom_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.bottom.get_psi(t=time)
+                    if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 top_phi=(
-                    self.top_bc.get_phi(t=time)
-                    if self.top_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.top.get_phi(t=time)
+                    if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
                 bottom_phi=(
-                    self.bottom_bc.get_phi(t=time)
-                    if self.bottom_bc.boundary_type == BoundaryConditionType.ROBIN
+                    self.bcs.bottom.get_phi(t=time)
+                    if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
                     else None
                 ),
             )

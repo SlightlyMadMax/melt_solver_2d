@@ -2,7 +2,11 @@ import numpy as np
 import os
 
 from compare_boundary import compare_num_with_analytic
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import (
+    BoundaryConditionType,
+    BoundaryConditions,
+    BoundaryCondition,
+)
 from src.constants import ABS_ZERO
 from src.convective_operator import ConvectiveTermForm
 from src.geometry import DomainGeometry
@@ -67,29 +71,31 @@ thermal_params = ThermalParameters(
 
 print(thermal_params)
 
-top_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.DIRICHLET,
-    n=geometry.n_x,
-    value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-    / thermal_params.delta_u
-    * np.ones(n),
-)
-right_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.NEUMANN,
-    n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(n),
-)
-bottom_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.DIRICHLET,
-    n=geometry.n_x,
-    value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-    / thermal_params.delta_u
-    * np.ones(n),
-)
-left_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.NEUMANN,
-    n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(n),
+bcs = BoundaryConditions(
+    top=BoundaryCondition(
+        boundary_type=BoundaryConditionType.DIRICHLET,
+        n=geometry.n_x,
+        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(n),
+    ),
+    right=BoundaryCondition(
+        boundary_type=BoundaryConditionType.NEUMANN,
+        n=geometry.n_y,
+        flux_func=lambda t, n: np.zeros(n),
+    ),
+    bottom=BoundaryCondition(
+        boundary_type=BoundaryConditionType.DIRICHLET,
+        n=geometry.n_x,
+        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(n),
+    ),
+    left=BoundaryCondition(
+        boundary_type=BoundaryConditionType.NEUMANN,
+        n=geometry.n_y,
+        flux_func=lambda t, n: np.zeros(n),
+    ),
 )
 
 heat_transfer_solver = HeatTransferSolver(
@@ -97,10 +103,7 @@ heat_transfer_solver = HeatTransferSolver(
     geometry=geometry,
     parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
-    top_bc=top_bc,
-    right_bc=right_bc,
-    bottom_bc=bottom_bc,
-    left_bc=left_bc,
+    bcs=bcs,
     fixed_delta=fixed_delta,
     implicit_lin_max_iters=1,
     implicit_lin_stopping_criteria=1e-6,
