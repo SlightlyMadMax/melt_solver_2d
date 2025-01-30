@@ -14,13 +14,13 @@ from src.geometry import DomainGeometry
 class NavierStokesSolver:
     def __init__(
         self,
-        vorticity_solver_name: VorticitySolverName,
-        stream_function_solver_name: StreamFunctionSolverName,
         geometry: DomainGeometry,
         parameters: FluidParameters,
-        convective_term_form: ConvectiveTermForm,
         sf_bcs: BoundaryConditions,
-        sf_max_iters: int = 50,
+        vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
+        stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.SOR,
+        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
+        sf_max_iters: int = 1000,
         sf_stopping_criteria: float = 1e-6,
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,
@@ -33,7 +33,9 @@ class NavierStokesSolver:
         self.implicit_lin_urf = implicit_lin_urf
 
         if vorticity_bc_order not in (1, 2):
-            raise NotImplementedError("Only 1st and 2nd order accuracy BCs are supported for vorticity.")
+            raise NotImplementedError(
+                "Only 1st and 2nd order accuracy BCs are supported for vorticity."
+            )
 
         self.convective_operator = ConvectionOperator(
             form=convective_term_form, geometry=geometry

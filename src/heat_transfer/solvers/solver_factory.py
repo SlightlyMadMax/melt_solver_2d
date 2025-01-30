@@ -11,11 +11,11 @@ from src.heat_transfer.solvers.heat_transfer_solvers import *
 class HeatTransferSolver:
     def __init__(
         self,
-        solver_name: HeatTransferSolverName,
         geometry: DomainGeometry,
         parameters: ThermalParameters,
-        convective_term_form: ConvectiveTermForm,
         bcs: BoundaryConditions,
+        solver_name: HeatTransferSolverName = HeatTransferSolverName.PEACEMAN_RACHFORD,
+        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         fixed_delta: bool = False,
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,

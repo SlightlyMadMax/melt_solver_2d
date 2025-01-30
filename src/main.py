@@ -7,7 +7,6 @@ from src.boundary_conditions import (
     BoundaryConditions,
 )
 from src.constants import ABS_ZERO
-from src.convective_operator import ConvectiveTermForm
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_stream_function
 from src.fluid_dynamics.solvers import (
@@ -101,7 +100,6 @@ if __name__ == "__main__":
         show_graph=True,
         min_temp=min_temp + ABS_ZERO,
         max_temp=max_temp + ABS_ZERO,
-        invert_yaxis=False,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
     )
@@ -162,10 +160,8 @@ if __name__ == "__main__":
     w = initialize_vorticity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         geometry=geometry,
         parameters=thermal_params,
-        convective_term_form=ConvectiveTermForm.UPWIND,
         bcs=u_bcs,
         fixed_delta=False,
         implicit_lin_max_iters=2,
@@ -178,7 +174,6 @@ if __name__ == "__main__":
         stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
         geometry=geometry,
         parameters=fluid_params,
-        convective_term_form=ConvectiveTermForm.UPWIND,
         sf_bcs=sf_bcs,
         sf_max_iters=1000,
         sf_stopping_criteria=1e-6,
@@ -206,7 +201,6 @@ if __name__ == "__main__":
                 show_graph=False,
                 min_temp=min_temp + ABS_ZERO,
                 max_temp=max_temp + ABS_ZERO,
-                invert_yaxis=False,
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
