@@ -3,7 +3,7 @@ from scipy.sparse import diags, csr_matrix
 from scipy.sparse.linalg import spsolve
 
 from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import BoundaryConditionType, BoundaryConditions
 from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
@@ -23,10 +23,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        bcs: BoundaryConditions,
         *args,
         **kwargs,
     ):
@@ -34,18 +31,9 @@ class MatrixSweepPoissonSolver(BaseSolver):
         Initialize the MatrixSweepPoissonSolver with domain geometry and boundary conditions.
 
         :param geometry: The computational domain's geometry.
-        :param top_bc: Boundary condition at the top of the domain.
-        :param right_bc: Boundary condition on the right side of the domain.
-        :param bottom_bc: Boundary condition at the bottom of the domain.
-        :param left_bc: Boundary condition on the left side of the domain.
+        :param bcs: An object containing boundary conditions.
         """
-        super().__init__(
-            geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
-        )
+        super().__init__(geometry=geometry, bcs=bcs)
 
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
@@ -120,23 +108,23 @@ class MatrixSweepPoissonSolver(BaseSolver):
         self._matrix_sweep(
             f=rhs,
             right_value=(
-                self.right_bc.get_value(t=time)
-                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.right.get_value(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             left_value=(
-                self.left_bc.get_value(t=time)
-                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.left.get_value(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             top_value=(
-                self.top_bc.get_value(t=time)
-                if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.top.get_value(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             bottom_value=(
-                self.bottom_bc.get_value(t=time)
-                if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.bottom.get_value(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
         )

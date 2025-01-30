@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryCondition
+from src.boundary_conditions import BoundaryConditions
 from src.convective_operator import ConvectiveTermForm, ConvectionOperator
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.stream_function_solvers import *
@@ -19,10 +19,7 @@ class NavierStokesSolver:
         geometry: DomainGeometry,
         parameters: FluidParameters,
         convective_term_form: ConvectiveTermForm,
-        sf_top_bc: BoundaryCondition,
-        sf_right_bc: BoundaryCondition,
-        sf_bottom_bc: BoundaryCondition,
-        sf_left_bc: BoundaryCondition,
+        sf_bcs: BoundaryConditions,
         sf_max_iters: int = 50,
         sf_stopping_criteria: float = 1e-6,
         implicit_lin_max_iters: int = 5,
@@ -57,10 +54,7 @@ class NavierStokesSolver:
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
-            top_bc=sf_top_bc,
-            right_bc=sf_right_bc,
-            bottom_bc=sf_bottom_bc,
-            left_bc=sf_left_bc,
+            bcs=sf_bcs,
             max_iters=sf_max_iters,
             stopping_criteria=sf_stopping_criteria,
         )

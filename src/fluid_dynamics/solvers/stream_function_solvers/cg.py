@@ -3,7 +3,7 @@ from scipy.sparse import diags, csr_matrix
 from scipy.sparse.linalg import cg
 
 from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryCondition
+from src.boundary_conditions import BoundaryConditions
 from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
@@ -23,10 +23,7 @@ class ConjugateGradientSolver(BaseSolver):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        bcs: BoundaryConditions,
         max_iters: int = 1000,
         stopping_criteria: float = 1e-6,
     ):
@@ -34,21 +31,11 @@ class ConjugateGradientSolver(BaseSolver):
         Initialize the ConjugateGradientSolver with domain geometry and boundary conditions.
 
         :param geometry: The computational domain's geometry.
-        :param top_bc: Boundary condition at the top of the domain.
-        :param right_bc: Boundary condition on the right side of the domain.
-        :param bottom_bc: Boundary condition at the bottom of the domain.
-        :param left_bc: Boundary condition on the left side of the domain.
+        :param bcs: An object containing boundary conditions.
         :param max_iters: Maximum number of iterations for convergence. Default is 1000.
         :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
         """
-        super().__init__(
-            geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
-        )
-
+        super().__init__(geometry=geometry, bcs=bcs)
         self.max_iters = max_iters
         self.stopping_criteria = stopping_criteria
 
@@ -119,10 +106,10 @@ class ConjugateGradientSolver(BaseSolver):
         n_y, n_x = f.shape
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
-        right = self.right_bc.get_value(t=time)
-        left = self.left_bc.get_value(t=time)
-        top = self.top_bc.get_value(t=time)
-        bottom = self.bottom_bc.get_value(t=time)
+        right = self.bcs.right.get_value(t=time)
+        left = self.bcs.left.get_value(t=time)
+        top = self.bcs.top.get_value(t=time)
+        bottom = self.bcs.bottom.get_value(t=time)
 
         a = self._construct_operator_matrix(c=c)
         rhs = self._construct_rhs(

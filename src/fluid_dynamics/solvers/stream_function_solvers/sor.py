@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 
 from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import BoundaryConditions, BoundaryConditionType
 from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
@@ -23,10 +23,7 @@ class SORPoissonSolver(BaseSolver):
     def __init__(
         self,
         geometry: DomainGeometry,
-        top_bc: BoundaryCondition,
-        right_bc: BoundaryCondition,
-        bottom_bc: BoundaryCondition,
-        left_bc: BoundaryCondition,
+        bcs: BoundaryConditions,
         max_iters: int = 50,
         stopping_criteria: float = 1e-6,
     ):
@@ -34,20 +31,11 @@ class SORPoissonSolver(BaseSolver):
         Initialize the SORPoissonSolver with domain geometry and boundary conditions.
 
         :param geometry: The computational domain's geometry.
-        :param top_bc: Boundary condition at the top of the domain.
-        :param right_bc: Boundary condition on the right side of the domain.
-        :param bottom_bc: Boundary condition at the bottom of the domain.
-        :param left_bc: Boundary condition on the left side of the domain.
+        :param bcs: An object containing boundary conditions.
         :param max_iters: Maximum number of iterations for convergence. Default is 50.
         :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
         """
-        super().__init__(
-            geometry=geometry,
-            top_bc=top_bc,
-            right_bc=right_bc,
-            bottom_bc=bottom_bc,
-            left_bc=left_bc,
-        )
+        super().__init__(geometry=geometry, bcs=bcs)
         self._optimal_omega = self.calculate_omega()
         self.max_iters = max_iters
         self.stopping_criteria = stopping_criteria
@@ -139,23 +127,23 @@ class SORPoissonSolver(BaseSolver):
             max_iters=self.max_iters,
             stopping_criteria=self.stopping_criteria,
             right_value=(
-                self.right_bc.get_value(t=time)
-                if self.right_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.right.get_value(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             left_value=(
-                self.left_bc.get_value(t=time)
-                if self.left_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.left.get_value(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             top_value=(
-                self.top_bc.get_value(t=time)
-                if self.top_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.top.get_value(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
             bottom_value=(
-                self.bottom_bc.get_value(t=time)
-                if self.bottom_bc.boundary_type == BoundaryConditionType.DIRICHLET
+                self.bcs.bottom.get_value(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
                 else None
             ),
         )
