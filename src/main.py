@@ -1,7 +1,11 @@
 import time
 import numpy as np
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import (
+    BoundaryCondition,
+    BoundaryConditionType,
+    BoundaryConditions,
+)
 from src.constants import ABS_ZERO
 from src.convective_operator import ConvectiveTermForm
 from src.fluid_dynamics.parameters import FluidParameters
@@ -36,8 +40,8 @@ if __name__ == "__main__":
 
     print(geometry)
 
-    min_temp = 272.15
-    max_temp = 274.15
+    min_temp = 273.05
+    max_temp = 283.15
     reference_temperature = 0.5 * (min_temp + max_temp)
 
     thermal_params = ThermalParameters(
@@ -64,7 +68,7 @@ if __name__ == "__main__":
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
         v=0.01,
-        epsilon=1e-3,
+        epsilon=5e-2,
     )
 
     print(fluid_params)
@@ -72,10 +76,11 @@ if __name__ == "__main__":
     u = init_temperature(
         geom=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.LINEAR,
-        solid_temp=max_temp,
-        liquid_temp=min_temp,
+        shape=DomainShape.UNIFORM_SOLID,
+        solid_temp=min_temp,
     )
+
+    u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
 
     print(
         f"Delta for the initial temperature distribution: {
@@ -83,7 +88,7 @@ if __name__ == "__main__":
                 u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
             )
-        }"
+        :.2E}"
     )
 
     plot_temperature(
@@ -102,51 +107,55 @@ if __name__ == "__main__":
     )
 
     # Temperature boundary conditions
-    u_top_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_x,
-        flux_func=lambda t, n: np.zeros(n),
-    )
-    u_right_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_y,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
-    )
-    u_bottom_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_x,
-        flux_func=lambda t, n: np.zeros(n),
-    )
-    u_left_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_y,
-        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
+    u_bcs = BoundaryConditions(
+        top=BoundaryCondition(
+            boundary_type=BoundaryConditionType.NEUMANN,
+            n=geometry.n_x,
+            flux_func=lambda t, n: np.zeros(n),
+        ),
+        right=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_y,
+            value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
+        ),
+        bottom=BoundaryCondition(
+            boundary_type=BoundaryConditionType.NEUMANN,
+            n=geometry.n_x,
+            flux_func=lambda t, n: np.zeros(n),
+        ),
+        left=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_y,
+            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
+        ),
     )
 
     # Stream function boundary conditions
-    sf_top_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_x,
-        value_func=lambda t, n: np.zeros(n),
-    )
-    sf_right_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_y,
-        value_func=lambda t, n: np.zeros(n),
-    )
-    sf_bottom_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_x,
-        value_func=lambda t, n: np.zeros(n),
-    )
-    sf_left_bc = BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_y,
-        value_func=lambda t, n: np.zeros(n),
+    sf_bcs = BoundaryConditions(
+        top=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_x,
+            value_func=lambda t, n: np.zeros(n),
+        ),
+        right=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_y,
+            value_func=lambda t, n: np.zeros(n),
+        ),
+        bottom=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_x,
+            value_func=lambda t, n: np.zeros(n),
+        ),
+        left=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=geometry.n_y,
+            value_func=lambda t, n: np.zeros(n),
+        ),
     )
 
     sf = initialize_stream_function(geom=geometry)
@@ -157,25 +166,20 @@ if __name__ == "__main__":
         geometry=geometry,
         parameters=thermal_params,
         convective_term_form=ConvectiveTermForm.UPWIND,
-        top_bc=u_top_bc,
-        right_bc=u_right_bc,
-        bottom_bc=u_bottom_bc,
-        left_bc=u_left_bc,
+        bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=1,
+        implicit_lin_max_iters=2,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=1.0,
     )
+
     navier_solver = NavierStokesSolver(
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
         geometry=geometry,
         parameters=fluid_params,
         convective_term_form=ConvectiveTermForm.UPWIND,
-        sf_top_bc=sf_top_bc,
-        sf_right_bc=sf_right_bc,
-        sf_bottom_bc=sf_bottom_bc,
-        sf_left_bc=sf_left_bc,
+        sf_bcs=sf_bcs,
         sf_max_iters=1000,
         sf_stopping_criteria=1e-6,
         implicit_lin_max_iters=1,
@@ -191,14 +195,14 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 100 == 0:
+        if n % 3000 == 0:
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
                 geom=geometry,
                 time=t,
                 graph_id=n,
-                plot_boundary=False,
+                plot_boundary=True,
                 show_graph=False,
                 min_temp=min_temp + ABS_ZERO,
                 max_temp=max_temp + ABS_ZERO,
