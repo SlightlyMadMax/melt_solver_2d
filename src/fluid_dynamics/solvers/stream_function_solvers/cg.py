@@ -14,7 +14,7 @@ from src.geometry import DomainGeometry
 @register_sf_solver(StreamFunctionSolverName.CG)
 class ConjugateGradientSolver(BaseSolver):
     """
-    A solver for elliptic equations of the form Δu - c(x,y)u = f(x,y) using the Conjugate Gradient method.
+    A solver for elliptic equations of the form Δu - c(x,y)u = -f(x,y) using the Conjugate Gradient method.
 
     This class extends the BaseSolver to provide functionality for solving elliptic equations on a
     two-dimensional domain with specified boundary conditions.
@@ -82,12 +82,12 @@ class ConjugateGradientSolver(BaseSolver):
         dx2 = self.geometry.dx**2
         dy2 = self.geometry.dy**2
         rhs_inner = f[1:-1, 1:-1]
-        rhs_inner[0, :] -= top_bc_value[1:-1] / dy2
-        rhs_inner[-1, :] -= bottom_bc_value[1:-1] / dy2
-        rhs_inner[:, 0] -= left_bc_value[1:-1] / dx2
-        rhs_inner[:, -1] -= right_bc_value[1:-1] / dx2
+        rhs_inner[0, :] += top_bc_value[1:-1] / dy2
+        rhs_inner[-1, :] += bottom_bc_value[1:-1] / dy2
+        rhs_inner[:, 0] += left_bc_value[1:-1] / dx2
+        rhs_inner[:, -1] += right_bc_value[1:-1] / dx2
 
-        rhs_inner_flat = -rhs_inner.flatten()
+        rhs_inner_flat = rhs_inner.flatten()
 
         return rhs_inner_flat
 

@@ -227,8 +227,8 @@ class NonIterativeNavierStokersSolver:
         tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
         c = 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number)
         f = (
-            -vorticity
-            - 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number) * sf_nm1
+            vorticity
+            + 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number) * sf_nm1
         )
         return self.stream_function_solver.solve(
             initial_guess=sf_nm1, c=c, f=f, time=time

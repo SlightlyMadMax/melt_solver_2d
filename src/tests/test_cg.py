@@ -61,7 +61,7 @@ def test_cg_elliptic_solver():
     )
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, c=c, f=rhs, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, c=c, f=-rhs, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
@@ -87,7 +87,7 @@ def test_cg_elliptic_solver():
 
 def analytical_solution_sinusoidal(f0, Lx, Ly, c, m, n, n_x, n_y):
     r"""
-    Compute the analytical solution for \Delta u - c u = -f with sinusoidal forcing.
+    Compute the analytical solution for \Delta u - c u = f with sinusoidal forcing.
 
     Parameters:
         f0 (float): Amplitude of the forcing term.
@@ -186,7 +186,7 @@ def test_cg_elliptic_solver_2():
     )
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, c=c, f=f, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, c=c, f=-f, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
