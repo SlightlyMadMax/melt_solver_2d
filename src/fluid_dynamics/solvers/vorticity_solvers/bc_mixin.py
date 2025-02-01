@@ -15,12 +15,20 @@ class VorticityBCMixin:
         order: int,
         dx: float,
         dy: float,
+        homogeneous: bool = False,
     ) -> None:
         n_y, n_x = sf.shape
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
         inv_dx2 = inv_dx * inv_dx
         inv_dy2 = inv_dy * inv_dy
+
+        if homogeneous:
+            top_bc[:] = 0.0
+            right_bc[:] = 0.0
+            bottom_bc[:] = 0.0
+            left_bc[:] = 0.0
+            return
 
         if order == 1:
             top_bc[:] = -2.0 * inv_dy2 * sf[n_y - 2, :]
