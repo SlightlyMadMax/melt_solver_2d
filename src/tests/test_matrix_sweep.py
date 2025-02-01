@@ -3,8 +3,14 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
-from src.fluid_dynamics.solvers.stream_function_solvers.matrix_sweep import MatrixSweepPoissonSolver
+from src.boundary_conditions import (
+    BoundaryCondition,
+    BoundaryConditionType,
+    BoundaryConditions,
+)
+from src.fluid_dynamics.solvers.stream_function_solvers.matrix_sweep import (
+    MatrixSweepPoissonSolver,
+)
 from src.geometry import DomainGeometry
 
 
@@ -30,25 +36,27 @@ def test_matrix_sweep_poisson_solver():
 
     solver = MatrixSweepPoissonSolver(
         geometry=geometry,
-        top_bc=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=geometry.n_x,
-            value_func=lambda t, n: -0.5 * x**2,
-        ),
-        right_bc=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=geometry.n_y,
-            value_func=lambda t, n: -0.5 * (1 + y**2),
-        ),
-        bottom_bc=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=geometry.n_x,
-            value_func=lambda t, n: -0.5 * (x**2 + 1),
-        ),
-        left_bc=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=geometry.n_y,
-            value_func=lambda t, n: -0.5 * y**2,
+        bcs=BoundaryConditions(
+            top=BoundaryCondition(
+                boundary_type=BoundaryConditionType.DIRICHLET,
+                n=geometry.n_x,
+                value_func=lambda t, n: -0.5 * x**2,
+            ),
+            right=BoundaryCondition(
+                boundary_type=BoundaryConditionType.DIRICHLET,
+                n=geometry.n_y,
+                value_func=lambda t, n: -0.5 * (1 + y**2),
+            ),
+            bottom=BoundaryCondition(
+                boundary_type=BoundaryConditionType.DIRICHLET,
+                n=geometry.n_x,
+                value_func=lambda t, n: -0.5 * (x**2 + 1),
+            ),
+            left=BoundaryCondition(
+                boundary_type=BoundaryConditionType.DIRICHLET,
+                n=geometry.n_y,
+                value_func=lambda t, n: -0.5 * y**2,
+            ),
         ),
     )
 
