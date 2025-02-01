@@ -136,7 +136,7 @@ class NonIterativeNavierStokersSolver:
         parameters: FluidParameters,
         sf_bcs: BoundaryConditions,
         sf_max_iters: int = 10000,
-        sf_stopping_criteria: float = 1e-8,
+        sf_stopping_criteria: float = 1e-6,
     ):
         self.geometry = geometry
         self.parameters = parameters
