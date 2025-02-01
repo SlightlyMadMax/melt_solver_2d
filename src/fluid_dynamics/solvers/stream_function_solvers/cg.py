@@ -24,7 +24,7 @@ class ConjugateGradientSolver(BaseSolver):
         self,
         geometry: DomainGeometry,
         bcs: BoundaryConditions,
-        max_iters: int = 1000,
+        max_iters: int = 10000,
         stopping_criteria: float = 1e-6,
     ):
         """
