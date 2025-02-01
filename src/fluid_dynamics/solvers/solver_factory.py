@@ -181,17 +181,15 @@ class NonIterativeNavierStokersSolver:
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        self._stream_function = np.copy(sf)
-
         self._temp_vorticity = self._solve_vorticity(
             old_vorticity=w,
-            stream_function=self._stream_function,
+            stream_function=sf,
             temperature=u,
             time=time,
         )
         self._stream_function = self._solve_stream_function(
-            sf_nm1=self._stream_function,
-            vorticity=self._vorticity,
+            sf_nm1=sf,
+            vorticity=self._temp_vorticity,
             time=time,
         )
         calculate_vorticity_from_sf(
@@ -229,8 +227,8 @@ class NonIterativeNavierStokersSolver:
         tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
         c = 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number)
         f = (
-            vorticity
-            + 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number) * sf_nm1
+            -vorticity
+            - 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number) * sf_nm1
         )
         return self.stream_function_solver.solve(
             initial_guess=sf_nm1, c=c, f=f, time=time
