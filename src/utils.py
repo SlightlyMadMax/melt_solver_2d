@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 from numba import njit
 
@@ -72,8 +74,21 @@ def solve_tridiagonal(
     elif right_type == 2:  # Neumann
         result[n - 1] = (h * right_flux + beta[n - 2]) / (1 - alpha[n - 2])
     else:  # Robin
-        result[n - 1] = (h * right_psi + beta[n - 2]) / (1 - alpha[n - 2] - h * right_phi)
+        result[n - 1] = (h * right_psi + beta[n - 2]) / (
+            1 - alpha[n - 2] - h * right_phi
+        )
 
     # Backward substitution to find the solution
     for j in range(n - 2, -1, -1):
         result[j] = alpha[j] * result[j + 1] + beta[j]
+
+
+def get_remaining_time(n: int, n_t: int, start_time: float) -> float:
+    """
+    Calculate the approximate remaining calculation time in seconds.
+    :param n: current step
+    :param n_t: total amount of steps
+    :param start_time: value of time.perf_counter() right before the calculation
+    :return: estimated remaining time in seconds
+    """
+    return (time.perf_counter() - start_time) * (n_t - n) / n

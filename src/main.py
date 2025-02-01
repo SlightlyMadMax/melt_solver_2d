@@ -24,17 +24,18 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.heat_transfer.solvers import HeatTransferSolver
+from src.utils import get_remaining_time
 
 
 if __name__ == "__main__":
     geometry = DomainGeometry(
         width=1.0,
         height=1.0,
-        end_time=60.0 * 60.0 * 24.0 * 7.0,
+        end_time=60.0 * 60.0 * 24.0,
         n_x=101,
         n_y=101,
-        n_t=60 * 60 * 24 * 70,
+        n_t=60 * 60 * 24 * 10,
     )
 
     print(geometry)
@@ -48,7 +49,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.01,
+        v=0.03,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
         specific_latent_heat_solid=333000.0,
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         u_pt=273.15,
         u_ref=reference_temperature,
         delta_u=abs(max_temp - reference_temperature),
-        v=0.01,
+        v=0.03,
         epsilon=5e-2,
     )
 
@@ -163,7 +164,7 @@ if __name__ == "__main__":
         parameters=thermal_params,
         bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=2,
+        implicit_lin_max_iters=1,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=1.0,
     )
@@ -204,7 +205,9 @@ if __name__ == "__main__":
                 show_graph=False,
             )
             print(
-                f"Modelling Time: {n * geometry.dt} s, Execution Time: {time.perf_counter() - start_time:.4f} s.\n"
+                f"Modelling Time: {n * geometry.dt} s, "
+                f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
+                f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} min.\n"
             )
             print(
                 f"Maximum temperature value: {round(np.max(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
