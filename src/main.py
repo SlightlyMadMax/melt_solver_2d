@@ -172,7 +172,7 @@ if __name__ == "__main__":
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
-        sf_max_iters=1000,
+        sf_max_iters=geometry.n_x * geometry.n_y,
         sf_stopping_criteria=1e-6,
     )
 
