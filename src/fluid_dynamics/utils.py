@@ -28,3 +28,24 @@ def calculate_indicator_function(
         for i in range(1, n_x - 1):
             if u[j, i] - u_pt < 0.0:
                 result[j, i] = 1.0 / (eps * eps)
+
+
+@njit
+def calculate_vorticity_from_sf(
+    sf: NDArray[np.float64], result: NDArray[np.float64], dx: float, dy: float
+):
+    n_y, n_x = sf.shape
+    inv_dx2 = 1.0 / dx**2
+    inv_dy2 = 1.0 / dy**2
+
+    result[-1, :] = -2.0 * inv_dy2 * sf[n_y - 2, :]
+    result[:, -1] = -2.0 * inv_dx2 * sf[:, n_x - 2]
+    result[0, :] = -2.0 * inv_dy2 * sf[1, :]
+    result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
+
+    for j in range(1, n_y - 1):
+        for i in range(1, n_x - 1):
+            result[j, i] = (
+                -(sf[j + 1, i] - 2 * sf[j, i] + sf[j - 1, i]) * inv_dy2
+                - (sf[j, i + 1] - 2 * sf[j, i] + sf[j, i - 1]) * inv_dx2
+            )

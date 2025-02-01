@@ -1,5 +1,6 @@
 from src.fluid_dynamics.solvers.solver_factory import (
-    NavierStokesSolver,
+    IterativeNavierStokesSolver,
+    NonIterativeNavierStokersSolver,
     VorticitySolverName,
     StreamFunctionSolverName,
 )

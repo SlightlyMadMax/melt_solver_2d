@@ -10,7 +10,7 @@ from src.constants import ABS_ZERO
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.plotting import plot_stream_function
 from src.fluid_dynamics.solvers import (
-    NavierStokesSolver,
+    NonIterativeNavierStokersSolver,
     VorticitySolverName,
     StreamFunctionSolverName,
 )
@@ -168,18 +168,12 @@ if __name__ == "__main__":
         implicit_lin_urf=1.0,
     )
 
-    navier_solver = NavierStokesSolver(
-        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
+    navier_solver = NonIterativeNavierStokersSolver(
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
         sf_max_iters=1000,
         sf_stopping_criteria=1e-6,
-        implicit_lin_max_iters=1,
-        implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=1.0,
-        vorticity_bc_order=1,
     )
 
     start_time = time.perf_counter()
