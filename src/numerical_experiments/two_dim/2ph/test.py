@@ -3,7 +3,11 @@ import time
 
 import numpy as np
 
-from src.boundary_conditions import BoundaryCondition, BoundaryConditionType
+from src.boundary_conditions import (
+    BoundaryCondition,
+    BoundaryConditionType,
+    BoundaryConditions,
+)
 from src.constants import ABS_ZERO
 from src.convective_operator import ConvectiveTermForm
 from src.geometry import DomainGeometry
@@ -102,30 +106,31 @@ plot_temperature(
     display_temp_units=TemperatureUnit.CELSIUS,
     directory="./results/",
 )
-
-u_top_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.DIRICHLET,
-    n=geometry.n_x,
-    value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-    / thermal_params.delta_u
-    * np.ones(n),
-)
-u_right_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.NEUMANN,
-    n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(n),
-)
-u_bottom_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.DIRICHLET,
-    n=geometry.n_x,
-    value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-    / thermal_params.delta_u
-    * np.ones(n),
-)
-u_left_bc = BoundaryCondition(
-    boundary_type=BoundaryConditionType.NEUMANN,
-    n=geometry.n_y,
-    flux_func=lambda t, n: np.zeros(n),
+bcs = BoundaryConditions(
+    top=BoundaryCondition(
+        boundary_type=BoundaryConditionType.DIRICHLET,
+        n=geometry.n_x,
+        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(n),
+    ),
+    right=BoundaryCondition(
+        boundary_type=BoundaryConditionType.NEUMANN,
+        n=geometry.n_y,
+        flux_func=lambda t, n: np.zeros(n),
+    ),
+    bottom=BoundaryCondition(
+        boundary_type=BoundaryConditionType.DIRICHLET,
+        n=geometry.n_x,
+        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+        / thermal_params.delta_u
+        * np.ones(n),
+    ),
+    left=BoundaryCondition(
+        boundary_type=BoundaryConditionType.NEUMANN,
+        n=geometry.n_y,
+        flux_func=lambda t, n: np.zeros(n),
+    ),
 )
 
 heat_transfer_solver = HeatTransferSolver(
@@ -133,10 +138,7 @@ heat_transfer_solver = HeatTransferSolver(
     geometry=geometry,
     parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
-    top_bc=u_top_bc,
-    right_bc=u_right_bc,
-    bottom_bc=u_bottom_bc,
-    left_bc=u_left_bc,
+    bcs=bcs,
     fixed_delta=False,
     implicit_lin_max_iters=2,
     implicit_lin_stopping_criteria=1e-6,
