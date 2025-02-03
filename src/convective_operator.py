@@ -11,6 +11,7 @@ from src.geometry import DomainGeometry
 class ConvectiveTermForm(Enum):
     DIVERGENT_CENTRAL = "Divergent central"
     NON_DIVERGENT_CENTRAL = "Non-divergent central"
+    SYMMETRIC = "Symmetric"
     UPWIND = "Upwind"
 
 
@@ -74,6 +75,26 @@ class ConvectionOperator:
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
+        elif self.form == ConvectiveTermForm.SYMMETRIC:
+            self._compute_div_components(
+                v_x=self._v_x,
+                v_y=self._v_y,
+                result_x=self._result_x,
+                result_y=self._result_y,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+            )
+            temp_x, temp_y = np.copy(self._result_x), np.copy(self._result_y)
+            self._compute_non_div_components(
+                v_x=self._v_x,
+                v_y=self._v_y,
+                result_x=self._result_x,
+                result_y=self._result_y,
+                dx=self.geometry.dx / self.geometry.length_scale,
+                dy=self.geometry.dy / self.geometry.length_scale,
+            )
+            self._result_x = 0.5 * (temp_x + self._result_x)
+            self._result_y = 0.5 * (temp_y + self._result_y)
         else:
             raise NotImplementedError
 
