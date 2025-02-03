@@ -91,6 +91,11 @@ class ConjugateGradientSolver(BaseSolver):
 
         return rhs_inner_flat
 
+    def _construct_preconditioner(self, a):
+        m_diag = a.diagonal()
+        m_inv = diags(1 / m_diag)
+        return m_inv
+
     def solve(
         self, initial_guess: np.ndarray, c: np.ndarray, f: np.ndarray, time: float
     ) -> np.ndarray:
@@ -119,11 +124,14 @@ class ConjugateGradientSolver(BaseSolver):
             top_bc_value=top,
             bottom_bc_value=bottom,
         )
+        m = self._construct_preconditioner(a=a)
+
         initial_guess_inner_flat = initial_guess[1:-1, 1:-1].flatten()
 
         solution_inner_flat, info = cg(
-            a,
-            rhs,
+            A=a,
+            b=rhs,
+            M=m,
             x0=initial_guess_inner_flat,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
