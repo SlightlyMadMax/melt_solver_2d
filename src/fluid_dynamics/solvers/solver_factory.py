@@ -135,6 +135,7 @@ class NonIterativeNavierStokersSolver:
         geometry: DomainGeometry,
         parameters: FluidParameters,
         sf_bcs: BoundaryConditions,
+        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         sf_max_iters: int = 10000,
         sf_stopping_criteria: float = 1e-6,
     ):
@@ -142,7 +143,7 @@ class NonIterativeNavierStokersSolver:
         self.parameters = parameters
 
         self.convective_operator = ConvectionOperator(
-            form=ConvectiveTermForm.UPWIND, geometry=geometry
+            form=convective_term_form, geometry=geometry
         )
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
