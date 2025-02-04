@@ -99,8 +99,8 @@ class ThermalParameters(BaseModel):
         return c_smoothed(
             u=self.u_ref,
             u_pt=self.u_pt,
-            c_solid=self.specific_heat_solid,
-            c_liquid=self.specific_heat_liquid,
+            c_solid=self.volumetric_heat_capacity_solid,
+            c_liquid=self.volumetric_heat_capacity_liquid,
             l_solid=self.volumetric_latent_heat_solid,
             delta=self.delta_u,
         )
