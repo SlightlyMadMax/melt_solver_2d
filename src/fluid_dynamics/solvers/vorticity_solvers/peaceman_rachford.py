@@ -179,7 +179,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             eps=self.parameters.epsilon,
             result=self.c_ind,
         )
-        self.c_ind *= self.geometry.length_scale ** 3 / self.parameters.v
+        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
 
         self._temp_w = np.copy(w)
 
@@ -194,7 +194,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             dy=self.geometry.dy / self.geometry.length_scale,
             homogeneous=self.incorporated_bc,
         )
-
         self._compute_sweep_x(
             w=w,
             sf=sf,
