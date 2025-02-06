@@ -8,7 +8,7 @@ from src.boundary_conditions import (
     BoundaryCondition,
 )
 from src.constants import ABS_ZERO
-from src.convective_operator import ConvectiveTermForm
+from src.convective_operators import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,

@@ -4,7 +4,11 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditions
-from src.convective_operator import ConvectiveTermForm, ConvectionOperator
+from src.convective_operators import (
+    ConvectiveTermForm,
+    ConvectiveVorticityTransportOperator,
+    EffectiveSFTransportOperator,
+)
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
@@ -38,7 +42,7 @@ class IterativeNavierStokesSolver:
                 "Only 1st and 2nd order accuracy BCs are supported for vorticity."
             )
 
-        self.convective_operator = ConvectionOperator(
+        self.convective_operator = ConvectiveVorticityTransportOperator(
             form=convective_term_form, geometry=geometry
         )
 
@@ -135,16 +139,13 @@ class NonIterativeNavierStokersSolver:
         geometry: DomainGeometry,
         parameters: FluidParameters,
         sf_bcs: BoundaryConditions,
-        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         sf_max_iters: int = 10000,
         sf_stopping_criteria: float = 1e-6,
     ):
         self.geometry = geometry
         self.parameters = parameters
 
-        self.convective_operator = ConvectionOperator(
-            form=convective_term_form, geometry=geometry
-        )
+        self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
             solver_name=VorticitySolverName.PEACEMAN_RACHFORD

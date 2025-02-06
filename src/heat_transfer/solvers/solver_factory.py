@@ -2,7 +2,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.boundary_conditions import BoundaryConditions
-from src.convective_operator import ConvectiveTermForm, ConvectionOperator
+from src.convective_operators import (
+    ConvectiveTermForm,
+    ConvectiveVorticityTransportOperator,
+)
 from src.geometry import DomainGeometry
 from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers.heat_transfer_solvers import *
@@ -23,7 +26,7 @@ class HeatTransferSolver:
     ):
         solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
-        self.convective_operator = ConvectionOperator(
+        self.convective_operator = ConvectiveVorticityTransportOperator(
             form=convective_term_form, geometry=geometry
         )
 

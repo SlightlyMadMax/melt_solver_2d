@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.base_solver import Sweep2DSolver, BaseSolver
-from src.convective_operator import ConvectionOperator
+from src.convective_operators import BaseConvectiveOperator
 from src.fluid_dynamics.parameters import FluidParameters
 from src.fluid_dynamics.solvers.vorticity_solvers.bc_mixin import VorticityBCMixin
 from src.geometry import DomainGeometry
@@ -15,8 +15,7 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
         self,
         geometry: DomainGeometry,
         parameters: FluidParameters,
-        convective_operator: ConvectionOperator,
-        incorporated_bc: bool,
+        convective_operator: BaseConvectiveOperator,
         bc_order: int,
         *args,
         **kwargs,
@@ -27,7 +26,6 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
 
         self.parameters = parameters
         self.convective_operator = convective_operator
-        self.incorporated_bc = incorporated_bc
         self.bc_order = bc_order
 
         # Pre-allocate some arrays that will be used in the calculations
@@ -52,11 +50,11 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
 
         rho = np.zeros((n_y, n_x))
 
-        rho[2: n_y - 2, 1] = 2 * dx**-4
-        rho[2: n_y - 2, n_x - 2] = 2 * dx**-4
+        rho[2 : n_y - 2, 1] = 2 * dx**-4
+        rho[2 : n_y - 2, n_x - 2] = 2 * dx**-4
 
-        rho[1, 2: n_x - 2] = 2 * dy**-4
-        rho[n_y - 2, 2: n_x - 2] = 2 * dy**-4
+        rho[1, 2 : n_x - 2] = 2 * dy**-4
+        rho[n_y - 2, 2 : n_x - 2] = 2 * dy**-4
 
         rho[1, 1] = 2 * (dx**-4 + dy**-4)
         rho[1, n_x - 2] = 2 * (dx**-4 + dy**-4)
@@ -71,7 +69,7 @@ class ExplicitVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self,
         geometry: DomainGeometry,
         parameters: FluidParameters,
-        convective_operator: ConvectionOperator,
+        convective_operator: BaseConvectiveOperator,
         bc_order: int,
         *args,
         **kwargs,

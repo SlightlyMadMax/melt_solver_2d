@@ -9,7 +9,7 @@ from src.boundary_conditions import (
     BoundaryConditions,
 )
 from src.constants import ABS_ZERO
-from src.convective_operator import ConvectiveTermForm
+from src.convective_operators import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.heat_transfer.init_values import init_temperature_with_interface
 from src.heat_transfer.parameters import ThermalParameters

@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.base_solver import Sweep2DSolver, BaseSolver
-from src.convective_operator import ConvectionOperator
+from src.convective_operators import BaseConvectiveOperator
 from src.heat_transfer.parameters import ThermalParameters
 
 
@@ -11,7 +11,7 @@ class ImplicitHeatTransferSolver(Sweep2DSolver):
     def __init__(
         self,
         parameters: ThermalParameters,
-        convective_operator: ConvectionOperator,
+        convective_operator: BaseConvectiveOperator,
         fixed_delta: bool = False,
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,
@@ -52,7 +52,7 @@ class ExplicitHeatTransferSolver(BaseSolver):
     def __init__(
         self,
         parameters: ThermalParameters,
-        convective_operator: ConvectionOperator,
+        convective_operator: BaseConvectiveOperator,
         fixed_delta: bool = False,
         implicit_lin_max_iters: int = 5,
         implicit_lin_stopping_criteria: float = 1e-6,
