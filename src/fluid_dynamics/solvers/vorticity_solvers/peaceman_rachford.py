@@ -38,7 +38,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u_pt_ref: float,
         delta_u: float,
         c_ind: NDArray[np.float64],
-        rho: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -72,7 +71,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    - (c_ind[j, i] + inv_re * rho[j, i]) * sf[j, i]
+                    - c_ind[j, i] * sf[j, i]
                 )
 
             solve_tridiagonal(
@@ -113,7 +112,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u_pt_ref: float,
         delta_u: float,
         c_ind: NDArray[np.float64],
-        rho: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -147,7 +145,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    - (c_ind[j, i] + inv_re * rho[j, i]) * sf[j, i]
+                    - c_ind[j, i] * sf[j, i]
                 )
 
             solve_tridiagonal(
@@ -192,7 +190,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             order=self.bc_order,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
-            homogeneous=self.incorporated_bc,
         )
         self._compute_sweep_x(
             w=w,
@@ -215,7 +212,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             c_ind=self.c_ind,
-            rho=self.rho,
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
@@ -239,7 +235,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             c_ind=self.c_ind,
-            rho=self.rho,
         )
 
         return self._new_w
