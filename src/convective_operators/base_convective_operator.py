@@ -17,11 +17,6 @@ class ConvectiveTermForm(Enum):
 
 
 class BaseConvectiveOperator(ABC):
-    @abstractmethod
-    def __call__(
-        self, *args, **kwargs
-    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]: ...
-
     def __init__(self, geometry: DomainGeometry, n_points: Optional[int] = 3):
         self.geometry = geometry
 
@@ -31,6 +26,11 @@ class BaseConvectiveOperator(ABC):
         self._result_y: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x, n_points)
         )
+
+    @abstractmethod
+    def __call__(
+        self, *args, **kwargs
+    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]: ...
 
     @staticmethod
     @njit
