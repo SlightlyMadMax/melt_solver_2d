@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 from src.base_solver import Sweep2DSolver, BaseSolver
 from src.convective_operators import BaseConvectiveOperator
 from src.fluid_dynamics.parameters import FluidParameters
-from src.fluid_dynamics.solvers.vorticity_solvers.bc_mixin import VorticityBCMixin
+from src.fluid_dynamics.utils import VorticityBCMixin
 from src.geometry import DomainGeometry
 
 
