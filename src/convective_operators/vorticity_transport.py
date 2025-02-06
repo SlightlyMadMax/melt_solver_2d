@@ -1,36 +1,25 @@
-from enum import Enum
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
+from src.convective_operators.base_convective_operator import (
+    BaseConvectiveOperator,
+    ConvectiveTermForm,
+)
 from src.geometry import DomainGeometry
 
 
-class ConvectiveTermForm(Enum):
-    DIVERGENT_CENTRAL = "Divergent central"
-    NON_DIVERGENT_CENTRAL = "Non-divergent central"
-    SYMMETRIC = "Symmetric"
-    UPWIND = "Upwind"
-
-
-class ConvectionOperator:
+class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
     def __init__(self, form: ConvectiveTermForm, geometry: DomainGeometry):
+        super().__init__(geometry=geometry, n_points=3)
         self.form = form
-        self.geometry = geometry
-
         self._v_x: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
         self._v_y: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._result_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._result_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
         )
 
     def __call__(
@@ -222,19 +211,3 @@ class ConvectionOperator:
                 result_y[j, i, 0] = 0.5 * inv_dy * v_y[j, i]
                 result_y[j, i, 1] = 0.0
                 result_y[j, i, 2] = -0.5 * inv_dy * v_y[j, i]
-
-    @staticmethod
-    @njit
-    def _restrict(
-        conv_x: NDArray[np.float64],
-        conv_y: NDArray[np.float64],
-        u: NDArray[np.float64],
-        u_pt: float,
-    ):
-        n_y, n_x = u.shape
-
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                if u[j, i] < u_pt:
-                    conv_x[j, i, :] = 0.0
-                    conv_y[j, i, :] = 0.0
