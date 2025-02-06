@@ -38,8 +38,8 @@ def calculate_vorticity_from_sf(
     inv_dx2 = 1.0 / dx**2
     inv_dy2 = 1.0 / dy**2
 
-    result[-1, :] = -2.0 * inv_dy2 * sf[n_y - 2, :]
-    result[:, -1] = -2.0 * inv_dx2 * sf[:, n_x - 2]
+    result[-1, :] = -2.0 * inv_dy2 * sf[-2, :]
+    result[:, -1] = -2.0 * inv_dx2 * sf[:, -2]
     result[0, :] = -2.0 * inv_dy2 * sf[1, :]
     result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
 
