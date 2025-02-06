@@ -7,6 +7,7 @@ class VorticitySolverName(Enum):
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
     LOC_ONE_DIM = "Local one dimensional"
+    VABISHCHEVICH = "Vabishchevich"
 
 
 def register_solver(solver_name: VorticitySolverName):
