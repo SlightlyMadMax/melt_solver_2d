@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 from numba import njit
+import scipy.sparse.linalg as spla
 
 
 @njit
@@ -92,3 +93,14 @@ def get_remaining_time(n: int, n_t: int, start_time: float) -> float:
     :return: estimated remaining time in seconds
     """
     return (time.perf_counter() - start_time) * (n_t - n) / n
+
+
+def is_positive_definite(A) -> bool:
+    """Check if a sparse matrix A is positive definite using eigenvalues."""
+    eigvals = spla.eigs(
+        A=A,
+        k=min(A.shape[0] - 1, 5),
+        which="SM",
+        return_eigenvectors=False,
+    )
+    return np.all(eigvals > 0)
