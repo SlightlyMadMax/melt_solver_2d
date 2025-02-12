@@ -1,6 +1,7 @@
 import numpy as np
+from pyamg import smoothed_aggregation_solver
 from scipy.sparse import diags, csr_matrix
-from scipy.sparse.linalg import cg
+from scipy.sparse.linalg import cg, spilu, LinearOperator, norm, bicgstab
 
 from src.base_solver import BaseSolver
 from src.boundary_conditions import BoundaryConditions
@@ -42,35 +43,6 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _construct_operator_matrix(self, c: np.ndarray) -> csr_matrix:
-        ny, nx = c.shape
-        dx2 = self.geometry.dx**2
-        dy2 = self.geometry.dy**2
-
-        inner_ny, inner_nx = ny - 2, nx - 2
-
-        c_inner = c[1:-1, 1:-1]
-        c_inner_flat = c_inner.flatten()
-
-        diagonal = 2 / dx2 + 2 / dy2 + c_inner_flat
-        off_diag_x = -1 / dx2
-        off_diag_y = -1 / dy2
-
-        size = inner_nx * inner_ny
-        main_diag = np.full(size, diagonal)
-        x_off_diag = np.full(size - 1, off_diag_x)
-        y_off_diag = np.full(size - inner_nx, off_diag_y)
-
-        for i in range(1, inner_ny):
-            x_off_diag[i * inner_nx - 1] = 0
-
-        diagonals = [main_diag, x_off_diag, x_off_diag, y_off_diag, y_off_diag]
-        offsets = [0, -1, 1, -inner_nx, inner_nx]
-
-        m = diags(diagonals, offsets, shape=(size, size), format="csr")
-
-        return m
-
     def _construct_rhs(
         self,
         f: np.ndarray,
@@ -91,24 +63,33 @@ class ConjugateGradientSolver(BaseSolver):
 
         return rhs_inner_flat
 
-    def _construct_preconditioner(self, a):
-        m_diag = a.diagonal()
-        m_inv = diags(1 / m_diag)
+    def _spilu_preconditioner(self, A: csr_matrix):
+        A_csc = A.tocsc()
+        m_inv = spilu(A_csc, drop_tol=1e-4, fill_factor=20)
+        m_in_op = LinearOperator(A.shape, m_inv.solve)
+        return m_in_op
+
+    def _jacobi_preconditioner(self, A):
+        M_inv = diags(1 / A.diagonal())  # Inverse of diagonal elements
+        return LinearOperator(A.shape, lambda x: M_inv @ x)
+
+    def _incomp_chol_preconditioner(self, A):
+        ml = smoothed_aggregation_solver(A)
+        m_inv = ml.aspreconditioner()
         return m_inv
 
     def solve(
-        self, initial_guess: np.ndarray, c: np.ndarray, f: np.ndarray, time: float
+        self, A: csr_matrix, b: np.ndarray, initial_guess: np.ndarray, time: float
     ) -> np.ndarray:
         """
-        Solve an elliptic equation of the form Δu - c(x,y)u = -f(x,y) for a given initial guess, c(x,y) and f(x,y).
+        Solve an elliptic equation of the form Δu - c(x,y)u = f(x,y) for a given initial guess, c(x,y) and f(x,y).
 
         :param initial_guess: The initial guess for the solution.
-        :param c: A positive function of x and y.
-        :param f: The function of x and y in the right-hand side of the equation.
+        :param b: The right-hand side of the equation.
         :param time: The current time, used to calculate time-dependent boundary conditions.
         :return: The final solution as a 2D NumPy array.
         """
-        n_y, n_x = f.shape
+        n_y, n_x = b.shape
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
         right = self.bcs.right.get_value(t=time)
@@ -116,26 +97,35 @@ class ConjugateGradientSolver(BaseSolver):
         top = self.bcs.top.get_value(t=time)
         bottom = self.bcs.bottom.get_value(t=time)
 
-        a = self._construct_operator_matrix(c=c)
         rhs = self._construct_rhs(
-            f=f,
+            f=b,
             right_bc_value=right,
             left_bc_value=left,
             top_bc_value=top,
             bottom_bc_value=bottom,
         )
-        m = self._construct_preconditioner(a=a)
+        # m = self._spilu_preconditioner(A=A)
+        # m = self._incomp_chol_preconditioner(A=A)
 
         initial_guess_inner_flat = initial_guess[1:-1, 1:-1].flatten()
 
         solution_inner_flat, info = cg(
-            A=a,
+            A=A,
             b=rhs,
-            M=m,
+            # M=m,
             x0=initial_guess_inner_flat,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
         )
+
+        # solution_inner_flat, info = bicgstab(
+        #     A=A,
+        #     b=rhs,
+        #     x0=initial_guess_inner_flat,
+        #     M=m,
+        #     maxiter=self.max_iters,
+        #     rtol=self.stopping_criteria,
+        # )
 
         if info != 0:
             raise RuntimeError(

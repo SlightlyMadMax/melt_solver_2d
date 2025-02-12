@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.sparse import csr_matrix, diags
 
 from src.boundary_conditions import (
     BoundaryCondition,
@@ -66,8 +67,10 @@ def test_cg_elliptic_solver():
         stopping_criteria=1e-8,
     )
 
+    A = construct_matrix_for_cg(c=c, dx=geometry.dx, dy=geometry.dy)
+
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, c=c, f=-rhs, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, A=A, b=-rhs, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
@@ -89,6 +92,36 @@ def test_cg_elliptic_solver():
     axes[2].set_title("Error (Numerical - Analytical)")
 
     plt.show()
+
+
+def construct_matrix_for_cg(c: np.ndarray, dx: float, dy: float) -> csr_matrix:
+    ny, nx = c.shape
+    dx2 = dx**2
+    dy2 = dy**2
+
+    inner_ny, inner_nx = ny - 2, nx - 2
+
+    c_inner = c[1:-1, 1:-1]
+    c_inner_flat = c_inner.flatten()
+
+    diagonal = 2 / dx2 + 2 / dy2 + c_inner_flat
+    off_diag_x = -1 / dx2
+    off_diag_y = -1 / dy2
+
+    size = inner_nx * inner_ny
+    main_diag = np.full(size, diagonal)
+    x_off_diag = np.full(size - 1, off_diag_x)
+    y_off_diag = np.full(size - inner_nx, off_diag_y)
+
+    for i in range(1, inner_ny):
+        x_off_diag[i * inner_nx - 1] = 0
+
+    diagonals = [main_diag, x_off_diag, x_off_diag, y_off_diag, y_off_diag]
+    offsets = [0, -1, 1, -inner_nx, inner_nx]
+
+    m = diags(diagonals, offsets, shape=(size, size), format="csr")
+
+    return m
 
 
 def analytical_solution_sinusoidal(f0, Lx, Ly, c, m, n, n_x, n_y):
@@ -193,8 +226,10 @@ def test_cg_elliptic_solver_2():
         stopping_criteria=1e-8,
     )
 
+    A = construct_matrix_for_cg(c=c, dx=geometry.dx, dy=geometry.dy)
+
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, c=c, f=-f, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, A=A, b=-f, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
