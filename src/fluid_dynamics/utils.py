@@ -46,17 +46,10 @@ def calculate_vorticity_from_sf(
 
     for j in range(1, n_y - 1):
         for i in range(1, n_x - 1):
-            if j == 1 or j == n_y - 2:
-                d2_psi_dy2 = (sf[j + 1, i] - 2 * sf[j, i]) * inv_dy2
-            else:
-                d2_psi_dy2 = (sf[j + 1, i] - 2 * sf[j, i] + sf[j - 1, i]) * inv_dy2
-
-            if i == 1 or i == n_x - 2:
-                d2_psi_dx2 = (sf[j, i + 1] - 2 * sf[j, i]) * inv_dx2
-            else:
-                d2_psi_dx2 = (sf[j, i + 1] - 2 * sf[j, i] + sf[j, i - 1]) * inv_dx2
-
-            result[j, i] = -(d2_psi_dy2 + d2_psi_dx2)
+            result[j, i] = (
+                -(sf[j + 1, i] - 2 * sf[j, i] + sf[j - 1, i]) * inv_dy2
+                - (sf[j, i + 1] - 2 * sf[j, i] + sf[j, i - 1]) * inv_dx2
+            )
 
 
 class VorticityBCMixin:
