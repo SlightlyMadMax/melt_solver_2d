@@ -72,11 +72,6 @@ class ConjugateGradientSolver(BaseSolver):
         M_inv = diags(1 / A.diagonal())  # Inverse of diagonal elements
         return LinearOperator(A.shape, lambda x: M_inv @ x)
 
-    def _incomp_chol_preconditioner(self, A):
-        ml = smoothed_aggregation_solver(A)
-        m_inv = ml.aspreconditioner()
-        return m_inv
-
     def solve(
         self, A: csr_matrix, b: np.ndarray, initial_guess: np.ndarray, time: float
     ) -> np.ndarray:
