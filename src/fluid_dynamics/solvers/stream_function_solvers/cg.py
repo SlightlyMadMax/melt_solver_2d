@@ -1,5 +1,4 @@
 import numpy as np
-from pyamg import smoothed_aggregation_solver
 from scipy.sparse import diags, csr_matrix
 from scipy.sparse.linalg import cg, spilu, LinearOperator, norm, bicgstab
 
