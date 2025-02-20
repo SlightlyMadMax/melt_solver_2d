@@ -4,9 +4,10 @@ from pydantic import BaseModel, Field
 
 from src.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+from src.utils import FileMixin
 
 
-class ThermalParameters(BaseModel):
+class ThermalParameters(BaseModel, FileMixin):
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
     delta_u: float = Field(

@@ -2,9 +2,10 @@ from pydantic import BaseModel, Field
 
 from src.geometry import DomainGeometry
 from src.constants import G
+from src.utils import FileMixin
 
 
-class FluidParameters(BaseModel):
+class FluidParameters(BaseModel, FileMixin):
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
     delta_u: float = Field(
