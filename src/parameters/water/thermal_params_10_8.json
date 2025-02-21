@@ -1,0 +1,22 @@
+{
+    "u_pt": 273.15,
+    "u_ref": 278.1,
+    "delta_u": 5.0499999999999545,
+    "v": 0.03,
+    "specific_heat_liquid": 4120.7,
+    "specific_heat_solid": 2056.8,
+    "specific_latent_heat_solid": 333000.0,
+    "density_liquid": 999.84,
+    "density_solid": 918.9,
+    "thermal_conductivity_liquid": 0.59,
+    "thermal_conductivity_solid": 2.21,
+    "delta": null,
+    "domain_geometry": {
+        "width": 1.0,
+        "height": 1.0,
+        "end_time": 86400.0,
+        "n_x": 101,
+        "n_y": 101,
+        "n_t": 864000
+    }
+}
