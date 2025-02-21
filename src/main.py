@@ -82,14 +82,10 @@ if __name__ == "__main__":
 
     u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
 
-    print(
-        f"Delta for the initial temperature distribution: {
-            get_max_delta(
-                u * thermal_params.delta_u + thermal_params.u_ref,
-                u_pt=thermal_params.u_pt,
-            )
-        :.2E}"
+    init_delta = get_max_delta(
+        u * thermal_params.delta_u + thermal_params.u_ref, u_pt=thermal_params.u_pt
     )
+    print(f"Delta for the initial temperature distribution: {init_delta:.2f}")
 
     plot_temperature(
         u=u * thermal_params.delta_u + thermal_params.u_ref,
