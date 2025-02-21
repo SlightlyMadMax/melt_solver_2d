@@ -1,3 +1,6 @@
+from typing import List
+
+import numpy as np
 from pydantic import BaseModel, Field
 
 from src.geometry import DomainGeometry
@@ -17,30 +20,30 @@ class FluidParameters(BaseModel, FileMixin):
         gt=0.0,
         description="Parameter of the indicator function used in the fictitious domain method.",
     )
-    domain_geometry: DomainGeometry
+    kinematic_viscosity_coeffs: List[float] = Field(
+        ...,
+        description="Polynomial coefficients for kinematic viscosity at reference temperature. "
+        "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
+    )
+    volumetric_thermal_exp_coeffs: List[float] = Field(
+        ...,
+        description="Polynomial coefficients for volumetric thermal expansion coefficient at reference temperature. "
+        "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
+    )
 
     @property
     def kinematic_viscosity_at_u_ref(self) -> float:
         """
-        Calculate the kinematic viscosity coefficient at the reference temperature (water).
+        Calculate the kinematic viscosity coefficient at the reference temperature using polynomial evaluation.
         """
-        return (
-            -2.54761652e-12 * self.u_ref * self.u_ref * self.u_ref
-            + 2.65889022e-09 * self.u_ref * self.u_ref
-            - 9.28722151e-07 * self.u_ref
-            + 1.08963453e-04
-        )
+        return np.polyval(self.kinematic_viscosity_coeffs[::-1], self.u_ref)
 
     @property
     def thermal_exp_coefficient_at_u_ref(self) -> float:
         """
-        Calculate the volumetric thermal expansion coefficient at the reference temperature (water).
+        Calculate the volumetric thermal expansion coefficient at the reference temperature using polynomial evaluation.
         """
-        return (
-            -9.84848485e-08 * self.u_ref * self.u_ref
-            + 6.86739177e-05 * self.u_ref
-            - 1.14630054e-02
-        )
+        return np.polyval(self.volumetric_thermal_exp_coeffs[::-1], self.u_ref)
 
     @property
     def u_pt_ref(self) -> float:
