@@ -218,7 +218,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             w=self._temp_w,
             sf=sf,
             u=u,
-            conv_x=conv_y,
+            conv_x=conv_x,
             conv_y=conv_y,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
