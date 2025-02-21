@@ -45,32 +45,10 @@ if __name__ == "__main__":
     max_temp = 283.15
     reference_temperature = 0.5 * (min_temp + max_temp)
 
-    thermal_params = ThermalParameters(
-        domain_geometry=geometry,
-        u_pt=273.15,
-        u_ref=reference_temperature,
-        delta_u=abs(max_temp - reference_temperature),
-        v=0.03,
-        specific_heat_liquid=4120.7,
-        specific_heat_solid=2056.8,
-        specific_latent_heat_solid=333000.0,
-        density_liquid=999.84,
-        density_solid=918.9,
-        thermal_conductivity_liquid=0.59,
-        thermal_conductivity_solid=2.21,
-    )
-
+    thermal_params = ThermalParameters.load_from_file("./parameters/air/thermal_params_10_6.json")
     print(thermal_params)
 
-    fluid_params = FluidParameters(
-        domain_geometry=geometry,
-        u_pt=273.15,
-        u_ref=reference_temperature,
-        delta_u=abs(max_temp - reference_temperature),
-        v=0.03,
-        epsilon=5e-2,
-    )
-
+    fluid_params = FluidParameters.load_from_file("./parameters/air/fluid_params_10_6.json")
     print(fluid_params)
 
     u = init_temperature(
