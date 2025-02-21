@@ -3,6 +3,7 @@
     "u_ref": 273.15,
     "delta_u": 0.7585260000000176,
     "v": 0.16,
+    "l": 1.0,
     "specific_heat_liquid": 1005.0,
     "specific_heat_solid": 1005.0,
     "specific_latent_heat_solid": 333000.0,
@@ -10,13 +11,5 @@
     "density_solid": 1.269,
     "thermal_conductivity_liquid": 0.02442285675,
     "thermal_conductivity_solid": 0.02442285675,
-    "delta": null,
-    "domain_geometry": {
-        "width": 1.0,
-        "height": 1.0,
-        "end_time": 86400.0,
-        "n_x": 51,
-        "n_y": 51,
-        "n_t": 86400
-    }
+    "delta": null
 }

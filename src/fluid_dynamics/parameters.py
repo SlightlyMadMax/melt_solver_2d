@@ -3,7 +3,6 @@ from typing import List
 import numpy as np
 from pydantic import BaseModel, Field
 
-from src.geometry import DomainGeometry
 from src.constants import G
 from src.utils import FileMixin
 
@@ -15,6 +14,7 @@ class FluidParameters(BaseModel, FileMixin):
         ..., gt=0.0, description="Characteristic temperature difference [K]."
     )
     v: float = Field(..., gt=0.0, description="Characteristic flow velocity [m/s].")
+    l: float = Field(..., gt=0.0, description="Characteristic length [m].")
     epsilon: float = Field(
         ...,
         gt=0.0,
@@ -60,7 +60,7 @@ class FluidParameters(BaseModel, FileMixin):
         """
         return (
             self.v
-            * self.domain_geometry.length_scale
+            * self.l
             / self.kinematic_viscosity_at_u_ref
         )
 
@@ -70,14 +70,13 @@ class FluidParameters(BaseModel, FileMixin):
         Calculate the Grashof number at the reference temperature.
         Formula: Gr = g * thermal_expansion_coefficient * delta_u * l^3 / kinematic_viscosity^2
         """
-        l = self.domain_geometry.length_scale
         return (
             G
             * self.thermal_exp_coefficient_at_u_ref
             * self.delta_u
-            * l
-            * l
-            * l
+            * self.l
+            * self.l
+            * self.l
             / (self.kinematic_viscosity_at_u_ref * self.kinematic_viscosity_at_u_ref)
         )
 
@@ -92,7 +91,7 @@ class FluidParameters(BaseModel, FileMixin):
             f"  Volumetric Thermal Expansion Coefficient at the Reference Temperature (Water): "
             f"{self.thermal_exp_coefficient_at_u_ref:.2E} 1/K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
-            f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
+            f"  Characteristic Length {self.l} m\n"
             f"  Reynolds number {self.reynolds_number:.2E}\n"
             f"  Grashof number {self.grashof_number:.2E}\n"
         )

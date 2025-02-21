@@ -2,7 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from src.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.utils import FileMixin
 
@@ -14,6 +13,7 @@ class ThermalParameters(BaseModel, FileMixin):
         ..., gt=0.0, description="Characteristic temperature difference [K]."
     )
     v: float = Field(..., gt=0.0, description="Characteristic flow velocity [m/s].")
+    l: float = Field(..., gt=0.0, description="Characteristic length [m].")
     specific_heat_liquid: float = Field(
         ...,
         gt=0.0,
@@ -42,7 +42,6 @@ class ThermalParameters(BaseModel, FileMixin):
     delta: Optional[float] = Field(
         None, gt=0.0, description="Default smoothing parameter (delta)."
     )
-    domain_geometry: DomainGeometry
 
     @property
     def u_pt_ref(self) -> float:
@@ -127,7 +126,7 @@ class ThermalParameters(BaseModel, FileMixin):
         """
         return (
             self.v
-            * self.domain_geometry.length_scale
+            * self.l
             * self.volumetric_heat_capacity_ref
             / self.thermal_conductivity_ref
         )
@@ -139,6 +138,7 @@ class ThermalParameters(BaseModel, FileMixin):
             f"  Reference Temperature: {self.u_ref} K\n"
             f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
             f"  Characteristic Flow Velocity {self.v} m/s\n"
+            f"  Characteristic Length {self.l} m\n"
             f"  Specific Heat (Liquid): {self.specific_heat_liquid} J/(kg⋅K)\n"
             f"  Specific Heat (Solid): {self.specific_heat_solid} J/(kg⋅K)\n"
             f"  Density (Liquid): {self.density_liquid} kg/m^3\n"
