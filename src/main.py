@@ -55,7 +55,7 @@ if __name__ == "__main__":
         fluid_params.kinematic_viscosity_at_u_ref
         / thermal_params.thermal_diffusivity_solid
     )
-    print(f"Pr = {pr:.2f}\n")
+    print(f"Pr = {pr:.4f}\n")
     print(f"Ra = {fluid_params.grashof_number * pr:.2f}\n")
 
     u = init_temperature(
