@@ -189,18 +189,23 @@ if __name__ == "__main__":
             print(
                 f"Modelling Time: {n * geometry.dt} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
-                f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} min.\n"
+                f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} min."
             )
             print(
-                f"Maximum temperature value: {round(np.max(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
+                f"Maximum temperature value: {np.max(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO):.2f} C"
             )
             print(
-                f"Minimum temperature value: {round(np.min(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO), 2)} C"
+                f"Minimum temperature value: {np.min(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO):.2f} C"
             )
-            # print(f"Maximum stream function value: {round(np.max(sf), 6)}")
-            # print(f"Minimum stream function value: {round(np.min(sf), 6)}")
-            # print(f"Maximum vorticity value: {round(np.max(w), 2)}")
-            # print(f"Minimum vorticity value: {round(np.min(w), 2)}")
+            # j, i = np.unravel_index(sf.argmax(), sf.shape)
+            # y, x = j * geometry.dy, i * geometry.dx
+            # print(
+            #     f"Maximum stream function value: {np.max(sf) * fluid_params.v * geometry.length_scale / thermal_params.thermal_diffusivity_solid:.3f}, (x, y) = {x:.3f}, {1.0 - y:.3f}"
+            # )
+            # print(f"Minimum stream function value: {np.min(sf) * fluid_params.v * geometry.length_scale:.3f}")
+            # print(f"Maximum vorticity value: {np.max(w) * fluid_params.v / geometry.length_scale:.3f}")
+            # print(f"Minimum vorticity value: {np.min(w) * fluid_params.v / geometry.length_scale:.3f}")
+            # print()
 
     print("Creating animation...")
     create_gif_from_images(output_filename="test_animation")
