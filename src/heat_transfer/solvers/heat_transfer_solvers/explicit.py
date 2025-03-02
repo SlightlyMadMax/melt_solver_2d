@@ -170,7 +170,7 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             c_ref=self.parameters.volumetric_heat_capacity_ref,
             c_solid=self.parameters.volumetric_heat_capacity_solid,
             c_liquid=self.parameters.volumetric_heat_capacity_liquid,
-            l_solid=self.parameters.volumetric_latent_heat_solid,
+            l_solid=self.parameters.volumetric_latent_heat,
             k_ref=self.parameters.thermal_conductivity_ref,
             k_solid=self.parameters.thermal_conductivity_solid,
             k_liquid=self.parameters.thermal_conductivity_liquid,

@@ -22,10 +22,10 @@ class ThermalParameters(BaseModel, FileMixin):
     specific_heat_solid: float = Field(
         ..., gt=0.0, description="Specific heat capacity of the solid phase [J/(kg⋅K)]."
     )
-    specific_latent_heat_solid: float = Field(
+    specific_latent_heat: float = Field(
         ...,
         gt=0.0,
-        description="Specific latent heat of fusion of the solid phase [J/kg].",
+        description="Specific latent heat of fusion [J/kg].",
     )
     density_liquid: float = Field(
         ..., gt=0, description="Density of the liquid phase [kg/m^3]."
@@ -67,13 +67,13 @@ class ThermalParameters(BaseModel, FileMixin):
         return self.density_solid * self.specific_heat_solid
 
     @property
-    def volumetric_latent_heat_solid(self) -> float:
+    def volumetric_latent_heat(self) -> float:
         """
-        Calculate the volumetric latent heat of fusion for the solid phase
-        (given its density is equal to the density of the liquid phase when melting/freezing).
+        Calculate the volumetric latent heat of fusion
+        (given the density of the solid phase is equal to that of the liquid phase when melting/freezing).
         Formula: volumetric_latent_heat = density * specific_latent_heat
         """
-        return self.density_liquid * self.specific_latent_heat_solid
+        return self.density_liquid * self.specific_latent_heat
 
     @property
     def thermal_diffusivity_solid(self) -> float:
@@ -101,7 +101,7 @@ class ThermalParameters(BaseModel, FileMixin):
             u_pt=self.u_pt,
             c_solid=self.volumetric_heat_capacity_solid,
             c_liquid=self.volumetric_heat_capacity_liquid,
-            l_solid=self.volumetric_latent_heat_solid,
+            l_solid=self.volumetric_latent_heat,
             delta=self.delta_u,
         )
 
@@ -131,6 +131,16 @@ class ThermalParameters(BaseModel, FileMixin):
             / self.thermal_conductivity_ref
         )
 
+    @property
+    def stefan_number(self):
+        """
+        Calculate the Stefan number for liquid phase.
+        Formula: Ste = specific_heat_liquid * temperature_difference / specific_latent_heat
+        """
+        return (
+            self.specific_heat_liquid * self.delta_u / self.specific_latent_heat
+        )
+
     def __str__(self):
         s = (
             f"Heat Transfer Parameters:\n"
@@ -147,7 +157,7 @@ class ThermalParameters(BaseModel, FileMixin):
             f"  Volumetric Heat Capacity (Solid): {self.volumetric_heat_capacity_solid:.2E} J/(m^3⋅K)\n"
             f"  Volumetric Heat Capacity at the Reference Temperature: "
             f"{self.volumetric_heat_capacity_ref:.2E} J/(m^3⋅K)\n"
-            f"  Volumetric Latent Heat of Fusion (Solid): {self.volumetric_latent_heat_solid:.2E} J/m^3\n"
+            f"  Volumetric Latent Heat of Fusion: {self.volumetric_latent_heat:.2E} J/m^3\n"
             f"  Thermal Conductivity (Liquid): {self.thermal_conductivity_liquid} W/(m⋅K)\n"
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
             f"  Thermal Conductivity at the Reference Temperature: "
@@ -156,5 +166,6 @@ class ThermalParameters(BaseModel, FileMixin):
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
             f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
             f"  Peclet Number: {self.peclet_number:.2E}\n"
+            f"  Stefan Number: {self.stefan_number:.2E}\n"
         )
         return s

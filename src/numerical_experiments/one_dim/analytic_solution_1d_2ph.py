@@ -21,11 +21,11 @@ def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp:
     )
 
     rhs = (
-        -params.thermal_conductivity_liquid
-        * max_temp
-        * math.exp(-((gamma / (2.0 * a_water)) ** 2))
-        / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
-        - gamma * params.volumetric_latent_heat_solid * math.pi**0.5 / 2
+            -params.thermal_conductivity_liquid
+            * max_temp
+            * math.exp(-((gamma / (2.0 * a_water)) ** 2))
+            / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
+            - gamma * params.volumetric_latent_heat * math.pi ** 0.5 / 2
     )
 
     return lhs - rhs

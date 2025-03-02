@@ -53,20 +53,20 @@ print(thermal_params)
 b_lim = (
     (
         thermal_params.thermal_conductivity_liquid
-        * thermal_params.specific_latent_heat_solid
+        * thermal_params.specific_latent_heat
         / thermal_params.density_solid
     )
     * (max_temp + ABS_ZERO)
     / (
         (
             thermal_params.thermal_conductivity_liquid
-            * thermal_params.specific_latent_heat_solid
+            * thermal_params.specific_latent_heat
             / thermal_params.density_solid
         )
         * (max_temp + ABS_ZERO)
         + (
             thermal_params.thermal_conductivity_solid
-            * thermal_params.specific_latent_heat_solid
+            * thermal_params.specific_latent_heat
             / thermal_params.density_solid
         )
         * abs(min_temp + ABS_ZERO)

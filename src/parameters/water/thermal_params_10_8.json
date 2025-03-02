@@ -6,7 +6,7 @@
     "l": 1.0,
     "specific_heat_liquid": 4120.7,
     "specific_heat_solid": 2056.8,
-    "specific_latent_heat_solid": 333000.0,
+    "specific_latent_heat": 333000.0,
     "density_liquid": 999.84,
     "density_solid": 918.9,
     "thermal_conductivity_liquid": 0.59,
