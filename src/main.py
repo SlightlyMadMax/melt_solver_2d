@@ -146,18 +146,31 @@ if __name__ == "__main__":
         parameters=thermal_params,
         bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=1,
+        implicit_lin_max_iters=3,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=1.0,
+        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+        convective_term_form=ConvectiveTermForm.UPWIND,
     )
 
-    navier_solver = NonIterativeNavierStokersSolver(
+    navier_solver = IterativeNavierStokesSolver(
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
-        sf_max_iters=geometry.n_x * geometry.n_y,
-        sf_stopping_criteria=1e-6,
+        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
+        convective_term_form=ConvectiveTermForm.UPWIND,
+        stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
+        implicit_lin_max_iters=3,
+        implicit_lin_urf=1.0,
     )
+
+    # navier_solver = NonIterativeNavierStokersSolver(
+    #     geometry=geometry,
+    #     parameters=fluid_params,
+    #     sf_bcs=sf_bcs,
+    #     sf_max_iters=geometry.n_x * geometry.n_y,
+    #     sf_stopping_criteria=1e-5,
+    # )
 
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
