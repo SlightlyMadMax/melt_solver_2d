@@ -13,7 +13,7 @@ class DomainShape(Enum):
     CIRCLE = "circle"
     DOUBLE_CIRCLE = "double_circle"
     PACMAN = "pacman"
-    SQUARE = "square"
+    RECTANGLE = "rectangle"
     UNIFORM_LIQUID = "uniform_liquid"
     UNIFORM_SOLID = "uniform_solid"
 
@@ -63,9 +63,10 @@ def init_temperature(
     solid_temp: Optional[float] = None,
     radius: float = 0.25,
     small_radius: float = 0.1,
-    square_size: float = 0.5,
     eye_radius: float = 0.05,
     eye_offset: float = 0.6,
+    rect_width: float = 0.04,
+    rect_height: float = 0.12,
 ) -> NDArray[np.float64]:
     """
     Initializes the temperature field based on a specified domain shape.
@@ -77,9 +78,10 @@ def init_temperature(
     :param solid_temp: The temperature assigned to ice regions.
     :param radius: The radius used for circular shapes (default: 0.25).
     :param small_radius: A smaller radius for additional features in shapes (default: 0.1).
-    :param square_size: The size of the square region (default: 0.5).
     :param eye_radius: The radius of the eye in the Pacman shape (default: 0.05).
     :param eye_offset: The offset for positioning the eye in the Pacman shape (default: 0.6).
+    :param rect_width: The width of the rectangle filled with solid phase (default: 0.02).
+    :param rect_height: The height of the rectangle filled with solid phase (default: 0.12).
     :return: A 2D array of nondimensionilized initialized based on the specified shape of the domain.
     """
     u = np.full((geom.n_y, geom.n_x), solid_temp)
@@ -137,13 +139,24 @@ def init_temperature(
                 else:
                     u[j, i] = solid_temp
 
-    elif shape == DomainShape.SQUARE:
-        # Square shape centered in the domain with side length "square_size"
-        half_size = square_size / 2
-        mask = (np.abs(X - geom.width / 2) < half_size) & (
-            np.abs(Y - geom.height / 2) < half_size
+    elif shape == DomainShape.RECTANGLE:
+        # center
+        # half_width = rect_width / 2
+        # half_height = rect_height / 2
+        # mask = (np.abs(X - geom.width / 2) < half_width) & (np.abs(Y - geom.height / 2) < half_height)
+        # u[mask] = liquid_temp
+
+        # top
+        half_width = rect_width / 2
+        mask = (np.abs(X - geom.width / 2) < half_width) & (
+            Y > geom.height - rect_height
         )
         u[mask] = liquid_temp
+
+        # bottom
+        # half_width = rect_width / 2
+        # mask = (np.abs(X - geom.width / 2) < half_width) & (Y < rect_height)
+        # u[mask] = liquid_temp
 
     elif shape == DomainShape.UNIFORM_LIQUID:
         u = np.ones(u.shape) * liquid_temp
