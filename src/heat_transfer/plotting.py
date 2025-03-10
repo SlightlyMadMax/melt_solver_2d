@@ -166,7 +166,7 @@ def create_gif_from_images(
     :param output_filename: Filename of the resulting GIF file
     :param source_directory: Path to the folder containing PNG images.
     :param output_directory: Path to save the resulting GIF file.
-    :param duration: Duration of each frame in milliseconds. Default is 500ms.
+    :param duration: Duration of each frame in milliseconds. Default is 100 ms.
     :param loop: Number of loops. 0 means infinite looping. Default is 0.
     """
     # Sort files by the numeric part of the filename (e.g., T_1.png -> 1)
