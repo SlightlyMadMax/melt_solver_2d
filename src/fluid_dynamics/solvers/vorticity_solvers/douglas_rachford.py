@@ -50,8 +50,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                if u[j, i] * delta_u - u_pt_ref < 0.0:
-                    grashof_number = 0.0
+                gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
                 a_x[i] = dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
@@ -60,11 +59,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
                 c_x[i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[i] = w[j, i] + dt * (
-                    grashof_number
-                    * inv_re2
-                    * 0.5
-                    * inv_dx
-                    * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w[j + 1, i]
@@ -166,7 +161,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             eps=self.parameters.epsilon,
             result=self.c_ind,
         )
-        self.c_ind *= self.geometry.length_scale ** 3 / self.parameters.v
+        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
         self._temp_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,

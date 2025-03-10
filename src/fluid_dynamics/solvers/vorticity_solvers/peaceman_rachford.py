@@ -55,8 +55,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                if u[j, i] * delta_u - u_pt_ref < 0.0:
-                    grashof_number = 0.0
+                gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
                 a_x[i] = 0.5 * dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
@@ -65,11 +64,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c_x[i] = 0.5 * dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[i] = w[j, i] + 0.5 * dt * (
-                    grashof_number
-                    * inv_re2
-                    * 0.5
-                    * inv_dx
-                    * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w[j + 1, i]
@@ -197,8 +192,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                if u[j, i] * delta_u - u_pt_ref < 0.0:
-                    grashof_number = 0.0
+                gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
                 a_y[j] = 0.5 * dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
@@ -207,11 +201,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c_y[j] = 0.5 * dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[j] = w[j, i] + 0.5 * dt * (
-                    grashof_number
-                    * inv_re2
-                    * 0.5
-                    * inv_dx
-                    * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
                         conv_x[j, i, 0] * w[j, i + 1]

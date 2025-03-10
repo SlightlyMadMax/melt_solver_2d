@@ -48,8 +48,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                if u[j, i] * delta_u - u_pt_ref < 0.0:
-                    grashof_number = 0.0
+                gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
                 a_x[i] = dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
@@ -58,11 +57,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
                 c_x[i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[i] = w[j, i] + dt * (
-                    grashof_number
-                    * inv_re2
-                    * 0.5
-                    * inv_dx
-                    * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     - c_ind[j, i] * sf[j, i]
                 )
 
@@ -113,9 +108,6 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                if u[j, i] * delta_u - u_pt_ref < 0.0:
-                    grashof_number = 0.0
-
                 a_y[j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
                 b_y[j] = 1.0 + 2.0 * dt * (conv_y[j, i, 1] + inv_re * inv_dy2)
@@ -153,7 +145,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
             eps=self.parameters.epsilon,
             result=self.c_ind,
         )
-        self.c_ind *= self.geometry.length_scale ** 3 / self.parameters.v
+        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
         self._temp_w = np.copy(w)
         self.calculate_boundary_conditions(
             sf=sf,
