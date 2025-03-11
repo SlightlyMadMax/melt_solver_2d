@@ -140,23 +140,24 @@ def init_temperature(
                     u[j, i] = solid_temp
 
     elif shape == DomainShape.RECTANGLE:
+        half_width = rect_width / 2
+        half_height = rect_height / 2
+
         # center
-        # half_width = rect_width / 2
-        # half_height = rect_height / 2
         # mask = (np.abs(X - geom.width / 2) < half_width) & (np.abs(Y - geom.height / 2) < half_height)
-        # u[mask] = liquid_temp
 
         # top
-        half_width = rect_width / 2
-        mask = (np.abs(X - geom.width / 2) < half_width) & (
-            Y > geom.height - rect_height
-        )
-        u[mask] = liquid_temp
+        # mask = (np.abs(X - geom.width / 2) < half_width) & (
+        #     Y > geom.height - rect_height
+        # )
 
         # bottom
-        # half_width = rect_width / 2
         # mask = (np.abs(X - geom.width / 2) < half_width) & (Y < rect_height)
-        # u[mask] = liquid_temp
+
+        # left
+        mask = (X < rect_width) & (np.abs(Y - geom.height / 2) < half_height)
+
+        u[mask] = liquid_temp
 
     elif shape == DomainShape.UNIFORM_LIQUID:
         u = np.ones(u.shape) * liquid_temp
