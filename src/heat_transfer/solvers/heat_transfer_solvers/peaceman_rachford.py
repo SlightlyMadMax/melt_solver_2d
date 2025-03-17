@@ -459,6 +459,12 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
 
         self._new_u = np.copy(self._temp_u)
 
+        # convection_x, convection_y = self.convective_operator(
+        #     sf=sf,
+        #     u=self._new_u * self.parameters.delta_u + self.parameters.u_ref,
+        #     u_pt=self.parameters.u_pt,
+        # )
+
         # Run the y-direction sweep iterations
         for i in range(self.implicit_lin_max_iters):
             delta = (
