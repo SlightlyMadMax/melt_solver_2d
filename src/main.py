@@ -14,6 +14,7 @@ from src.fluid_dynamics.solvers import (
     NonIterativeNavierStokersSolver,
     VorticitySolverName,
     StreamFunctionSolverName,
+    IterativeNavierStokesSolver,
 )
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
@@ -25,30 +26,34 @@ from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.solvers import HeatTransferSolver
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.utils import get_remaining_time
 
 
 if __name__ == "__main__":
     geometry = DomainGeometry(
-        width=1.0,
-        height=1.0,
+        width=0.2,
+        height=0.2,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=101,
-        n_y=101,
-        n_t=60 * 60 * 24 * 10,
+        n_x=151,
+        n_y=151,
+        n_t=60 * 60 * 24 * 100,
     )
 
     print(geometry)
 
-    min_temp = 273.05
-    max_temp = 283.15
-    reference_temperature = 0.5 * (min_temp + max_temp)
+    min_temp = 273.14
+    max_temp = 281.15
+    # reference_temperature = 0.5 * (min_temp + max_temp)
 
-    thermal_params = ThermalParameters.load_from_file("./parameters/air/thermal_params_10_6.json")
+    thermal_params = ThermalParameters.load_from_file(
+        "./parameters/water/thermal_params_10_8.json"
+    )
     print(thermal_params)
 
-    fluid_params = FluidParameters.load_from_file("./parameters/air/fluid_params_10_6.json")
+    fluid_params = FluidParameters.load_from_file(
+        "./parameters/water/fluid_params_10_8.json"
+    )
     print(fluid_params)
 
     pr = (
@@ -61,11 +66,15 @@ if __name__ == "__main__":
     u = init_temperature(
         geom=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.UNIFORM_SOLID,
-        solid_temp=min_temp,
+        shape=DomainShape.RECTANGLE,
+        rect_width=0.04,
+        rect_height=0.12,
+        solid_temp=max_temp,
+        liquid_temp=min_temp,
     )
 
-    u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
+    # u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
+    # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
 
     init_delta = get_max_delta(
         u * thermal_params.delta_u + thermal_params.u_ref, u_pt=thermal_params.u_pt
@@ -92,25 +101,33 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
+            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
         right=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
+            boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
-            value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
+            flux_func=lambda t, n: np.zeros(n),
+            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
         bottom=BoundaryCondition(
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
+            # value_func=lambda t, n: (272.15 - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
         left=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
+            boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
-            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
+            flux_func=lambda t, n: np.zeros(n),
+            # value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
     )
 
@@ -179,7 +196,12 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 3000 == 0:
+        if n % 1000 == 0:
+            d = get_max_delta(
+                u * thermal_params.delta_u + thermal_params.u_ref,
+                u_pt=thermal_params.u_pt,
+            )
+            print(round(d, 2))
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
@@ -215,10 +237,16 @@ if __name__ == "__main__":
             # print(
             #     f"Maximum stream function value: {np.max(sf) * fluid_params.v * geometry.length_scale / thermal_params.thermal_diffusivity_solid:.3f}, (x, y) = {x:.3f}, {1.0 - y:.3f}"
             # )
-            # print(f"Minimum stream function value: {np.min(sf) * fluid_params.v * geometry.length_scale:.3f}")
-            # print(f"Maximum vorticity value: {np.max(w) * fluid_params.v / geometry.length_scale:.3f}")
-            # print(f"Minimum vorticity value: {np.min(w) * fluid_params.v / geometry.length_scale:.3f}")
-            # print()
+            # print(
+            #     f"Minimum stream function value: {np.min(sf) * fluid_params.v * geometry.length_scale:.3f}"
+            # )
+            # print(
+            #     f"Maximum vorticity value: {np.max(w) * fluid_params.v / geometry.length_scale:.3f}"
+            # )
+            # print(
+            #     f"Minimum vorticity value: {np.min(w) * fluid_params.v / geometry.length_scale:.3f}"
+            # )
+            print()
 
     print("Creating animation...")
-    create_gif_from_images(output_filename="test_animation")
+    create_gif_from_images(output_filename="icicle_one_sided_smoothing", duration=300)

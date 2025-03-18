@@ -7,16 +7,16 @@ from numpy.typing import NDArray
 
 @njit
 def c_new(u: float, u_pt: float, eps: float, delta: float) -> float:
-    if u - u_pt < 0.0:
-        return 1.0 / (eps * eps)
+    # if u - u_pt < 0.0:
+    #     return 1.0 / (eps * eps)
     # if u - u_pt < 0.0:
     #     return (
     #         2.0 + math.exp(-(u - u_pt) / delta) / (0.5 - math.exp(-(u - u_pt) / delta))
     #     ) / (eps * eps)
     # return 0.5 * (1.0 - math.erf((u - u_pt) / (2**0.5 * delta))) / (eps * eps)
-    return 0.0
-    # l_frac = 0.5 * (1.0 + math.erf((u - u_pt) / (2**0.5 * delta)))
-    # return 1.6 * (1.0 - l_frac)**2 / (l_frac**3 + 1e-3)
+    # return 0.0
+    l_frac = 0.5 * (1.0 + math.erf((u - u_pt) / (2**0.5 * delta)))
+    return 1.6e3 * (1.0 - l_frac) ** 2 / (l_frac**3 + 1e-3)
 
 
 @njit
@@ -46,15 +46,15 @@ def calculate_indicator_function(
         for i in range(1, n_x - 1):
             # if u[j, i] - u_pt < 0.0:
             #     result[j, i] = inv_eps_2
-            # result[j, i] = (
-            #     (1.0 - math.erf((u[j, i] - u_pt) / (2**0.5 * delta))) * 0.5 * inv_eps_2
-            # )
-            if u[j, i] - u_pt < 0.0:
-                result[j, i] = inv_eps_2 * (
-                    2.0
-                    + math.exp(-(u[j, i] - u_pt) / delta)
-                    / (0.5 - math.exp(-(u[j, i] - u_pt) / delta))
-                )
+            result[j, i] = (
+                (1.0 - math.erf((u[j, i] - u_pt) / (2**0.5 * delta))) * 0.5 * inv_eps_2
+            )
+            # if u[j, i] - u_pt < 0.0:
+            #     result[j, i] = inv_eps_2 * (
+            #         2.0
+            #         + math.exp(-(u[j, i] - u_pt) / delta)
+            #         / (0.5 - math.exp(-(u[j, i] - u_pt) / delta))
+            #     )
 
 
 @njit

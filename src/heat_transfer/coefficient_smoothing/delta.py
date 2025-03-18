@@ -17,15 +17,14 @@ def get_max_delta(
     """
     n_y, n_x = u.shape
     delta = 0.0
-
     for i in range(n_x - 1):
         for j in range(n_y - 1):
             if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
                 temp = abs(u[j + 1, i] - u[j, i])
                 delta = temp if temp > delta else delta
-                break
+                # break
             if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
                 temp = abs(u[j, i + 1] - u[j, i])
                 delta = temp if temp > delta else delta
-                break
+                # break
     return delta
