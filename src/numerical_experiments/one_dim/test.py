@@ -59,7 +59,7 @@ thermal_params = ThermalParameters(
     domain_geometry=geometry,
     u_pt=273.15,
     u_ref=reference_temperature,
-    delta_u=max_temp - min_temp,
+    delta_u=0.5 * (max_temp - min_temp),
     v=0.01,
     l=8.0,
     specific_heat_liquid=4120.7,
@@ -113,31 +113,11 @@ heat_transfer_solver = HeatTransferSolver(
     implicit_lin_urf=1.0,
 )
 
-gamma = fsolve(
-    lambda x: trans_eq(
-        gamma=x,
-        params=thermal_params,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-    ),
-    0.0002,
-)[0]
+u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
+u[0, :] = min_temp
+u = (u - thermal_params.u_ref) / thermal_params.delta_u
 
-t_0: float = (s_0 / gamma) ** 2
-
-u = (
-    get_analytic_solution(
-        t=t_0,
-        min_temp=min_temp,
-        max_temp=max_temp,
-        geometry=geometry,
-        params=thermal_params,
-    )
-    - ABS_ZERO
-    - thermal_params.u_ref
-) / thermal_params.delta_u
-
-boundary = [s_0]
+boundary = [0.0]
 times = [0.0]
 i = int(geometry.n_x / 2)
 
@@ -161,7 +141,7 @@ for n in range(1, geometry.n_t):
 
 u_analytical = (
     get_analytic_solution(
-        t=geometry.end_time,
+        t=geometry.n_t * geometry.dt,
         min_temp=min_temp,
         max_temp=max_temp,
         geometry=geometry,

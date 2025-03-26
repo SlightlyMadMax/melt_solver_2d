@@ -32,25 +32,23 @@ def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp:
 
 
 def get_ice_temp(
-    y: float, s: float, t: float, min_temp: float, params: ThermalParameters
+    y: float, gamma: float, t: float, min_temp: float, params: ThermalParameters
 ) -> float:
     a_ice = params.thermal_diffusivity_solid**0.5
 
-    return (
-        min_temp
-        * (erf(s / (2.0 * a_ice * t**0.5)) - erf(y / (2.0 * a_ice * t**0.5)))
-        / erf(s / (2.0 * a_ice * t**0.5))
+    return min_temp * (
+        1.0 - erf(y / (2.0 * a_ice * t**0.5)) / erf(gamma / (2.0 * a_ice))
     )
 
 
 def get_water_temp(
-    y: float, s: float, t: float, max_temp: float, params: ThermalParameters
+    y: float, gamma: float, t: float, max_temp: float, params: ThermalParameters
 ) -> float:
     a_water = params.thermal_diffusivity_liquid**0.5
     return (
         max_temp
-        * (erf(y / (2.0 * a_water * t**0.5)) - erf(s / (2.0 * a_water * t**0.5)))
-        / (1.0 - erf(s / (2.0 * a_water * t**0.5)))
+        * (erf(y / (2.0 * a_water * t**0.5)) - erf(gamma / (2.0 * a_water)))
+        / (1.0 - erf(gamma / (2.0 * a_water)))
     )
 
 
@@ -74,14 +72,14 @@ def get_analytic_solution(
     """
     result = np.empty((geometry.n_y, geometry.n_x))
 
-    gamma = fsolve(
+    gamma: float = fsolve(  # noqa
         lambda x: trans_eq(
             gamma=x,
             params=params,
             min_temp=min_temp + ABS_ZERO,
             max_temp=max_temp + ABS_ZERO,
         ),
-        0.0002,
+        0.0002,  # noqa
     )[0]
 
     s = t**0.5 * gamma
@@ -89,11 +87,19 @@ def get_analytic_solution(
     for j in range(geometry.n_y):
         result[j, :] = (
             get_ice_temp(
-                y=j * geometry.dy, s=s, t=t, min_temp=min_temp + ABS_ZERO, params=params
+                y=j * geometry.dy,
+                gamma=gamma,
+                t=t,
+                min_temp=min_temp + ABS_ZERO,
+                params=params,
             )
             if j * geometry.dy <= s
             else get_water_temp(
-                y=j * geometry.dy, s=s, t=t, max_temp=max_temp + ABS_ZERO, params=params
+                y=j * geometry.dy,
+                gamma=gamma,
+                t=t,
+                max_temp=max_temp + ABS_ZERO,
+                params=params,
             )
         )
 

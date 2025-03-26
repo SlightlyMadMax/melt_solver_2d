@@ -13,7 +13,6 @@ def compare_num_with_analytic(
     max_temp: float,
     params: ThermalParameters,
     num: list[float],
-    s_0: float,
     dir_name: str,
     show_graphs: bool = True,
 ) -> None:
@@ -23,7 +22,6 @@ def compare_num_with_analytic(
     :param max_temp: Initial temperature of the liquid phase region.
     :param params: Object containing parameters of the problem like thermal conductivity etc.
     :param num: Array containing positions of the boundary throughout the modelling time.
-    :param s_0: Initial position of the boundary.
     :param dir_name: Name of the directory where the graphs will be saved.
     :param show_graphs: If set to True, the graphs will be opened in a new window.
     :return: None
@@ -41,15 +39,11 @@ def compare_num_with_analytic(
 
     n = len(num)
 
-    t_0: float = (s_0 / gamma) ** 2
-
-    print(int(t_0 / 3600))
-
-    time = [i * 60.0 * 60.0 * 24.0 + t_0 for i in range(n)]
+    time = [i * 60.0 * 60.0 * 24.0 for i in range(n)]
 
     exact = [gamma * time[i] ** 0.5 for i in range(n)]
 
-    relative_error = [abs(exact[i] - num[i]) * 100 / exact[i] for i in range(n)]
+    relative_error = [abs(exact[i] - num[i]) * 100 / exact[i] for i in range(1, n)]
 
     abs_error = [abs(exact[i] - num[i]) for i in range(n)]
 
@@ -59,7 +53,7 @@ def compare_num_with_analytic(
 
     ax = plt.axes()
     plt.plot(
-        time,
+        time[1:],
         relative_error,
         linewidth=1,
         color="r",
