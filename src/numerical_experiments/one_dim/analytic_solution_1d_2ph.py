@@ -21,58 +21,51 @@ def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp:
     )
 
     rhs = (
-            -params.thermal_conductivity_liquid
-            * max_temp
-            * math.exp(-((gamma / (2.0 * a_water)) ** 2))
-            / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
-            - gamma * params.volumetric_latent_heat * math.pi ** 0.5 / 2
+        -params.thermal_conductivity_liquid
+        * max_temp
+        * math.exp(-((gamma / (2.0 * a_water)) ** 2))
+        / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
+        - gamma * params.volumetric_latent_heat * math.pi**0.5 / 2
     )
 
     return lhs - rhs
 
 
 def get_ice_temp(
-    y: float,
-    s_0: float,
-    t_0: float,
-    min_temp: float,
-    params: ThermalParameters,
+    y: float, s: float, t: float, min_temp: float, params: ThermalParameters
 ) -> float:
     a_ice = params.thermal_diffusivity_solid**0.5
 
     return (
         min_temp
-        * (erf(s_0 / (2.0 * a_ice * t_0**0.5)) - erf(y / (2.0 * a_ice * t_0**0.5)))
-        / erf(s_0 / (2.0 * a_ice * t_0**0.5))
+        * (erf(s / (2.0 * a_ice * t**0.5)) - erf(y / (2.0 * a_ice * t**0.5)))
+        / erf(s / (2.0 * a_ice * t**0.5))
     )
 
 
 def get_water_temp(
-    y: float,
-    s_0: float,
-    t_0: float,
-    max_temp: float,
-    params: ThermalParameters,
+    y: float, s: float, t: float, max_temp: float, params: ThermalParameters
 ) -> float:
     a_water = params.thermal_diffusivity_liquid**0.5
     return (
         max_temp
-        * (erf(y / (2.0 * a_water * t_0**0.5)) - erf(s_0 / (2.0 * a_water * t_0**0.5)))
-        / (1.0 - erf(s_0 / (2.0 * a_water * t_0**0.5)))
+        * (erf(y / (2.0 * a_water * t**0.5)) - erf(s / (2.0 * a_water * t**0.5)))
+        / (1.0 - erf(s / (2.0 * a_water * t**0.5)))
     )
 
 
 def get_analytic_solution(
-    s_0: float,
+    t: float,
     min_temp: float,
     max_temp: float,
     geometry: DomainGeometry,
     params: ThermalParameters,
 ) -> np.ndarray:
     """
-    Find the analytical solution of a model one-dimensional two-phase problem with given parameters.
+    Find the analytical solution of a model one-dimensional two-phase problem with given parameters at a given moment
+    of time.
 
-    :param s_0: Initial position of the boundary.
+    :param t: Time
     :param min_temp: Initial temperature of the solid phase region.
     :param max_temp: Initial temperature of the liquid phase region.
     :param geometry: Object containing the domain geometry information.
@@ -91,24 +84,16 @@ def get_analytic_solution(
         0.0002,
     )[0]
 
-    t_0: float = (s_0 / gamma) ** 2
+    s = t**0.5 * gamma
 
     for j in range(geometry.n_y):
         result[j, :] = (
             get_ice_temp(
-                y=j * geometry.dy,
-                s_0=s_0,
-                t_0=t_0,
-                min_temp=min_temp + ABS_ZERO,
-                params=params,
+                y=j * geometry.dy, s=s, t=t, min_temp=min_temp + ABS_ZERO, params=params
             )
-            if j * geometry.dy <= s_0
+            if j * geometry.dy <= s
             else get_water_temp(
-                y=j * geometry.dy,
-                s_0=s_0,
-                t_0=t_0,
-                max_temp=max_temp + ABS_ZERO,
-                params=params,
+                y=j * geometry.dy, s=s, t=t, max_temp=max_temp + ABS_ZERO, params=params
             )
         )
 
