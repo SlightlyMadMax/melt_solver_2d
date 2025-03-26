@@ -12,7 +12,8 @@ from src.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
-    get_analytic_solution, trans_eq,
+    get_analytic_solution,
+    trans_eq,
 )
 from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
@@ -60,9 +61,10 @@ thermal_params = ThermalParameters(
     u_ref=reference_temperature,
     delta_u=max_temp - min_temp,
     v=0.01,
+    l=8.0,
     specific_heat_liquid=4120.7,
     specific_heat_solid=2056.8,
-    specific_latent_heat_solid=333000.0,
+    specific_latent_heat=333000.0,
     density_liquid=999.84,
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
@@ -157,12 +159,26 @@ for n in range(1, geometry.n_t):
                 boundary.append(y_0)
                 break
 
-compare_num_with_analytic(
-    num=boundary,
-    s_0=s_0,
-    min_temp=min_temp,
-    max_temp=max_temp,
-    params=thermal_params,
-    show_graphs=True,
-    dir_name=dir_path,
-)
+u_analytical = (
+    get_analytic_solution(
+        t=geometry.end_time,
+        min_temp=min_temp,
+        max_temp=max_temp,
+        geometry=geometry,
+        params=thermal_params,
+    )
+    - ABS_ZERO
+    - thermal_params.u_ref
+) / thermal_params.delta_u
+
+print(np.linalg.norm(u - u_analytical))
+
+# compare_num_with_analytic(
+#     num=boundary,
+#     s_0=s_0,
+#     min_temp=min_temp,
+#     max_temp=max_temp,
+#     params=thermal_params,
+#     show_graphs=True,
+#     dir_name=dir_path,
+# )
