@@ -1,7 +1,8 @@
 import numpy as np
 import os
 
-from compare_boundary import compare_num_with_analytic
+from scipy.optimize import fsolve
+
 from src.boundary_conditions import (
     BoundaryConditionType,
     BoundaryConditions,
@@ -11,7 +12,7 @@ from src.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
-    get_analytic_solution,
+    get_analytic_solution, trans_eq,
 )
 from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
@@ -110,9 +111,21 @@ heat_transfer_solver = HeatTransferSolver(
     implicit_lin_urf=1.0,
 )
 
+gamma = fsolve(
+    lambda x: trans_eq(
+        gamma=x,
+        params=thermal_params,
+        min_temp=min_temp + ABS_ZERO,
+        max_temp=max_temp + ABS_ZERO,
+    ),
+    0.0002,
+)[0]
+
+t_0: float = (s_0 / gamma) ** 2
+
 u = (
     get_analytic_solution(
-        s_0=s_0,
+        t=t_0,
         min_temp=min_temp,
         max_temp=max_temp,
         geometry=geometry,
