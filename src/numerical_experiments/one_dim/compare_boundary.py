@@ -1,32 +1,11 @@
-import math
 import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy.optimize import fsolve
-from scipy.special import erf
 
 from src.constants import ABS_ZERO
 from src.heat_transfer.parameters import ThermalParameters
-
-
-def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp: float):
-    a_ice = params.thermal_diffusivity_solid**0.5
-    a_water = params.thermal_diffusivity_liquid**0.5
-
-    lhs = (
-        params.thermal_conductivity_solid
-        * min_temp
-        * math.exp(-((gamma / (2.0 * a_ice)) ** 2))
-        / (a_ice * erf(gamma / (2.0 * a_ice)))
-    )
-    rhs = (
-            -params.thermal_conductivity_liquid
-            * max_temp
-            * math.exp(-((gamma / (2.0 * a_water)) ** 2))
-            / (a_water * (1.0 - erf(gamma / (2.0 * a_water))))
-            - gamma * params.volumetric_latent_heat * math.pi ** 0.5 / 2
-    )
-    return lhs - rhs
+from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import trans_eq
 
 
 def compare_num_with_analytic(
