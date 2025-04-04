@@ -144,7 +144,7 @@ def init_temperature(
         half_height = rect_height / 2
 
         # center
-        # mask = (np.abs(X - geom.width / 2) < half_width) & (np.abs(Y - geom.height / 2) < half_height)
+        mask = (np.abs(X - geom.width / 2) < half_width) & (np.abs(Y - geom.height / 2) < half_height)
 
         # top
         # mask = (np.abs(X - geom.width / 2) < half_width) & (
@@ -155,7 +155,7 @@ def init_temperature(
         # mask = (np.abs(X - geom.width / 2) < half_width) & (Y < rect_height)
 
         # left
-        mask = (X < rect_width) & (np.abs(Y - geom.height / 2) < half_height)
+        # mask = (X < rect_width) & (np.abs(Y - geom.height / 2) < half_height)
 
         u[mask] = liquid_temp
 
