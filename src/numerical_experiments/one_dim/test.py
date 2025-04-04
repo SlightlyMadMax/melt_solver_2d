@@ -16,7 +16,7 @@ from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
 )
 from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-
+from src.numerical_experiments.one_dim.compare_boundary import compare_num_with_analytic
 
 dir_name = input("Enter a directory name where the data will be stored: ")
 dir_path = f"./results/{dir_name}"
