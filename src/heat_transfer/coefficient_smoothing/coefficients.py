@@ -4,7 +4,12 @@ from numba import njit
 
 
 @njit
-def delta_function(u: float, u_0: float, delta: float) -> float:
+def step_erf(u: float, u_0: float, delta: float) -> float:
+    return 0.5 * (1.0 + math.erf((u - u_0) / (2**0.5 * delta)))
+
+
+@njit
+def delta_gauss(u: float, u_0: float, delta: float) -> float:
     """
     Smoothed approximation of the delta function, centered at u_0.
 
@@ -16,6 +21,29 @@ def delta_function(u: float, u_0: float, delta: float) -> float:
     return math.exp(-(u - u_0) * (u - u_0) / (2.0 * delta * delta)) / (
         (2.0 * math.pi) ** 0.5 * delta
     )
+
+
+@njit
+def step_hyper(u: float, u_0: float, delta: float) -> float:
+    if abs(u - u_0) < delta:
+        return 0.5 * (
+            1.0 + math.tanh(3.0 * (u - u_0) / (delta**2 - (u - u_0) ** 2) ** 0.5)
+        )
+    elif u < u_0 - delta:
+        return 0.0
+    else:
+        return 1.0
+
+
+@njit
+def delta_hyper(u: float, u_0: float, delta: float) -> float:
+    if abs(u - u_0) < delta:
+        return (
+            1.5
+            * (delta**2 / (delta**2 - (u - u_0) ** 2) ** 1.5)
+            / math.cosh(3.0 * (u - u_0) / (delta**2 - (u - u_0) ** 2) ** 0.5) ** 2
+        )
+    return 0.0
 
 
 @njit
@@ -43,8 +71,8 @@ def c_smoothed(
 
     return (
         c_solid
-        + (c_liquid - c_solid) * (1.0 + math.erf((u - u_pt) / (2**0.5 * delta))) * 0.5
-        + l_solid * delta_function(u=u, u_0=u_pt, delta=delta)
+        + (c_liquid - c_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
+        + l_solid * delta_gauss(u=u, u_0=u_pt, delta=delta)
     )
 
 
@@ -69,10 +97,7 @@ def k_smoothed(
     if delta <= 0.0:
         return k_solid if u < u_pt else k_liquid
 
-    return (
-        k_solid
-        + (k_liquid - k_solid) * (1.0 + math.erf((u - u_pt) / (2**0.5 * delta))) * 0.5
-    )
+    return k_solid + (k_liquid - k_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
 
 
 @njit
