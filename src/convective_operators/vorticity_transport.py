@@ -180,10 +180,27 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                result_x[j, i, 0] = 0.5 * inv_dx * v_x[j, i + 1]
-                result_x[j, i, 1] = 0.0
-                result_x[j, i, 2] = -0.5 * inv_dx * v_x[j, i - 1]
-
+                if i == 1:
+                    result_x[j, i, 0] = inv_dx * v_x[j, i + 1]
+                    result_x[j, i, 1] = inv_dx * v_x[j, i]
+                    result_x[j, i, 2] = 0.0
+                elif i == n_x - 2:
+                    result_x[j, i, 0] = 0.0
+                    result_x[j, i, 1] = inv_dx * v_x[j, i]
+                    result_x[j, i, 2] = -inv_dx * v_x[j, i - 1]
+                else:
+                    result_x[j, i, 0] = 0.5 * inv_dx * v_x[j, i + 1]
+                    result_x[j, i, 1] = 0.0
+                    result_x[j, i, 2] = -0.5 * inv_dx * v_x[j, i - 1]
+                # if j == 1:
+                #     result_y[j, i, 0] = inv_dy * v_y[j + 1, i]
+                #     result_y[j, i, 1] = inv_dy * v_y[j, i]
+                #     result_y[j, i, 2] = 0.0
+                # elif j == n_y - 1:
+                #     result_y[j, i, 0] = 0.0
+                #     result_y[j, i, 1] = inv_dy * v_y[j, i]
+                #     result_y[j, i, 2] = -inv_dy * v_y[j - 1, i]
+                # else:
                 result_y[j, i, 0] = 0.5 * inv_dy * v_y[j + 1, i]
                 result_y[j, i, 1] = 0.0
                 result_y[j, i, 2] = -0.5 * inv_dy * v_y[j - 1, i]

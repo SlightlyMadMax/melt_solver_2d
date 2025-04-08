@@ -35,8 +35,8 @@ if __name__ == "__main__":
         width=0.2,
         height=0.2,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=151,
-        n_y=151,
+        n_x=81,
+        n_y=81,
         n_t=60 * 60 * 24 * 100,
     )
 
@@ -45,16 +45,38 @@ if __name__ == "__main__":
     min_temp = 273.14
     max_temp = 281.15
     # reference_temperature = 0.5 * (min_temp + max_temp)
+    reference_temperature = max_temp
 
-    thermal_params = ThermalParameters.load_from_file(
-        "./parameters/water/thermal_params_10_8.json"
+    thermal_params = ThermalParameters(
+        u_pt=273.15,
+        u_ref=reference_temperature,
+        delta_u=8.0,
+        v=0.04,
+        l=0.2,
+        specific_heat_liquid=4120.7,
+        specific_heat_solid=2056.8,
+        specific_latent_heat=333000.0,
+        density_liquid=999.84,
+        density_solid=918.9,
+        thermal_conductivity_liquid=0.59,
+        thermal_conductivity_solid=2.21,
     )
-    print(thermal_params)
 
-    fluid_params = FluidParameters.load_from_file(
-        "./parameters/water/fluid_params_10_8.json"
+    fluid_params = FluidParameters(
+        u_pt=273.15,
+        u_ref=reference_temperature,
+        delta_u=8.0,
+        v=0.04,
+        l=0.2,
+        epsilon=0.001,
+        kinematic_viscosity_coeffs=[
+            0.000108963453,
+            -9.28722151e-07,
+            2.65889022e-09,
+            -2.54761652e-12,
+        ],
+        volumetric_thermal_exp_coeffs=[-0.0114630054, 6.86739177e-05, -9.84848485e-08],
     )
-    print(fluid_params)
 
     pr = (
         fluid_params.kinematic_viscosity_at_u_ref
@@ -109,9 +131,9 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
         bottom=BoundaryCondition(
             boundary_type=BoundaryConditionType.NEUMANN,
@@ -125,9 +147,9 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
     )
 
@@ -163,7 +185,7 @@ if __name__ == "__main__":
         parameters=thermal_params,
         bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=3,
+        implicit_lin_max_iters=1,
         implicit_lin_stopping_criteria=1e-6,
         implicit_lin_urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
@@ -177,7 +199,7 @@ if __name__ == "__main__":
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
         stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
-        implicit_lin_max_iters=3,
+        implicit_lin_max_iters=1,
         implicit_lin_urf=1.0,
     )
 
@@ -201,7 +223,8 @@ if __name__ == "__main__":
                 u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
             )
-            print(round(d, 2))
+            if d <= 0.0:
+                break
             plot_temperature(
                 u=u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
@@ -215,12 +238,12 @@ if __name__ == "__main__":
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
-            plot_stream_function(
-                stream_function=sf / fluid_params.v,
-                geometry=geometry,
-                graph_id=n,
-                show_graph=False,
-            )
+            # plot_stream_function(
+            #     stream_function=sf / fluid_params.v,
+            #     geometry=geometry,
+            #     graph_id=n,
+            #     show_graph=False,
+            # )
             print(
                 f"Modelling Time: {n * geometry.dt} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
@@ -249,4 +272,4 @@ if __name__ == "__main__":
             print()
 
     print("Creating animation...")
-    create_gif_from_images(output_filename="icicle_one_sided_smoothing", duration=300)
+    create_gif_from_images(output_filename="hyper_coeff.gif", duration=300)

@@ -2,6 +2,7 @@ from typing import Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import diags
 
 from src.boundary_conditions import BoundaryConditions
 from src.convective_operators import (
@@ -148,7 +149,7 @@ class NonIterativeNavierStokersSolver:
         self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
-            solver_name=VorticitySolverName.PEACEMAN_RACHFORD
+            solver_name=VorticitySolverName.VABISHCHEVICH
         )
         stream_function_solver_class = StreamFunctionSolverRegistry.get_solver_class(
             solver_name=StreamFunctionSolverName.CG
@@ -159,7 +160,6 @@ class NonIterativeNavierStokersSolver:
             parameters=parameters,
             convective_operator=self.convective_operator,
             bc_order=1,
-            incorporated_bc=True,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
@@ -185,13 +185,17 @@ class NonIterativeNavierStokersSolver:
     ) -> Tuple[np.ndarray, np.ndarray]:
         self._temp_vorticity = self._solve_vorticity(
             old_vorticity=w,
+            conv_vorticity=w,
             stream_function=sf,
             temperature=u,
             time=time,
         )
+        # print(np.max(self._temp_vorticity))
+        # print(np.min(self._temp_vorticity))
         self._stream_function = self._solve_stream_function(
             sf_nm1=sf,
             vorticity=self._temp_vorticity,
+            conv_vorticity=w,
             time=time,
         )
         calculate_vorticity_from_sf(
@@ -200,18 +204,24 @@ class NonIterativeNavierStokersSolver:
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
         )
-
+        # print(np.max(self._stream_function))
+        # print(np.min(self._stream_function))
+        # print(np.max(self._vorticity))
+        # print(np.min(self._vorticity))
+        # print()
         return self._stream_function, self._vorticity
 
     def _solve_vorticity(
         self,
         old_vorticity: np.ndarray,
+        conv_vorticity: np.ndarray,
         stream_function: np.ndarray,
         temperature: np.ndarray,
         time: float,
     ) -> np.ndarray:
         return self.vorticity_solver.solve(
             w=old_vorticity,
+            conv_w=conv_vorticity,
             sf=stream_function,
             u=temperature,
             time=time,
@@ -221,17 +231,108 @@ class NonIterativeNavierStokersSolver:
         self,
         sf_nm1: np.ndarray,
         vorticity: np.ndarray,
+        conv_vorticity: np.ndarray,
         time: float,
     ) -> np.ndarray:
-        rho = self.vorticity_solver.rho
-        c_ind = self.vorticity_solver.c_ind
-
-        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
-        c = 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number)
-        f = (
-            vorticity
-            + 0.5 * tau * (c_ind + rho / self.parameters.reynolds_number) * sf_nm1
+        conv_x, conv_y = self.convective_operator(w=conv_vorticity)
+        b = construct_rhs_for_cg(
+            geometry=self.geometry,
+            parameters=self.parameters,
+            vorticity=vorticity,
+            sf_nm1=sf_nm1,
+            rho=self.vorticity_solver.rho,
+            c_ind=self.vorticity_solver.c_ind,
+            conv_x=conv_x,
+            conv_y=conv_y,
+        )
+        A = construct_matrix_for_cg(
+            geometry=self.geometry,
+            parameters=self.parameters,
+            rho=self.vorticity_solver.rho,
+            c_ind=self.vorticity_solver.c_ind,
+            conv_x=conv_x,
+            conv_y=conv_y,
         )
         return self.stream_function_solver.solve(
-            initial_guess=sf_nm1, c=c, f=f, time=time
+            initial_guess=sf_nm1,
+            A=-A,
+            b=-b,
+            time=time,
         )
+
+
+def construct_rhs_for_cg(
+    geometry: DomainGeometry,
+    parameters: FluidParameters,
+    vorticity: np.ndarray,
+    sf_nm1: np.ndarray,
+    rho: np.ndarray,
+    c_ind: np.ndarray,
+    conv_x: np.ndarray,
+    conv_y: np.ndarray,
+) -> np.ndarray:
+    b = np.zeros_like(sf_nm1)
+    tau = geometry.dt * parameters.v / geometry.length_scale
+    for i in range(1, geometry.n_x - 1):
+        for j in range(1, geometry.n_y - 1):
+            b[j, i] = -vorticity[j, i] - 0.5 * tau * (
+                (c_ind[j, i] + rho[j, i] / parameters.reynolds_number) * sf_nm1[j, i]
+                - (
+                    conv_x[j, i, 0] * sf_nm1[j, i + 1]
+                    + conv_x[j, i, 2] * sf_nm1[j, i - 1]
+                )
+                - (
+                    conv_y[j, i, 0] * sf_nm1[j + 1, i]
+                    + conv_y[j, i, 2] * sf_nm1[j - 1, i]
+                )
+            )
+    return b
+
+
+def construct_matrix_for_cg(
+    geometry: DomainGeometry,
+    parameters: FluidParameters,
+    rho: np.ndarray,
+    c_ind: np.ndarray,
+    conv_x: np.ndarray,
+    conv_y: np.ndarray,
+):
+    n_y, n_x = geometry.n_y, geometry.n_x
+    dx2 = geometry.dx**2
+    dy2 = geometry.dy**2
+
+    inner_n_y, inner_n_x = n_y - 2, n_x - 2
+
+    tau = geometry.dt * parameters.v / geometry.length_scale
+    c = 0.5 * tau * (c_ind + rho / parameters.reynolds_number)
+
+    c_inner = c[1:-1, 1:-1]
+    c_inner_flat = c_inner.flatten()
+
+    diagonal = -2 / dx2 - 2 / dy2 - c_inner_flat
+
+    size = inner_n_x * inner_n_y
+    main_diag = np.full(size, diagonal)
+
+    # Off-diagonal elements must be adjusted for staggered indexing
+    x_off_diag_array = (1 / dx2) + conv_x[1:-1, 1:-1, 0].flatten()  # u_{i+1, j}
+    x_off_diag_left_array = (1 / dx2) + conv_x[1:-1, 1:-1, 2].flatten()  # u_{i-1, j}
+    y_off_diag_array = (1 / dy2) + conv_y[1:-1, 1:-1, 0].flatten()  # u_{i, j+1}
+    y_off_diag_bottom_array = (1 / dy2) + conv_y[1:-1, 1:-1, 2].flatten()  # u_{i, j-1}
+
+    for i in range(1, inner_n_y):
+        x_off_diag_array[i * inner_n_x - 1] = 0
+        x_off_diag_left_array[i * inner_n_x - 1] = 0
+
+    diagonals = [
+        main_diag,
+        x_off_diag_left_array,
+        x_off_diag_array,
+        y_off_diag_bottom_array,
+        y_off_diag_array,
+    ]
+    offsets = [0, -1, 1, -inner_n_x, inner_n_x]
+
+    m = diags(diagonals, offsets, shape=(size, size), format="csr")
+
+    return m
