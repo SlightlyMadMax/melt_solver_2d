@@ -9,7 +9,9 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.heat_transfer.solvers.heat_transfer_solvers.base import ImplicitHeatTransferSolver
+from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+    ImplicitHeatTransferSolver,
+)
 from src.utils import solve_tridiagonal
 
 
@@ -409,6 +411,7 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             )
             diff = np.linalg.norm(self._temp_u - self._iter_u, ord=2)
             if diff < self.implicit_lin_stopping_criteria:
+                self._iter_u = np.copy(self._temp_u)
                 break
             self._iter_u = self._iter_u + alpha * (self._temp_u - self._iter_u)
 
