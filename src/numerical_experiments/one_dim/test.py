@@ -115,14 +115,14 @@ u[0, :] = min_temp
 u = (u - thermal_params.u_ref) / thermal_params.delta_u
 
 boundary = [0.0]
-times = [0.0]
+time = [0.0]
 i = int(geometry.n_x / 2)
 
 for n in range(1, geometry.n_t):
     t = n * geometry.dt
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t)
     if n % 24 == 0:
-        times.append(t)
+        time.append(t)
         print(f"ДЕНЬ: {int(n / 24)}")
         for j in range(geometry.n_y - 1):
             if (u[j, i] - thermal_params.u_pt_ref) * (
@@ -150,12 +150,12 @@ u_analytical = (
 
 print(np.linalg.norm(u - u_analytical))
 
-# compare_num_with_analytic(
-#     num=boundary,
-#     s_0=s_0,
-#     min_temp=min_temp,
-#     max_temp=max_temp,
-#     params=thermal_params,
-#     show_graphs=True,
-#     dir_name=dir_path,
-# )
+compare_num_with_analytic(
+    num=boundary,
+    time=time,
+    min_temp=min_temp,
+    max_temp=max_temp,
+    params=thermal_params,
+    show_graphs=True,
+    dir_name=dir_path,
+)
