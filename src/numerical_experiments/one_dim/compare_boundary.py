@@ -13,6 +13,7 @@ def compare_num_with_analytic(
     max_temp: float,
     params: ThermalParameters,
     num: list[float],
+    time: list[float],
     dir_name: str,
     show_graphs: bool = True,
 ) -> None:
@@ -38,8 +39,6 @@ def compare_num_with_analytic(
     )[0]
 
     n = len(num)
-
-    time = [i * 60.0 * 60.0 * 24.0 for i in range(n)]
 
     exact = [gamma * time[i] ** 0.5 for i in range(n)]
 
