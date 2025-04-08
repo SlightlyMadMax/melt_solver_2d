@@ -141,7 +141,7 @@ for n in range(1, geometry.n_t):
 
 u_analytical = (
     get_analytic_solution(
-        t=geometry.n_t * geometry.dt,
+        t=(geometry.n_t - 1) * geometry.dt,
         min_temp=min_temp,
         max_temp=max_temp,
         geometry=geometry,
