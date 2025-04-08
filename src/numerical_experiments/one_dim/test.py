@@ -1,7 +1,6 @@
 import numpy as np
 import os
 
-from scipy.optimize import fsolve
 
 from src.boundary_conditions import (
     BoundaryConditionType,
@@ -13,10 +12,10 @@ from src.convective_operators import ConvectiveTermForm
 from src.geometry import DomainGeometry
 from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
-    trans_eq,
 )
 from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.numerical_experiments.one_dim.compare_boundary import compare_num_with_analytic
 
 
 dir_name = input("Enter a directory name where the data will be stored: ")
@@ -26,8 +25,6 @@ try:
     os.mkdir(dir_path)
 except FileExistsError:
     pass
-
-s_0 = float(input("Enter the initial position of the free boundary (in meters): "))
 
 delta = input(
     "Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: "
