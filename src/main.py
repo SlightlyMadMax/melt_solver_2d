@@ -35,8 +35,8 @@ if __name__ == "__main__":
         width=0.4,
         height=0.4,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=801,
-        n_y=801,
+        n_x=401,
+        n_y=401,
         n_t=60 * 60 * 24 * 200,
     )
 
@@ -223,7 +223,7 @@ if __name__ == "__main__":
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
         if n % 2000 == 0:
-            np.savez_compressed(f"../data/experiment/u_{n}.npz")
+            np.savez_compressed(f"../data/experiment/u_{n}.npz", u=u)
             d = get_max_delta(
                 u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
