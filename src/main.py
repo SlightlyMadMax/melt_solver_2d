@@ -32,20 +32,20 @@ from src.utils import get_remaining_time
 
 if __name__ == "__main__":
     geometry = DomainGeometry(
-        width=0.2,
-        height=0.2,
+        width=0.4,
+        height=0.4,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=81,
-        n_y=81,
-        n_t=60 * 60 * 24 * 100,
+        n_x=801,
+        n_y=801,
+        n_t=60 * 60 * 24 * 200,
     )
 
     print(geometry)
 
     min_temp = 273.14
     max_temp = 281.15
-    # reference_temperature = 0.5 * (min_temp + max_temp)
-    reference_temperature = max_temp
+    reference_temperature = 0.5 * (min_temp + max_temp)
+    # reference_temperature = max_temp
 
     thermal_params = ThermalParameters(
         u_pt=273.15,
@@ -62,6 +62,8 @@ if __name__ == "__main__":
         thermal_conductivity_solid=2.21,
     )
 
+    print(thermal_params)
+
     fluid_params = FluidParameters(
         u_pt=273.15,
         u_ref=reference_temperature,
@@ -77,6 +79,8 @@ if __name__ == "__main__":
         ],
         volumetric_thermal_exp_coeffs=[-0.0114630054, 6.86739177e-05, -9.84848485e-08],
     )
+
+    print(fluid_params)
 
     pr = (
         fluid_params.kinematic_viscosity_at_u_ref
@@ -131,9 +135,9 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
+            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
         bottom=BoundaryCondition(
             boundary_type=BoundaryConditionType.NEUMANN,
@@ -147,9 +151,9 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
+            # value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            # / thermal_params.delta_u
+            # * np.ones(n),
         ),
     )
 
@@ -218,26 +222,27 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 1000 == 0:
+        if n % 2000 == 0:
+            np.savez_compressed(f"../data/experiment/u_{n}.npz")
             d = get_max_delta(
                 u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
             )
             if d <= 0.0:
                 break
-            plot_temperature(
-                u=u * thermal_params.delta_u + thermal_params.u_ref,
-                u_pt=thermal_params.u_pt,
-                geom=geometry,
-                time=t,
-                graph_id=n,
-                plot_boundary=True,
-                show_graph=False,
-                min_temp=min_temp + ABS_ZERO,
-                max_temp=max_temp + ABS_ZERO,
-                actual_temp_units=TemperatureUnit.KELVIN,
-                display_temp_units=TemperatureUnit.CELSIUS,
-            )
+            # plot_temperature(
+            #     u=u * thermal_params.delta_u + thermal_params.u_ref,
+            #     u_pt=thermal_params.u_pt,
+            #     geom=geometry,
+            #     time=t,
+            #     graph_id=n,
+            #     plot_boundary=True,
+            #     show_graph=False,
+            #     min_temp=min_temp + ABS_ZERO,
+            #     max_temp=max_temp + ABS_ZERO,
+            #     actual_temp_units=TemperatureUnit.KELVIN,
+            #     display_temp_units=TemperatureUnit.CELSIUS,
+            # )
             # plot_stream_function(
             #     stream_function=sf * fluid_params.v * geometry.length_scale,
             #     geometry=geometry,
@@ -271,5 +276,5 @@ if __name__ == "__main__":
             # )
             print()
 
-    print("Creating animation...")
-    create_gif_from_images(output_filename="hyper_coeff.gif", duration=300)
+    # print("Creating animation...")
+    # create_gif_from_images(output_filename="hyper_coeff.gif", duration=300)
