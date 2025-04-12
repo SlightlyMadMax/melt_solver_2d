@@ -239,7 +239,7 @@ if __name__ == "__main__":
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
             # plot_stream_function(
-            #     stream_function=sf / fluid_params.v,
+            #     stream_function=sf * fluid_params.v * geometry.length_scale,
             #     geometry=geometry,
             #     graph_id=n,
             #     show_graph=False,
