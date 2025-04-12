@@ -107,19 +107,19 @@ if __name__ == "__main__":
     )
     print(f"Delta for the initial temperature distribution: {init_delta:.2f}")
 
-    plot_temperature(
-        u=u * thermal_params.delta_u + thermal_params.u_ref,
-        u_pt=thermal_params.u_pt,
-        geom=geometry,
-        time=0.0,
-        graph_id=0,
-        plot_boundary=False,
-        show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-    )
+    # plot_temperature(
+    #     u=u * thermal_params.delta_u + thermal_params.u_ref,
+    #     u_pt=thermal_params.u_pt,
+    #     geom=geometry,
+    #     time=0.0,
+    #     graph_id=0,
+    #     plot_boundary=False,
+    #     show_graph=True,
+    #     min_temp=min_temp + ABS_ZERO,
+    #     max_temp=max_temp + ABS_ZERO,
+    #     actual_temp_units=TemperatureUnit.KELVIN,
+    #     display_temp_units=TemperatureUnit.CELSIUS,
+    # )
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
