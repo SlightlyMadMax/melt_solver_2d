@@ -164,7 +164,7 @@ class ThermalParameters(BaseModel, FileMixin):
             f"{self.thermal_conductivity_ref:.2E} W/(m⋅K)\n"
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
-            f"  Default Smoothing Parameter (Delta): {self.delta or "-"}\n"
+            f"  Default Smoothing Parameter (Delta): {self.delta or '-'}\n"
             f"  Peclet Number: {self.peclet_number:.2E}\n"
             f"  Stefan Number: {self.stefan_number:.2E}\n"
         )
