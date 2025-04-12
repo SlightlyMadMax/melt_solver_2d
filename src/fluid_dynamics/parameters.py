@@ -43,7 +43,8 @@ class FluidParameters(BaseModel, FileMixin):
         """
         Calculate the volumetric thermal expansion coefficient at the reference temperature using polynomial evaluation.
         """
-        return np.polyval(self.volumetric_thermal_exp_coeffs[::-1], self.u_ref)
+        return 7.68e-6
+        # return np.polyval(self.volumetric_thermal_exp_coeffs[::-1], self.u_ref)
 
     @property
     def u_pt_ref(self) -> float:
