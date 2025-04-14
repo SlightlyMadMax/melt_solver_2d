@@ -140,25 +140,24 @@ def init_temperature(
                     u[j, i] = solid_temp
 
     elif shape == DomainShape.RECTANGLE:
+        radius = rect_width / 2
         center_x = geom.width / 2
-        center_y = geom.height / 2
-
+        center_y = rect_height / 2
         half_width = rect_width / 2
         half_height = rect_height / 2
-        radius = half_width  # semicircle on top
 
-        # Rectangle part (bottom)
+        # Rectangle part
         rect_mask = (np.abs(X - center_x) < half_width) & (
-            np.abs(Y - center_y + radius) < half_height
+            np.abs(Y - center_y) < half_height
         )
 
         # Semicircle part (top cap)
-        semicircle_center_y = center_y + half_height - radius
+        semicircle_center_y = center_y + half_height
         dx = X - center_x
         dy = Y - semicircle_center_y
-        semicircle_mask = (dy > 0) & (dx**2 + dy**2 < radius**2)
+        semicircle_mask = dx**2 + dy**2 < radius**2
 
-        # Combine both
+        # Combined mask
         mask = rect_mask | semicircle_mask
 
         u[mask] = liquid_temp

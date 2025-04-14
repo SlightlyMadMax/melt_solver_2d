@@ -113,7 +113,7 @@ if __name__ == "__main__":
     #     geom=geometry,
     #     time=0.0,
     #     graph_id=0,
-    #     plot_boundary=False,
+    #     plot_boundary=True,
     #     show_graph=True,
     #     min_temp=min_temp + ABS_ZERO,
     #     max_temp=max_temp + ABS_ZERO,
