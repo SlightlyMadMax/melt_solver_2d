@@ -180,7 +180,8 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
     @staticmethod
     @njit
     def _compute_sweep_y(
-        u: NDArray[np.float64],
+        u_old: NDArray[np.float64],
+        u_prev: NDArray[np.float64],
         iter_u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
@@ -215,7 +216,7 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         top_phi: NDArray[np.float64] = None,
         bottom_phi: NDArray[np.float64] = None,
     ) -> NDArray[np.float64]:
-        n_y, n_x = u.shape
+        n_y, n_x = u_old.shape
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
 
@@ -270,17 +271,17 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Right-hand side of the equation
-                rhs[j] = u[j, i] - dt * inv_c_eff * (
+                rhs[j] = u_prev[j, i] - dt * inv_c_eff * (
                     inv_dy2
                     * inv_peclet_number
                     * (
-                        k_ij1 * (u[j + 1, i] - u[j, i])
-                        - k_ijm1 * (u[j, i] - u[j - 1, i])
+                        k_ij1 * (u_old[j + 1, i] - u_old[j, i])
+                        - k_ijm1 * (u_old[j, i] - u_old[j - 1, i])
                     )
                     - (
-                        conv_y[j, i, 0] * u[j + 1, i]
-                        + conv_y[j, i, 1] * u[j, i]
-                        + conv_y[j, i, 2] * u[j - 1, i]
+                        conv_y[j, i, 0] * u_old[j + 1, i]
+                        + conv_y[j, i, 1] * u_old[j, i]
+                        + conv_y[j, i, 2] * u_old[j - 1, i]
                     )
                 )
 
@@ -428,7 +429,8 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                 )
             )
             self._compute_sweep_y(
-                u=self._temp_u,
+                u_old=u,
+                u_prev=self._temp_u,
                 iter_u=self._iter_u,
                 conv_x=convection_x,
                 conv_y=convection_y,
