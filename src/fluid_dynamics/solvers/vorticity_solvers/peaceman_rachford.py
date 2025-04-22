@@ -39,10 +39,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u_pt_ref: float,
         delta_u: float,
         c_ind: NDArray[np.float64],
-        # u_pt: float,
-        # u_ref: float,
-        # eps: float,
-        # delta: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -71,70 +67,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    # - inv_dy2
-                    # * (
-                    #     -c_new(
-                    #         u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j + 1, i]
-                    #     + (
-                    #         c_new(
-                    #             u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #         + c_new(
-                    #             u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #     )
-                    #     * sf[j, i]
-                    #     - c_new(
-                    #         u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j - 1, i]
-                    # )
-                    # - inv_dx2
-                    # * (
-                    #     -c_new(
-                    #         u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j, i + 1]
-                    #     + (
-                    #         c_new(
-                    #             u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #         + c_new(
-                    #             u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #     )
-                    #     * sf[j, i]
-                    #     - c_new(
-                    #         u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j, i - 1]
-                    # )
                     - c_ind[j, i] * sf[j, i]
                 )
 
@@ -176,10 +108,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u_pt_ref: float,
         delta_u: float,
         c_ind: NDArray[np.float64],
-        # u_pt: float,
-        # u_ref: float,
-        # eps: float,
-        # delta: float,
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -208,70 +136,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    # - inv_dy2
-                    # * (
-                    #     -c_new(
-                    #         u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j + 1, i]
-                    #     + (
-                    #         c_new(
-                    #             u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #         + c_new(
-                    #             u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #     )
-                    #     * sf[j, i]
-                    #     - c_new(
-                    #         u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j - 1, i]
-                    # )
-                    # - inv_dx2
-                    # * (
-                    #     -c_new(
-                    #         u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j, i + 1]
-                    #     + (
-                    #         c_new(
-                    #             u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #         + c_new(
-                    #             u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
-                    #             u_pt=u_pt,
-                    #             eps=eps,
-                    #             delta=delta,
-                    #         )
-                    #     )
-                    #     * sf[j, i]
-                    #     - c_new(
-                    #         u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
-                    #         u_pt=u_pt,
-                    #         eps=eps,
-                    #         delta=delta,
-                    #     )
-                    #     * sf[j, i - 1]
-                    # )
                     - c_ind[j, i] * sf[j, i]
                 )
 
@@ -344,10 +208,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             c_ind=self.c_ind,
-            # u_pt=self.parameters.u_pt,
-            # u_ref=self.parameters.u_ref,
-            # eps=self.parameters.epsilon,
-            # delta=delta,
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
@@ -371,10 +231,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
             c_ind=self.c_ind,
-            # u_pt=self.parameters.u_pt,
-            # u_ref=self.parameters.u_ref,
-            # eps=self.parameters.epsilon,
-            # delta=delta,
         )
 
         return self._new_w
