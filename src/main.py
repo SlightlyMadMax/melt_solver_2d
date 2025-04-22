@@ -71,7 +71,7 @@ if __name__ == "__main__":
         delta_u=delta_u,
         v=0.04,
         l=geometry.length_scale,
-        epsilon=0.001,
+        epsilon=0.00075,
         kinematic_viscosity_coeffs=[
             0.000108963453,
             -9.28722151e-07,
