@@ -45,14 +45,15 @@ if __name__ == "__main__":
     min_temp = 273.14
     max_temp = 281.15
     reference_temperature = 0.5 * (min_temp + max_temp)
+    delta_u = (max_temp-min_temp) / 2
     # reference_temperature = max_temp
 
     thermal_params = ThermalParameters(
         u_pt=273.15,
         u_ref=reference_temperature,
-        delta_u=8.0,
+        delta_u=delta_u,
         v=0.04,
-        l=0.2,
+        l=geometry.length_scale,
         specific_heat_liquid=4120.7,
         specific_heat_solid=2056.8,
         specific_latent_heat=333000.0,
@@ -67,9 +68,9 @@ if __name__ == "__main__":
     fluid_params = FluidParameters(
         u_pt=273.15,
         u_ref=reference_temperature,
-        delta_u=8.0,
+        delta_u=delta_u,
         v=0.04,
-        l=0.2,
+        l=geometry.length_scale,
         epsilon=0.001,
         kinematic_viscosity_coeffs=[
             0.000108963453,
