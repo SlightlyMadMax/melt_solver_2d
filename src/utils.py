@@ -33,12 +33,12 @@ def solve_tridiagonal(
     :param c: Super-diagonal elements of the tridiagonal matrix.
     :param f: Right-hand side vector.
     :param result: Link to the array where the result will be stored.
-    :param left_type: Type of left boundary condition (0: Dirichlet, 1: Neumann, 2: Robin).
+    :param left_type: Type of left boundary condition (1: Dirichlet, 2: Neumann, 3: Robin).
     :param left_value: Value for the left boundary condition (optional).
     :param left_flux: Flux value for Neumann condition on the left (optional).
     :param left_psi: Psi parameter for Robin condition on the left (optional).
     :param left_phi: Phi parameter for Robin condition on the left (optional).
-    :param right_type: Type of right boundary condition (0: Dirichlet, 1: Neumann, 2: Robin).
+    :param right_type: Type of right boundary condition (1: Dirichlet, 2: Neumann, 3: Robin).
     :param right_value: Value for the right boundary condition (optional).
     :param right_flux: Flux value for Neumann condition on the right (optional).
     :param right_psi: Psi parameter for Robin condition on the right (optional).
