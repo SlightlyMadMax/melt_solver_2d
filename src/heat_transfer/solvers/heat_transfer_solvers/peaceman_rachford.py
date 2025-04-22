@@ -371,6 +371,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             u_pt=self.parameters.u_pt,
         )
         alpha = self.implicit_lin_urf
+        last_diff = np.inf
         self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
 
@@ -452,30 +453,10 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                     else None
                 ),
             )
-            diff = np.linalg.norm(self._temp_u - self._iter_u, ord=2)
-            if diff < self.implicit_lin_stopping_criteria:
-                self._iter_u = np.copy(self._temp_u)
-                break
-            self._iter_u = self._iter_u + alpha * (self._temp_u - self._iter_u)
 
-        self._new_u = np.copy(self._temp_u)
+            self._new_u = np.copy(self._temp_u)
 
-        # convection_x, convection_y = self.convective_operator(
-        #     sf=sf,
-        #     u=self._new_u * self.parameters.delta_u + self.parameters.u_ref,
-        #     u_pt=self.parameters.u_pt,
-        # )
-
-        # Run the y-direction sweep iterations
-        for i in range(self.implicit_lin_max_iters):
-            delta = (
-                self.parameters.delta
-                if self.fixed_delta
-                else get_max_delta(
-                    u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
-                    u_pt=self.parameters.u_pt,
-                )
-            )
+            # Run the y-direction sweep iterations
             self._compute_sweep_y(
                 u=self._temp_u,
                 iter_u=self._iter_u,
@@ -547,6 +528,12 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             diff = np.linalg.norm(self._new_u - self._iter_u, ord=2)
             if diff < self.implicit_lin_stopping_criteria:
                 break
+
+            # Adaptive under-relaxation
+            if diff > last_diff:
+                alpha = max(alpha * 0.5, 1e-4)
+
             self._iter_u = self._iter_u + alpha * (self._new_u - self._iter_u)
+            last_diff = diff
 
         return self._new_u
