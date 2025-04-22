@@ -87,7 +87,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
     @staticmethod
     @njit
     def _compute_sweep_y(
-        w: NDArray[np.float64],
+        w_old: NDArray[np.float64],
+        w_prev: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
@@ -108,7 +109,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         delta_u: float,
         c_ind: NDArray[np.float64],
     ) -> NDArray[np.float64]:
-        n_y, n_x = w.shape
+        n_y, n_x = w_old.shape
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
 
@@ -122,14 +123,13 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
 
                 c_y[j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
-                rhs[j] = w[j, i] - dt * (
-                    inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
+                rhs[j] = w_prev[j, i] - dt * (
+                    inv_re * inv_dy2 * (w_old[j + 1, i] - 2.0 * w_old[j, i] + w_old[j - 1, i])
                     - (
-                        conv_y[j, i, 0] * w[j + 1, i]
-                        + conv_y[j, i, 1] * w[j, i]
-                        + conv_y[j, i, 2] * w[j - 1, i]
+                        conv_y[j, i, 0] * w_old[j + 1, i]
+                        + conv_y[j, i, 1] * w_old[j, i]
+                        + conv_y[j, i, 2] * w_old[j - 1, i]
                     )
-                    - c_ind[j, i] * sf[j, i]
                 )
 
             solve_tridiagonal(
@@ -197,7 +197,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
-            w=self._temp_w,
+            w_old=w,
+            w_prev=self._temp_w,
             sf=sf,
             u=u,
             conv_x=conv_x,
