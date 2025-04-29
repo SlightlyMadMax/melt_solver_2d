@@ -33,11 +33,11 @@ from src.utils import get_remaining_time
 if __name__ == "__main__":
     geometry = DomainGeometry(
         width=0.4,
-        height=0.4,
+        height=0.2,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=401,
+        n_x=801,
         n_y=401,
-        n_t=60 * 60 * 24 * 200,
+        n_t=60 * 60 * 24 * 400,
     )
 
     print(geometry)
@@ -190,10 +190,10 @@ if __name__ == "__main__":
         parameters=thermal_params,
         bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=1,
+        implicit_lin_max_iters=5,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=1.0,
-        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+        implicit_lin_urf=0.75,
+        solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
     )
 
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
-        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
+        vorticity_solver_name=VorticitySolverName.DOUGLAS_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
         stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
         implicit_lin_max_iters=1,
@@ -216,14 +216,20 @@ if __name__ == "__main__":
     #     sf_stopping_criteria=1e-5,
     # )
 
+    u_temp = np.copy(u)
+    sf_temp, w_temp = np.copy(sf), np.copy(w)
+
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
-        u = heat_transfer_solver.solve(u=u, sf=sf, time=t)
+        u_temp = heat_transfer_solver.solve(u=u, sf=sf, time=t)
+        sf_temp, w_temp = navier_solver.solve(w=w, sf=sf, u=u_temp, time=t)
+
+        u = heat_transfer_solver.solve(u=u, sf=sf_temp, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 2000 == 0:
+        if n % 4000 == 0:
             np.savez_compressed(f"../data/experiment/u_{n}.npz", u=u)
             d = get_max_delta(
                 u * thermal_params.delta_u + thermal_params.u_ref,
