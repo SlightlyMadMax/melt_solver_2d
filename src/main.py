@@ -45,7 +45,7 @@ if __name__ == "__main__":
     min_temp = 273.14
     max_temp = 281.15
     reference_temperature = 0.5 * (min_temp + max_temp)
-    delta_u = (max_temp-min_temp) / 2
+    delta_u = (max_temp - min_temp) / 2
     # reference_temperature = max_temp
 
     thermal_params = ThermalParameters(
