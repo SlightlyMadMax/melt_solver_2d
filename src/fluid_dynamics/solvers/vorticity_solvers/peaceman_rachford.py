@@ -9,7 +9,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import calculate_indicator_function, c_new
+from src.fluid_dynamics.utils import calculate_indicator_function
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.utils import solve_tridiagonal
 
