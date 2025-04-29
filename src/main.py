@@ -190,10 +190,10 @@ if __name__ == "__main__":
         parameters=thermal_params,
         bcs=u_bcs,
         fixed_delta=False,
-        implicit_lin_max_iters=5,
+        implicit_lin_max_iters=1,
         implicit_lin_stopping_criteria=1e-6,
-        implicit_lin_urf=0.75,
-        solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
+        implicit_lin_urf=1.0,
+        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
     )
 
@@ -201,11 +201,11 @@ if __name__ == "__main__":
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
-        vorticity_solver_name=VorticitySolverName.DOUGLAS_RACHFORD,
+        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
         stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
-        implicit_lin_max_iters=1,
-        implicit_lin_urf=1.0,
+        implicit_lin_max_iters=5,
+        implicit_lin_urf=0.5,
     )
 
     # navier_solver = NonIterativeNavierStokersSolver(
