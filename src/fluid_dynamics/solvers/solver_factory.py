@@ -84,6 +84,7 @@ class IterativeNavierStokesSolver:
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         alpha = self.implicit_lin_urf
+        last_diff = np.inf
         self._stream_function = np.copy(sf)
 
         for iteration in range(self.implicit_lin_max_iters):
@@ -98,14 +99,23 @@ class IterativeNavierStokesSolver:
                 vorticity=self._vorticity,
                 time=time,
             )
+
             diff = np.linalg.norm(
                 self._temp_stream_function - self._stream_function, ord=2
             )
+
+            if diff < self.implicit_lin_stopping_criteria:
+                break
+
+            # Adaptive under-relaxation
+            if diff > last_diff:
+                alpha = max(alpha * 0.5, 1e-4)
+
             self._stream_function = self._stream_function + alpha * (
                 self._temp_stream_function - self._stream_function
             )
-            if diff < self.implicit_lin_stopping_criteria:
-                break
+
+            last_diff = diff
 
         return self._stream_function, self._vorticity
 
