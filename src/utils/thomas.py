@@ -1,7 +1,4 @@
-import time
-import json
 import numpy as np
-import scipy.sparse.linalg as spla
 from numba import njit
 
 
@@ -82,40 +79,3 @@ def solve_tridiagonal(
     # Backward substitution to find the solution
     for j in range(n - 2, -1, -1):
         result[j] = alpha[j] * result[j + 1] + beta[j]
-
-
-def get_remaining_time(n: int, n_t: int, start_time: float) -> float:
-    """
-    Calculate the approximate remaining calculation time in seconds.
-    :param n: current step
-    :param n_t: total amount of steps
-    :param start_time: value of time.perf_counter() right before the calculation
-    :return: estimated remaining time in seconds
-    """
-    return (time.perf_counter() - start_time) * (n_t - n) / n
-
-
-def is_positive_definite(A) -> bool:
-    """Check if a sparse matrix A is positive definite using eigenvalues."""
-    eigvals = spla.eigs(
-        A=A,
-        k=min(A.shape[0] - 1, 5),
-        which="SM",
-        return_eigenvectors=False,
-    )
-    return np.all(eigvals > 0)
-
-
-class FileMixin:
-    """Mixin for adding file loading and saving functionality to pydantic BaseModel."""
-    @classmethod
-    def load_from_file(cls, file_path: str):
-        """Load parameters from a JSON file."""
-        with open(file_path, "r") as file:
-            data = json.load(file)
-        return cls.model_validate(data)
-
-    def save_to_file(self, file_path: str):
-        """Save the model data to a JSON file."""
-        with open(file_path, "w") as file:
-            json.dump(self.model_dump(), file, indent=4)
