@@ -6,20 +6,8 @@ from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 
 from src.boundary_conditions import BoundaryConditions
+from src.core.base_solver import BaseSolver
 from src.geometry import DomainGeometry
-
-
-class BaseSolver(ABC):
-    def __init__(
-        self,
-        geometry: DomainGeometry,
-        bcs: Optional[BoundaryConditions] = None,
-    ):
-        self.geometry = geometry
-        self.bcs = bcs
-
-    @abstractmethod
-    def solve(self, *args, **kwargs) -> NDArray[np.float64]: ...
 
 
 class Sweep2DSolver(BaseSolver, ABC):
