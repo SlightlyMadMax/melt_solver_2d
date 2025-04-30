@@ -42,10 +42,10 @@ else:
 geometry = DomainGeometry(
     width=1.0,
     height=8.0,
-    end_time=60.0 * 60.0 * 24.0 * 300.0,  # 300 days
+    end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
     n_x=21,
     n_y=1001,
-    n_t=300 * 24,
+    n_t=100 * 24,
 )
 
 print(geometry)
