@@ -3,10 +3,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
-from src.utils import FileMixin
+from src.parameters.mixins import FileIOMixin
 
 
-class ThermalParameters(BaseModel, FileMixin):
+class ThermalParameters(BaseModel, FileIOMixin):
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
     delta_u: float = Field(

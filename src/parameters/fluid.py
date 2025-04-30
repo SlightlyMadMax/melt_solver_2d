@@ -4,10 +4,10 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from src.constants import G
-from src.utils import FileMixin
+from src.parameters.mixins import FileIOMixin
 
 
-class FluidParameters(BaseModel, FileMixin):
+class FluidParameters(BaseModel, FileIOMixin):
     u_pt: float = Field(..., gt=0.0, description="Phase transition temperature [K].")
     u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
     delta_u: float = Field(
