@@ -1,6 +1,8 @@
 import numpy as np
+
 from abc import abstractmethod
 from typing import Optional
+from numba import njit
 from numpy.typing import NDArray
 
 from src.convective_operators import BaseConvectiveOperator
@@ -9,6 +11,7 @@ from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
+from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.parameters.thermal import ThermalParameters
 
 
@@ -42,11 +45,62 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self._new_u: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
+        self._c_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
+        self._k_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
 
     @abstractmethod
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None: ...
+
+    @staticmethod
+    @njit
+    def compute_effective_properties(
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        u: NDArray[np.float64],
+        u_ref: float,
+        u_pt: float,
+        delta_u: float,
+        c_ref: float,
+        c_solid: float,
+        c_liquid: float,
+        l_solid: float,
+        k_ref: float,
+        k_solid: float,
+        k_liquid: float,
+        delta: float,
+    ) -> None:
+        n_y, n_x = u.shape
+        inv_c_ref = 1.0 / c_ref
+        inv_k_ref = 1.0 / k_ref
+
+        for j in range(n_y):
+            for i in range(n_x):
+                T = u[j, i] * delta_u + u_ref
+
+                c_eff[j, i] = (
+                    c_smoothed(
+                        u=T,
+                        u_pt=u_pt,
+                        c_solid=c_solid,
+                        c_liquid=c_liquid,
+                        l_solid=l_solid,
+                        delta=delta,
+                    )
+                    * inv_c_ref
+                )
+
+                k_eff[j, i] = (
+                    k_smoothed(
+                        u=T,
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta,
+                    )
+                    * inv_k_ref
+                )
 
 
 class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
