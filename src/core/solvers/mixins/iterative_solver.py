@@ -51,4 +51,4 @@ class IterativeSolverMixin:
             # Under-relaxation
             self._iter_u[:, :] = urf * self._new_u + (1 - urf) * self._iter_u
 
-        return self._iter_u
+        return self._new_u
