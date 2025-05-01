@@ -38,9 +38,6 @@ class IterativeSolverMixin:
         for k in range(self.max_iters):
             self.solve_linear(u=u, **kwargs)
 
-            # Under-relaxation
-            self._iter_u[:, :] = urf * self._new_u + (1 - urf) * self._iter_u
-
             # Check for convergence
             norm_diff = np.linalg.norm(self._new_u - self._iter_u, ord=np.inf)
             if norm_diff < self.tolerance:
@@ -49,7 +46,9 @@ class IterativeSolverMixin:
             # Adaptive under-relaxation parameter
             if norm_diff > last_diff:
                 urf = max(urf * 0.5, 1e-4)
-
             last_diff = norm_diff
 
-        return self._new_u
+            # Under-relaxation
+            self._iter_u[:, :] = urf * self._new_u + (1 - urf) * self._iter_u
+
+        return self._iter_u
