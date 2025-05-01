@@ -3,7 +3,6 @@ from numba import njit
 from numpy.typing import NDArray
 
 from src.core.boundary_conditions import BoundaryConditionType
-from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ExplicitHeatTransferSolver,
@@ -26,26 +25,15 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
         dx: float,
         dy: float,
         dt: float,
-        u_ref: float,
-        u_pt: float,
-        delta_u: float,
-        c_ref: float,
-        c_solid: float,
-        c_liquid: float,
-        l_solid: float,
-        k_ref: float,
-        k_solid: float,
-        k_liquid: float,
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
         peclet_number: float,
-        delta: float,
         right_value: NDArray[np.float64] = None,
         left_value: NDArray[np.float64] = None,
     ) -> NDArray[np.float64]:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
         inv_dy = 1.0 / dy
-
-        inv_k_ref = 1.0 / k_ref
         inv_peclet_number = 1.0 / peclet_number
 
         result[0, :] = result[1, :]  # Adiabatic top wall
@@ -55,54 +43,11 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                inv_c_eff = c_ref / c_smoothed(
-                    u=u[j, i] * delta_u + u_ref,
-                    u_pt=u_pt,
-                    c_solid=c_solid,
-                    c_liquid=c_liquid,
-                    l_solid=l_solid,
-                    delta=delta,
-                )
-                k_i1j = (
-                    k_smoothed(
-                        u=0.5 * (u[j, i + 1] + u[j, i]) * delta_u + u_ref,
-                        u_pt=u_pt,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        delta=delta,
-                    )
-                    * inv_k_ref
-                )
-                k_im1j = (
-                    k_smoothed(
-                        u=0.5 * (u[j, i] + u[j, i - 1]) * delta_u + u_ref,
-                        u_pt=u_pt,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        delta=delta,
-                    )
-                    * inv_k_ref
-                )
-                k_ij1 = (
-                    k_smoothed(
-                        u=0.5 * (u[j + 1, i] + u[j, i]) * delta_u + u_ref,
-                        u_pt=u_pt,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        delta=delta,
-                    )
-                    * inv_k_ref
-                )
-                k_ijm1 = (
-                    k_smoothed(
-                        u=0.5 * (u[j, i] + u[j - 1, i]) * delta_u + u_ref,
-                        u_pt=u_pt,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        delta=delta,
-                    )
-                    * inv_k_ref
-                )
+                inv_c_eff = 1.0 / c_eff[j, i]
+                k_i1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
+                k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
+                k_ij1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
+                k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 advection_x = (
                     conv_x[j, i, 0] * u[j, i + 1]
@@ -149,20 +94,16 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             self.parameters.delta
             if self.fixed_delta
             else get_max_delta(
-                u=u * self.parameters.delta_u + self.parameters.u_ref,
+                u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
                 u_pt=self.parameters.u_pt,
             )
         )
-        self._compute_temperature(
-            u=u,
-            conv_x=convection_x,
-            conv_y=convection_y,
-            result=self._new_u,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            u_pt=self.parameters.u_pt,
+        self.compute_effective_properties(
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            u=self._iter_u,
             u_ref=self.parameters.u_ref,
+            u_pt=self.parameters.u_pt,
             delta_u=self.parameters.delta_u,
             c_ref=self.parameters.volumetric_heat_capacity_ref,
             c_solid=self.parameters.volumetric_heat_capacity_solid,
@@ -171,8 +112,20 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             k_ref=self.parameters.thermal_conductivity_ref,
             k_solid=self.parameters.thermal_conductivity_solid,
             k_liquid=self.parameters.thermal_conductivity_liquid,
-            peclet_number=self.parameters.peclet_number,
             delta=delta,
+        )
+
+        self._compute_temperature(
+            u=u,
+            conv_x=convection_x,
+            conv_y=convection_y,
+            result=self._new_u,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            peclet_number=self.parameters.peclet_number,
             right_value=(
                 self.bcs.right.get_value(t=time)
                 if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
