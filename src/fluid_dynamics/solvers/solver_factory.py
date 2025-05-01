@@ -29,15 +29,15 @@ class IterativeNavierStokesSolver:
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         sf_max_iters: int = 1000,
         sf_stopping_criteria: float = 1e-6,
-        implicit_lin_max_iters: int = 5,
-        implicit_lin_stopping_criteria: float = 1e-6,
-        implicit_lin_urf: float = 0.5,
+        max_iters: int = 5,
+        tolerance: float = 1e-6,
+        urf: float = 0.5,
         bc_order: int = 2,
     ):
         self.geometry = geometry
-        self.implicit_lin_max_iters = implicit_lin_max_iters
-        self.implicit_lin_stopping_criteria = implicit_lin_stopping_criteria
-        self.implicit_lin_urf = implicit_lin_urf
+        self.max_iters = max_iters
+        self.tolerance = tolerance
+        self.urf = urf
 
         if bc_order not in (1, 2):
             raise NotImplementedError(
@@ -73,7 +73,7 @@ class IterativeNavierStokesSolver:
         self._stream_function: NDArray[np.float64] = np.empty(
             (geometry.n_y, geometry.n_x)
         )
-        self._temp_stream_function: NDArray[np.float64] = np.empty(
+        self._iter_stream_function: NDArray[np.float64] = np.empty(
             (geometry.n_y, geometry.n_x)
         )
 
@@ -84,39 +84,40 @@ class IterativeNavierStokesSolver:
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        alpha = self.implicit_lin_urf
+        urf = self.urf
         last_diff = np.inf
-        self._stream_function = np.copy(sf)
+        self._stream_function[:, :] = sf
+        self._iter_stream_function[:, :] = sf
 
-        for iteration in range(self.implicit_lin_max_iters):
-            self._vorticity = self._solve_vorticity(
+        for iteration in range(self.max_iters):
+            self._solve_vorticity(
                 old_vorticity=w,
-                stream_function=self._stream_function,
+                stream_function=self._iter_stream_function,
                 temperature=u,
                 time=time,
             )
-            self._temp_stream_function = self._solve_stream_function(
+            self._solve_stream_function(
                 initial_guess=self._stream_function,
                 vorticity=self._vorticity,
                 time=time,
             )
 
-            diff = np.linalg.norm(
-                self._temp_stream_function - self._stream_function, ord=2
+            # Check for convergence
+            norm_diff = np.linalg.norm(
+                self._stream_function - self._iter_stream_function, ord=2
             )
-
-            if diff < self.implicit_lin_stopping_criteria:
+            if norm_diff < self.tolerance:
                 break
 
-            # Adaptive under-relaxation
-            if diff > last_diff:
-                alpha = max(alpha * 0.5, 1e-4)
+            # Adaptive under-relaxation parameter
+            if norm_diff > last_diff:
+                urf = max(urf * 0.5, 1e-4)
+            last_diff = norm_diff
 
-            self._stream_function = self._stream_function + alpha * (
-                self._temp_stream_function - self._stream_function
+            # Under-relaxation
+            self._iter_stream_function[:, :] = (
+                urf * self._stream_function + (1 - urf) * self._iter_stream_function
             )
-
-            last_diff = diff
 
         return self._stream_function, self._vorticity
 
