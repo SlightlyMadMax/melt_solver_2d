@@ -4,8 +4,8 @@ import numpy as np
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 
-from src.boundary_conditions import BoundaryConditions
-from src.geometry import DomainGeometry
+from src.core.boundary_conditions import BoundaryConditions
+from src.core.geometry import DomainGeometry
 
 
 class BaseSolver(ABC):

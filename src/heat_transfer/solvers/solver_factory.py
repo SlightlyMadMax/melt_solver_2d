@@ -1,14 +1,14 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryConditions
 from src.convective_operators import (
     ConvectiveTermForm,
     ConvectiveVorticityTransportOperator,
 )
-from src.geometry import DomainGeometry
-from src.heat_transfer.parameters import ThermalParameters
+from src.core.boundary_conditions import BoundaryConditions
+from src.core.geometry import DomainGeometry
 from src.heat_transfer.solvers.heat_transfer_solvers import *
+from src.parameters.thermal import ThermalParameters
 
 
 class HeatTransferSolver:
@@ -20,9 +20,9 @@ class HeatTransferSolver:
         solver_name: HeatTransferSolverName = HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         fixed_delta: bool = False,
-        implicit_lin_max_iters: int = 5,
-        implicit_lin_stopping_criteria: float = 1e-6,
-        implicit_lin_urf: float = 0.5,
+        max_iters: int = 5,
+        tolerance: float = 1e-6,
+        urf: float = 0.5,
     ):
         solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
@@ -36,9 +36,9 @@ class HeatTransferSolver:
             convective_operator=self.convective_operator,
             bcs=bcs,
             fixed_delta=fixed_delta,
-            implicit_lin_max_iters=implicit_lin_max_iters,
-            implicit_lin_stopping_criteria=implicit_lin_stopping_criteria,
-            implicit_lin_urf=implicit_lin_urf,
+            max_iters=max_iters,
+            tolerance=tolerance,
+            urf=urf,
         )
 
     def solve(

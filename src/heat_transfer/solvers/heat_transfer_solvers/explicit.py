@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryConditionType
+from src.core.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
@@ -137,12 +137,9 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
 
         return result
 
-    def solve(
-        self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        time: float = 0.0,
-    ) -> NDArray[np.float64]:
+    def solve_linear(
+        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+    ) -> None:
         convection_x, convection_y = self.convective_operator(
             sf=sf,
             u=u * self.parameters.delta_u + self.parameters.u_ref,
@@ -187,5 +184,3 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
                 else None
             ),
         )
-
-        return self._new_u

@@ -2,17 +2,17 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.boundary_conditions import BoundaryConditionType
+from src.core.boundary_conditions import BoundaryConditionType
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+    ImplicitHeatTransferSolver,
+)
 from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.heat_transfer.solvers.heat_transfer_solvers.base import (
-    ImplicitHeatTransferSolver,
-)
-from src.utils import solve_tridiagonal
+from src.utils.thomas import solve_tridiagonal
 
 
 @register_solver(HeatTransferSolverName.LOC_ONE_DIM)
@@ -262,179 +262,161 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
 
         return result
 
-    def solve(
-        self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        time: float = 0.0,
-    ) -> NDArray[np.float64]:
+    def solve_linear(
+        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+    ) -> None:
         convection_x, convection_y = self.convective_operator(
             sf=sf,
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
         )
-        alpha = self.implicit_lin_urf
-        last_diff = np.inf
-        self._iter_u = np.copy(u)
         self._temp_u = np.copy(u)
 
+        delta = (
+            self.parameters.delta
+            if self.fixed_delta
+            else get_max_delta(
+                u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
+                u_pt=self.parameters.u_pt,
+            )
+        )
+
         # Run the x-direction sweep iterations
-        for i in range(self.implicit_lin_max_iters):
-            delta = (
-                self.parameters.delta
-                if self.fixed_delta
-                else get_max_delta(
-                    u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
-                    u_pt=self.parameters.u_pt,
-                )
-            )
-            self._compute_sweep_x(
-                u=u,
-                iter_u=self._iter_u,
-                conv_x=convection_x,
-                conv_y=convection_y,
-                result=self._temp_u,
-                a_x=self._a_x,
-                b_x=self._b_x,
-                c_x=self._c_x,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
-                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-                u_pt=self.parameters.u_pt,
-                u_ref=self.parameters.u_ref,
-                delta_u=self.parameters.delta_u,
-                c_ref=self.parameters.volumetric_heat_capacity_ref,
-                c_solid=self.parameters.volumetric_heat_capacity_solid,
-                c_liquid=self.parameters.volumetric_heat_capacity_liquid,
-                l_solid=self.parameters.volumetric_latent_heat,
-                k_ref=self.parameters.thermal_conductivity_ref,
-                k_solid=self.parameters.thermal_conductivity_solid,
-                k_liquid=self.parameters.thermal_conductivity_liquid,
-                peclet_number=self.parameters.peclet_number,
-                delta=delta,
-                rbc_type=self.bcs.right.boundary_type.value,
-                lbc_type=self.bcs.left.boundary_type.value,
-                right_value=(
-                    self.bcs.right.get_value(t=time)
-                    if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                left_value=(
-                    self.bcs.left.get_value(t=time)
-                    if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                right_flux=(
-                    self.bcs.right.get_flux(t=time)
-                    if self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN
-                    else None
-                ),
-                left_flux=(
-                    self.bcs.left.get_flux(t=time)
-                    if self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN
-                    else None
-                ),
-                right_psi=(
-                    self.bcs.right.get_psi(t=time)
-                    if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                left_psi=(
-                    self.bcs.left.get_psi(t=time)
-                    if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                right_phi=(
-                    self.bcs.right.get_phi(t=time)
-                    if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                left_phi=(
-                    self.bcs.left.get_phi(t=time)
-                    if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-            )
+        self._compute_sweep_x(
+            u=u,
+            iter_u=self._iter_u,
+            conv_x=convection_x,
+            conv_y=convection_y,
+            result=self._temp_u,
+            a_x=self._a_x,
+            b_x=self._b_x,
+            c_x=self._c_x,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            u_pt=self.parameters.u_pt,
+            u_ref=self.parameters.u_ref,
+            delta_u=self.parameters.delta_u,
+            c_ref=self.parameters.volumetric_heat_capacity_ref,
+            c_solid=self.parameters.volumetric_heat_capacity_solid,
+            c_liquid=self.parameters.volumetric_heat_capacity_liquid,
+            l_solid=self.parameters.volumetric_latent_heat,
+            k_ref=self.parameters.thermal_conductivity_ref,
+            k_solid=self.parameters.thermal_conductivity_solid,
+            k_liquid=self.parameters.thermal_conductivity_liquid,
+            peclet_number=self.parameters.peclet_number,
+            delta=delta,
+            rbc_type=self.bcs.right.boundary_type.value,
+            lbc_type=self.bcs.left.boundary_type.value,
+            right_value=(
+                self.bcs.right.get_value(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            left_value=(
+                self.bcs.left.get_value(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            right_flux=(
+                self.bcs.right.get_flux(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN
+                else None
+            ),
+            left_flux=(
+                self.bcs.left.get_flux(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN
+                else None
+            ),
+            right_psi=(
+                self.bcs.right.get_psi(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            left_psi=(
+                self.bcs.left.get_psi(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            right_phi=(
+                self.bcs.right.get_phi(t=time)
+                if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            left_phi=(
+                self.bcs.left.get_phi(t=time)
+                if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+        )
 
-            self._new_u = np.copy(self._temp_u)
+        self._new_u = np.copy(self._temp_u)
 
-            # Run the y-direction sweep iterations
-            self._compute_sweep_y(
-                u=self._temp_u,
-                iter_u=self._iter_u,
-                conv_x=convection_x,
-                conv_y=convection_y,
-                result=self._new_u,
-                a_y=self._a_y,
-                b_y=self._b_y,
-                c_y=self._c_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
-                dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-                u_pt=self.parameters.u_pt,
-                u_ref=self.parameters.u_ref,
-                delta_u=self.parameters.delta_u,
-                c_ref=self.parameters.volumetric_heat_capacity_ref,
-                c_solid=self.parameters.volumetric_heat_capacity_solid,
-                c_liquid=self.parameters.volumetric_heat_capacity_liquid,
-                l_solid=self.parameters.volumetric_latent_heat,
-                k_ref=self.parameters.thermal_conductivity_ref,
-                k_solid=self.parameters.thermal_conductivity_solid,
-                k_liquid=self.parameters.thermal_conductivity_liquid,
-                peclet_number=self.parameters.peclet_number,
-                delta=delta,
-                tbc_type=self.bcs.top.boundary_type.value,
-                bbc_type=self.bcs.bottom.boundary_type.value,
-                top_value=(
-                    self.bcs.top.get_value(t=time)
-                    if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                bottom_value=(
-                    self.bcs.bottom.get_value(t=time)
-                    if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
-                    else None
-                ),
-                top_flux=(
-                    self.bcs.top.get_flux(t=time)
-                    if self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN
-                    else None
-                ),
-                bottom_flux=(
-                    self.bcs.bottom.get_flux(t=time)
-                    if self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN
-                    else None
-                ),
-                top_psi=(
-                    self.bcs.top.get_psi(t=time)
-                    if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                bottom_psi=(
-                    self.bcs.bottom.get_psi(t=time)
-                    if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                top_phi=(
-                    self.bcs.top.get_phi(t=time)
-                    if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-                bottom_phi=(
-                    self.bcs.bottom.get_phi(t=time)
-                    if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
-                    else None
-                ),
-            )
-            diff = np.linalg.norm(self._new_u - self._iter_u, ord=2)
-            if diff < self.implicit_lin_stopping_criteria:
-                break
-
-            # Adaptive under-relaxation
-            if diff > last_diff:
-                alpha = max(alpha * 0.5, 1e-4)
-
-            self._iter_u = self._iter_u + alpha * (self._new_u - self._iter_u)
-            last_diff = diff
-
-        return self._new_u
+        # Run the y-direction sweep iterations
+        self._compute_sweep_y(
+            u=self._temp_u,
+            iter_u=self._iter_u,
+            conv_x=convection_x,
+            conv_y=convection_y,
+            result=self._new_u,
+            a_y=self._a_y,
+            b_y=self._b_y,
+            c_y=self._c_y,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            u_pt=self.parameters.u_pt,
+            u_ref=self.parameters.u_ref,
+            delta_u=self.parameters.delta_u,
+            c_ref=self.parameters.volumetric_heat_capacity_ref,
+            c_solid=self.parameters.volumetric_heat_capacity_solid,
+            c_liquid=self.parameters.volumetric_heat_capacity_liquid,
+            l_solid=self.parameters.volumetric_latent_heat,
+            k_ref=self.parameters.thermal_conductivity_ref,
+            k_solid=self.parameters.thermal_conductivity_solid,
+            k_liquid=self.parameters.thermal_conductivity_liquid,
+            peclet_number=self.parameters.peclet_number,
+            delta=delta,
+            tbc_type=self.bcs.top.boundary_type.value,
+            bbc_type=self.bcs.bottom.boundary_type.value,
+            top_value=(
+                self.bcs.top.get_value(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            bottom_value=(
+                self.bcs.bottom.get_value(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
+                else None
+            ),
+            top_flux=(
+                self.bcs.top.get_flux(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN
+                else None
+            ),
+            bottom_flux=(
+                self.bcs.bottom.get_flux(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN
+                else None
+            ),
+            top_psi=(
+                self.bcs.top.get_psi(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            bottom_psi=(
+                self.bcs.bottom.get_psi(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            top_phi=(
+                self.bcs.top.get_phi(t=time)
+                if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+            bottom_phi=(
+                self.bcs.bottom.get_phi(t=time)
+                if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
+                else None
+            ),
+        )

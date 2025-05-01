@@ -107,9 +107,9 @@ heat_transfer_solver = HeatTransferSolver(
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
-    implicit_lin_max_iters=1,
-    implicit_lin_stopping_criteria=1e-6,
-    implicit_lin_urf=1.0,
+    max_iters=1,
+    tolerance=1e-6,
+    urf=1.0,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
