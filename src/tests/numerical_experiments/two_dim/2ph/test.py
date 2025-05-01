@@ -3,20 +3,21 @@ import time
 
 import numpy as np
 
-from src.boundary_conditions import (
+
+from src.constants import ABS_ZERO
+from src.convective_operators import ConvectiveTermForm
+from src.core.boundary_conditions import (
     BoundaryCondition,
     BoundaryConditionType,
     BoundaryConditions,
 )
-from src.constants import ABS_ZERO
-from src.convective_operators import ConvectiveTermForm
-from src.geometry import DomainGeometry
+from src.core.geometry import DomainGeometry
 from src.heat_transfer.init_values import init_temperature_with_interface
-from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.utils import TemperatureUnit
-from src.utils import get_remaining_time
+from src.parameters.thermal import ThermalParameters
+from src.utils.time_utils import get_remaining_time
 
 max_temp = 278.15
 min_temp = 268.15
@@ -26,9 +27,9 @@ geometry = DomainGeometry(
     width=1.0,
     height=1.0,
     end_time=60.0 * 60.0 * 24.0 * 250.0,
-    n_x=100,
-    n_y=100,
-    n_t=24 * 250 * 60,
+    n_x=200,
+    n_y=200,
+    n_t=24 * 250,
 )
 
 print(geometry)
@@ -38,10 +39,11 @@ thermal_params = ThermalParameters(
     u_pt=273.15,
     u_ref=reference_temperature,
     delta_u=max_temp - min_temp,
+    l=geometry.length_scale,
     v=0.01,
     specific_heat_liquid=4120.7,
     specific_heat_solid=2056.8,
-    specific_latent_heat_solid=333000.0,
+    specific_latent_heat=333000.0,
     density_liquid=999.84,
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
@@ -151,9 +153,9 @@ start_time = time.perf_counter()
 for i in range(1, geometry.n_t + 1):
     t = i * geometry.dt
     u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t)
-    if i % (24 * 60) == 0:
+    if i % 24 == 0:
         print(
-            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i / 60} ч, "
+            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, "
             f"ВРЕМЯ ВЫПОЛНЕНИЯ: {(time.perf_counter() - start_time) / 60:.2f} мин., "
             f"ОСТАЛОСЬ: {get_remaining_time(n=i, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
         )

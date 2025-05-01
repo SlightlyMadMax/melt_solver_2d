@@ -5,8 +5,8 @@ from scipy.optimize import fsolve
 from scipy.special import erf
 
 from src.constants import ABS_ZERO
-from src.geometry import DomainGeometry
-from src.heat_transfer.parameters import ThermalParameters
+from src.core.geometry import DomainGeometry
+from src.parameters.thermal import ThermalParameters
 
 
 def trans_eq(gamma: float, params: ThermalParameters, min_temp: float, max_temp: float):

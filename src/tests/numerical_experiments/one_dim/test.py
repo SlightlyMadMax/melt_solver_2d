@@ -4,20 +4,20 @@ import numpy as np
 import os
 
 
-from src.boundary_conditions import (
+from src.constants import ABS_ZERO
+from src.convective_operators import ConvectiveTermForm
+from src.core.boundary_conditions import (
     BoundaryConditionType,
     BoundaryConditions,
     BoundaryCondition,
 )
-from src.constants import ABS_ZERO
-from src.convective_operators import ConvectiveTermForm
-from src.geometry import DomainGeometry
-from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
+from src.core.geometry import DomainGeometry
+from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.parameters.thermal import ThermalParameters
+from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
 )
-from src.heat_transfer.parameters import ThermalParameters
-from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.numerical_experiments.one_dim.compare_boundary import compare_num_with_analytic
+from src.tests.numerical_experiments.one_dim.compare_boundary import compare_num_with_analytic
 
 
 dir_name = input("Enter a directory name where the data will be stored: ")

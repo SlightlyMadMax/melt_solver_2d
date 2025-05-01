@@ -3,13 +3,13 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.boundary_conditions import (
+from src.core.boundary_conditions import (
     BoundaryCondition,
     BoundaryConditionType,
     BoundaryConditions,
 )
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers.sor import SORPoissonSolver
-from src.geometry import DomainGeometry
 
 
 def test_sor_poisson_solver():

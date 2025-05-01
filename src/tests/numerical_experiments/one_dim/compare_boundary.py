@@ -4,8 +4,8 @@ import numpy as np
 from scipy.optimize import fsolve
 
 from src.constants import ABS_ZERO
-from src.heat_transfer.parameters import ThermalParameters
-from src.numerical_experiments.one_dim.analytic_solution_1d_2ph import trans_eq
+from src.parameters.thermal import ThermalParameters
+from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import trans_eq
 
 
 def compare_num_with_analytic(

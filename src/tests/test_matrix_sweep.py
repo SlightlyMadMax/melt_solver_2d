@@ -3,15 +3,15 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.boundary_conditions import (
+from src.core.boundary_conditions import (
     BoundaryCondition,
     BoundaryConditionType,
     BoundaryConditions,
 )
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers.matrix_sweep import (
     MatrixSweepPoissonSolver,
 )
-from src.geometry import DomainGeometry
 
 
 def test_matrix_sweep_poisson_solver():

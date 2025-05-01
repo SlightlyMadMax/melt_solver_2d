@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_almost_equal
 
-from src.utils import solve_tridiagonal
+from src.utils.thomas import solve_tridiagonal
 
 
 def test_solve_tridiagonal_bc_1():
