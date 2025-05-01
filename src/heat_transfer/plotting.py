@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from typing import Optional
-
 from PIL import Image
 from numpy.typing import NDArray
 
+import src.constants as cfg
+from src.core.geometry import DomainGeometry
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.utils import TemperatureUnit
-from src.geometry import DomainGeometry
-import src.constants as cfg
 
 
 def _convert_temp_in_display_units(

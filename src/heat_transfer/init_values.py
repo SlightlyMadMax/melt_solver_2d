@@ -4,8 +4,8 @@ from enum import Enum
 from numpy.typing import NDArray
 from typing import Tuple, Optional
 
-from src.geometry import DomainGeometry
-from src.heat_transfer.parameters import ThermalParameters
+from src.core.geometry import DomainGeometry
+from src.parameters.thermal import ThermalParameters
 
 
 class DomainShape(Enum):

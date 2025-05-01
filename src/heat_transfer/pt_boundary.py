@@ -4,7 +4,7 @@ import numpy as np
 import math
 from numpy.typing import NDArray
 
-from src.geometry import DomainGeometry
+from src.core.geometry import DomainGeometry
 
 
 def init_crevasse_boundary(geom: DomainGeometry, water_th: float, crev_depth: float):
