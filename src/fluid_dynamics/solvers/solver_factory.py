@@ -1,20 +1,21 @@
-from typing import Tuple
-
 import numpy as np
+
+from typing import Tuple
 from numpy.typing import NDArray
 from scipy.sparse import diags
 
-from src.boundary_conditions import BoundaryConditions
+
 from src.convective_operators import (
     ConvectiveTermForm,
     ConvectiveVorticityTransportOperator,
     EffectiveSFTransportOperator,
 )
-from src.fluid_dynamics.parameters import FluidParameters
+from src.core.boundary_conditions import BoundaryConditions
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
-from src.geometry import DomainGeometry
+from src.parameters.fluid import FluidParameters
 
 
 class IterativeNavierStokesSolver:

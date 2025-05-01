@@ -2,13 +2,13 @@ import numpy as np
 from scipy.sparse import diags, csr_matrix
 from scipy.sparse.linalg import cg, spilu, LinearOperator, norm, bicgstab
 
-from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryConditions
+from src.core.boundary_conditions import BoundaryConditions
+from src.core.geometry import DomainGeometry
+from src.core.solvers.base_solver import BaseSolver
 from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
 )
-from src.geometry import DomainGeometry
 
 
 @register_sf_solver(StreamFunctionSolverName.CG)

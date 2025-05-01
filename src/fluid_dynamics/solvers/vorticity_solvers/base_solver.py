@@ -3,14 +3,15 @@ from abc import ABC
 import numpy as np
 from numpy.typing import NDArray
 
-from src.base_solver import Sweep2DSolver, BaseSolver
+from src.core.geometry import DomainGeometry
+from src.core.solvers.base_solver import BaseSolver
 from src.convective_operators import BaseConvectiveOperator
-from src.fluid_dynamics.parameters import FluidParameters
+from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
 from src.fluid_dynamics.utils import VorticityBCMixin
-from src.geometry import DomainGeometry
+from src.parameters.fluid import FluidParameters
 
 
-class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
+class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
     def __init__(
         self,
         geometry: DomainGeometry,
@@ -20,18 +21,13 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
         *args,
         **kwargs,
     ):
-        super().__init__(
-            geometry=geometry,
-        )
+        super().__init__(geometry=geometry)
 
         self.parameters = parameters
         self.convective_operator = convective_operator
         self.bc_order = bc_order
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._temp_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
         self._new_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
@@ -64,32 +60,22 @@ class ImplicitVorticitySolver(Sweep2DSolver, VorticityBCMixin, ABC):
         return rho
 
 
-class ExplicitVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
+class ImplicitVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
-        convective_operator: BaseConvectiveOperator,
-        bc_order: int,
         *args,
         **kwargs,
     ):
-        super().__init__(
-            geometry=geometry,
-        )
+        super().__init__(*args, **kwargs)
 
-        self.parameters = parameters
-        self.convective_operator = convective_operator
-        self.bc_order = bc_order
+        self._initialize_sweep_arrays()
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.empty(
+        self._temp_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
-        self.top_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
-        self.right_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
-        self.bottom_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
-        self.left_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
-        self.c_ind: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
+
+
+class ExplicitVorticitySolver(BaseVorticitySolver, ABC):
+    def __init__(*args, **kwargs):
+        super().__init__(*args, **kwargs)

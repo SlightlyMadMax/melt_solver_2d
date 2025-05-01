@@ -1,13 +1,13 @@
 import numpy as np
 from numba import njit
 
-from src.base_solver import BaseSolver
-from src.boundary_conditions import BoundaryConditions, BoundaryConditionType
+from src.core.geometry import DomainGeometry
+from src.core.boundary_conditions import BoundaryConditions, BoundaryConditionType
+from src.core.solvers.base_solver import BaseSolver
 from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
 )
-from src.geometry import DomainGeometry
 
 
 @register_sf_solver(StreamFunctionSolverName.SOR)

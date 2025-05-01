@@ -1,12 +1,12 @@
+import numpy as np
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Tuple, Optional
-
-import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.geometry import DomainGeometry
+from src.core.geometry import DomainGeometry
 
 
 class ConvectiveTermForm(Enum):

@@ -1,11 +1,11 @@
 import os
-from typing import Optional
-
 import numpy as np
-from numpy.typing import NDArray
 import matplotlib.pyplot as plt
 
-from src.geometry import DomainGeometry
+from typing import Optional
+from numpy.typing import NDArray
+
+from src.core.geometry import DomainGeometry
 
 
 def plot_velocity_field(

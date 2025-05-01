@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.geometry import DomainGeometry
+from src.core.geometry import DomainGeometry
 
 
 def initialize_stream_function(geom: DomainGeometry) -> np.ndarray:

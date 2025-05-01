@@ -10,7 +10,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.utils import solve_tridiagonal
+from src.utils.thomas import solve_tridiagonal
 
 
 @register_solver(VorticitySolverName.DOUGLAS_RACHFORD)

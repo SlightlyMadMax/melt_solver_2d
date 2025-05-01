@@ -1,6 +1,6 @@
-from typing import Optional, Tuple
-
 import numpy as np
+
+from typing import Optional, Tuple
 from numba import njit
 from numpy.typing import NDArray
 
@@ -8,7 +8,7 @@ from src.convective_operators.base_convective_operator import (
     BaseConvectiveOperator,
     ConvectiveTermForm,
 )
-from src.geometry import DomainGeometry
+from src.core.geometry import DomainGeometry
 
 
 class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):

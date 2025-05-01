@@ -1,14 +1,14 @@
 import time
 import numpy as np
 
-from src.boundary_conditions import (
+from src.core.boundary_conditions import (
     BoundaryCondition,
     BoundaryConditionType,
     BoundaryConditions,
 )
 from src.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
-from src.fluid_dynamics.parameters import FluidParameters
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.plotting import plot_stream_function
 from src.fluid_dynamics.solvers import (
     NonIterativeNavierStokersSolver,
@@ -20,14 +20,29 @@ from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
 )
-from src.geometry import DomainGeometry
 from src.heat_transfer.init_values import init_temperature, DomainShape
-from src.heat_transfer.parameters import ThermalParameters
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.utils import get_remaining_time
+from src.parameters.fluid import FluidParameters
+from src.parameters.thermal import ThermalParameters
+from src.utils.time_utils import get_remaining_time
+
+
+def bottom_dirichlet_condition(t: float, n: int) -> np.ndarray:
+    x = np.linspace(0, geometry.width - geometry.dx, n)
+    stand_half_width = 0.02  # 0.04 m wide total
+    stand_center = geometry.width / 2
+
+    # Logical mask for where the stand is
+    is_stand = (x >= stand_center - stand_half_width) & (x <= stand_center + stand_half_width)
+
+    # Allocate full array and assign values
+    values = np.full(n, (max_temp - thermal_params.u_ref) / thermal_params.delta_u)
+    values[is_stand] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
+
+    return values
 
 
 if __name__ == "__main__":
