@@ -126,8 +126,8 @@ class IterativeNavierStokesSolver:
         stream_function: np.ndarray,
         temperature: np.ndarray,
         time: float,
-    ) -> np.ndarray:
-        return self.vorticity_solver.solve(
+    ) -> None:
+        self._vorticity[:, :] = self.vorticity_solver.solve(
             w=old_vorticity,
             sf=stream_function,
             u=temperature,
@@ -139,8 +139,8 @@ class IterativeNavierStokesSolver:
         initial_guess: np.ndarray,
         vorticity: np.ndarray,
         time: float,
-    ) -> np.ndarray:
-        return self.stream_function_solver.solve(
+    ) -> None:
+        self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=initial_guess, rhs=-vorticity, time=time
         )
 
