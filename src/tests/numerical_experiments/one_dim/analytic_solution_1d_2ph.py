@@ -82,6 +82,9 @@ def get_analytic_solution(
         0.0002,  # noqa
     )[0]
 
+    residual = trans_eq(gamma, params, min_temp + ABS_ZERO, max_temp + ABS_ZERO)
+    print(f"Gamma: {gamma}, Residual: {residual}")
+
     s = t**0.5 * gamma
 
     for j in range(geometry.n_y):
