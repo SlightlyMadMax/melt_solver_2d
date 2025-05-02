@@ -161,7 +161,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        conv_x, conv_y = self.convective_operator(sf=sf)
+        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         # delta = get_max_delta(
         #     u=u * self.parameters.delta_u + self.parameters.u_ref,
         #     u_pt=self.parameters.u_pt,
@@ -191,8 +191,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             result=self._temp_w,
@@ -214,8 +214,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             w=self._temp_w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
             result=self._new_w,

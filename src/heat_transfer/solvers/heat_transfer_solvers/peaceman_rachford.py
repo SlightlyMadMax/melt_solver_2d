@@ -254,7 +254,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None:
-        convection_x, convection_y = self.convective_operator(
+        self.convective_operator(
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             sf=sf,
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
@@ -290,8 +292,8 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         self._compute_sweep_x(
             u=u,
             iter_u=self._iter_u,
-            conv_x=convection_x,
-            conv_y=convection_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             result=self._temp_u,
             rhs=self._rhs_x,
             a_x=self._a_x,
@@ -353,8 +355,8 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         self._compute_sweep_y(
             u=self._temp_u,
             iter_u=self._iter_u,
-            conv_x=convection_x,
-            conv_y=convection_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             result=self._new_u,
             rhs=self._rhs_y,
             a_y=self._a_y,

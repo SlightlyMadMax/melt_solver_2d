@@ -2,7 +2,6 @@ import numpy as np
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Tuple, Optional
 from numba import njit
 from numpy.typing import NDArray
 
@@ -17,20 +16,16 @@ class ConvectiveTermForm(Enum):
 
 
 class BaseConvectiveOperator(ABC):
-    def __init__(self, geometry: DomainGeometry, n_points: Optional[int] = 3):
+    def __init__(self, geometry: DomainGeometry):
         self.geometry = geometry
-
-        self._result_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, n_points)
-        )
-        self._result_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, n_points)
-        )
 
     @abstractmethod
     def __call__(
-        self, *args, **kwargs
-    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]: ...
+        self,
+        conv_x: NDArray[np.float64],
+        conv_y: NDArray[np.float64],
+        **kwargs,
+    ): ...
 
     @staticmethod
     @njit

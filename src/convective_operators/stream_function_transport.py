@@ -1,16 +1,26 @@
 import numpy as np
 
-from typing import Optional, Tuple
+from typing import Optional
 from numba import njit
 from numpy.typing import NDArray
+from pydantic import ValidationError, BaseModel
 
 from src.convective_operators.base_convective_operator import BaseConvectiveOperator
 from src.core.geometry import DomainGeometry
 
 
+class SFTransportArgs(BaseModel):
+    w: np.ndarray
+    u: Optional[np.ndarray] = None
+    u_pt: Optional[float] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class EffectiveSFTransportOperator(BaseConvectiveOperator):
     def __init__(self, geometry: DomainGeometry):
-        super().__init__(geometry=geometry, n_points=3)
+        super().__init__(geometry=geometry)
         self._dw_dx: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
@@ -18,14 +28,16 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
             (self.geometry.n_y, self.geometry.n_x)
         )
 
-    def __call__(
-        self,
-        w: NDArray[np.float64],
-        u: Optional[NDArray[np.float64]] = None,
-        u_pt: Optional[float] = None,
-        *args,
-        **kwargs
-    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def __call__(self, conv_x, conv_y, **kwargs) -> None:
+        try:
+            parsed = SFTransportArgs(**kwargs)
+        except ValidationError as e:
+            raise ValueError(f"Invalid arguments for EffectiveSFTransportOperator: {e}")
+
+        w = parsed.w
+        u = parsed.u
+        u_pt = parsed.u_pt
+
         self._compute_vorticity_first_derivatives(
             w=w,
             dw_dx=self._dw_dx,
@@ -36,16 +48,14 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         self._compute_convective_operator(
             dw_dx=self._dw_dx,
             dw_dy=self._dw_dy,
-            result_x=self._result_x,
-            result_y=self._result_y,
+            result_x=conv_x,
+            result_y=conv_y,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
         )
 
         if u is not None and u_pt is not None:
-            self._restrict(conv_x=self._result_x, conv_y=self._result_y, u=u, u_pt=u_pt)
-
-        return self._result_x, self._result_y
+            self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     @staticmethod
     @njit

@@ -169,7 +169,7 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        conv_x, conv_y = self.convective_operator(w=conv_w)
+        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
         calculate_indicator_function(
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
@@ -183,8 +183,8 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             result=self._temp_w,
             rhs=self._rhs_x,
             a_x=self._a_x,
@@ -205,8 +205,8 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             w=self._temp_w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             result=self._new_w,
             rhs=self._rhs_y,
             a_y=self._a_y,

@@ -84,7 +84,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        conv_x, conv_y = self.convective_operator(sf=sf)
+        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         calculate_indicator_function(
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
@@ -107,8 +107,8 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             top_bc=self.top_bc,

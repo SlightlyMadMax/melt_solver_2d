@@ -85,7 +85,9 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None:
-        convection_x, convection_y = self.convective_operator(
+        self.convective_operator(
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             sf=sf,
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
@@ -117,8 +119,8 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
 
         self._compute_temperature(
             u=u,
-            conv_x=convection_x,
-            conv_y=convection_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             result=self._new_u,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,

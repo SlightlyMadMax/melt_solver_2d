@@ -40,10 +40,10 @@ else:
     fixed_delta = True
 
 geometry = DomainGeometry(
-    width=2.0,
+    width=1.0,
     height=8.0,
     end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
-    n_x=41,
+    n_x=21,
     n_y=201,
     n_t=100 * 240,
 )

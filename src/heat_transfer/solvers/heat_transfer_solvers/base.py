@@ -45,6 +45,12 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self._new_u: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
+        self._conv_x: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
+        self._conv_y: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
         self._c_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
         self._k_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
 

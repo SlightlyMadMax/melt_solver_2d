@@ -31,6 +31,12 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self._new_w: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
         )
+        self._conv_x: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
+        self._conv_y: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
         self.top_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
         self.right_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
         self.bottom_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)

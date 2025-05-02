@@ -124,7 +124,9 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
                 c_y[j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[j] = w_prev[j, i] - dt * (
-                    inv_re * inv_dy2 * (w_old[j + 1, i] - 2.0 * w_old[j, i] + w_old[j - 1, i])
+                    inv_re
+                    * inv_dy2
+                    * (w_old[j + 1, i] - 2.0 * w_old[j, i] + w_old[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w_old[j + 1, i]
                         + conv_y[j, i, 1] * w_old[j, i]
@@ -154,7 +156,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        conv_x, conv_y = self.convective_operator(sf=sf)
+        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         calculate_indicator_function(
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
@@ -177,8 +179,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             w=w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             result=self._temp_w,
@@ -201,8 +203,8 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             w_prev=self._temp_w,
             sf=sf,
             u=u,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
             result=self._new_w,

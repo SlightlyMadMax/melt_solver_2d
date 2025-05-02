@@ -1,8 +1,9 @@
 import numpy as np
 
-from typing import Optional, Tuple
+from typing import Optional
 from numba import njit
 from numpy.typing import NDArray
+from pydantic import BaseModel, ValidationError
 
 from src.convective_operators.base_convective_operator import (
     BaseConvectiveOperator,
@@ -11,9 +12,18 @@ from src.convective_operators.base_convective_operator import (
 from src.core.geometry import DomainGeometry
 
 
-class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
+class VorticityTransportArgs(BaseModel):
+    sf: np.ndarray
+    u: Optional[np.ndarray] = None
+    u_pt: Optional[float] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class VorticityTransportOperator(BaseConvectiveOperator):
     def __init__(self, form: ConvectiveTermForm, geometry: DomainGeometry):
-        super().__init__(geometry=geometry, n_points=3)
+        super().__init__(geometry=geometry)
         self.form = form
         self._v_x: NDArray[np.float64] = np.empty(
             (self.geometry.n_y, self.geometry.n_x)
@@ -22,14 +32,18 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
             (self.geometry.n_y, self.geometry.n_x)
         )
 
-    def __call__(
-        self,
-        sf: NDArray[np.float64],
-        u: Optional[NDArray[np.float64]] = None,
-        u_pt: Optional[float] = None,
-        *args,
-        **kwargs
-    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
+    def __call__(self, conv_x, conv_y, **kwargs) -> None:
+        try:
+            parsed = VorticityTransportArgs(**kwargs)
+        except ValidationError as e:
+            raise ValueError(
+                f"Invalid arguments for VorticityTransportOperator: {e}"
+            )
+
+        sf = parsed.sf
+        u = parsed.u
+        u_pt = parsed.u_pt
+
         self.compute_velocity_from_sf(
             sf=sf,
             v_x=self._v_x,
@@ -41,8 +55,8 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
             self._compute_upwind_components(
                 v_x=self._v_x,
                 v_y=self._v_y,
-                result_x=self._result_x,
-                result_y=self._result_y,
+                result_x=conv_x,
+                result_y=conv_y,
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
@@ -50,8 +64,8 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
             self._compute_div_components(
                 v_x=self._v_x,
                 v_y=self._v_y,
-                result_x=self._result_x,
-                result_y=self._result_y,
+                result_x=conv_x,
+                result_y=conv_y,
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
@@ -59,8 +73,8 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
             self._compute_non_div_components(
                 v_x=self._v_x,
                 v_y=self._v_y,
-                result_x=self._result_x,
-                result_y=self._result_y,
+                result_x=conv_x,
+                result_y=conv_y,
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
@@ -68,29 +82,27 @@ class ConvectiveVorticityTransportOperator(BaseConvectiveOperator):
             self._compute_div_components(
                 v_x=self._v_x,
                 v_y=self._v_y,
-                result_x=self._result_x,
-                result_y=self._result_y,
+                result_x=conv_x,
+                result_y=conv_y,
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
-            temp_x, temp_y = np.copy(self._result_x), np.copy(self._result_y)
+            temp_x, temp_y = np.copy(conv_x), np.copy(conv_y)
             self._compute_non_div_components(
                 v_x=self._v_x,
                 v_y=self._v_y,
-                result_x=self._result_x,
-                result_y=self._result_y,
+                result_x=conv_x,
+                result_y=conv_y,
                 dx=self.geometry.dx / self.geometry.length_scale,
                 dy=self.geometry.dy / self.geometry.length_scale,
             )
-            self._result_x = 0.5 * (temp_x + self._result_x)
-            self._result_y = 0.5 * (temp_y + self._result_y)
+            conv_x = 0.5 * (temp_x + conv_x)
+            conv_y = 0.5 * (temp_y + conv_y)
         else:
             raise NotImplementedError
 
         if u is not None and u_pt is not None:
-            self._restrict(conv_x=self._result_x, conv_y=self._result_y, u=u, u_pt=u_pt)
-
-        return self._result_x, self._result_y
+            self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     @staticmethod
     @njit

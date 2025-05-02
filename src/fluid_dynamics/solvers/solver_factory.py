@@ -7,7 +7,7 @@ from scipy.sparse import diags
 
 from src.convective_operators import (
     ConvectiveTermForm,
-    ConvectiveVorticityTransportOperator,
+    VorticityTransportOperator,
     EffectiveSFTransportOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
@@ -44,7 +44,7 @@ class IterativeNavierStokesSolver:
                 "Only 1st and 2nd order accuracy BCs are supported for vorticity."
             )
 
-        self.convective_operator = ConvectiveVorticityTransportOperator(
+        self.convective_operator = VorticityTransportOperator(
             form=convective_term_form, geometry=geometry
         )
 
