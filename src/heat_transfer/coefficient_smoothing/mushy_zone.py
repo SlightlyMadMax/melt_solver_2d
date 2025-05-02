@@ -4,7 +4,7 @@ from numpy.typing import NDArray
 
 
 @njit
-def get_max_delta(
+def get_mushy_zone_width(
     u: NDArray[np.float64],
     u_pt: float,
 ) -> float:

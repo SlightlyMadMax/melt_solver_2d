@@ -10,7 +10,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
 from src.utils.thomas import solve_tridiagonal
 
 

@@ -17,7 +17,9 @@ from src.parameters.thermal import ThermalParameters
 from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
 )
-from src.tests.numerical_experiments.one_dim.compare_boundary import compare_num_with_analytic
+from src.tests.numerical_experiments.one_dim.compare_boundary import (
+    compare_num_with_analytic,
+)
 
 
 dir_name = input("Enter a directory name where the data will be stored: ")
@@ -153,7 +155,15 @@ u_analytical = (
     - thermal_params.u_ref
 ) / thermal_params.delta_u
 
-print(f"L2 error: {np.linalg.norm(u - u_analytical)}")
+temp_top = (
+    u_analytical[-1, int(geometry.n_x / 2)] * thermal_params.delta_u + ABS_ZERO + thermal_params.u_ref
+)
+temp_near_top = (
+    u_analytical[-2, int(geometry.n_x / 2)] * thermal_params.delta_u + ABS_ZERO + thermal_params.u_ref
+)
+print(f"Temperature at and near the top boundary: {temp_top}, {temp_near_top}")
+L2_error = np.linalg.norm(u[1:-1, :] - u_analytical[1:-1, :]) / np.sqrt(u[1:-1, :].size)
+print(f"L2 error: {L2_error}")
 
 compare_num_with_analytic(
     num=boundary,

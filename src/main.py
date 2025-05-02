@@ -22,7 +22,7 @@ from src.fluid_dynamics.init_values import (
 )
 from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.utils import TemperatureUnit
-from src.heat_transfer.coefficient_smoothing.delta import get_max_delta
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.fluid import FluidParameters
@@ -118,10 +118,10 @@ if __name__ == "__main__":
     # u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
     # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
 
-    init_delta = get_max_delta(
+    init_delta = get_mushy_zone_width(
         u * thermal_params.delta_u + thermal_params.u_ref, u_pt=thermal_params.u_pt
     )
-    print(f"Delta for the initial temperature distribution: {init_delta:.2f}")
+    print(f"Mushy zone width for the initial temperature distribution: {init_delta:.2f}")
 
     # plot_temperature(
     #     u=u * thermal_params.delta_u + thermal_params.u_ref,
@@ -244,9 +244,9 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf_temp, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
-        if n % 4000 == 0:
-            np.savez_compressed(f"../data/experiment/u_{n}.npz", u=u)
-            d = get_max_delta(
+        if n % 2000 == 0:
+            # np.savez_compressed(f"../data/experiment2/u_{n}.npz", u=u)
+            d = get_mushy_zone_width(
                 u * thermal_params.delta_u + thermal_params.u_ref,
                 u_pt=thermal_params.u_pt,
             )
