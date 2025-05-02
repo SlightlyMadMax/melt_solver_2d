@@ -5,7 +5,7 @@ from numba import njit
 from numpy.typing import NDArray
 from math import sin, cos, pi
 
-import src.constants as cfg
+import src.core.constants as cfg
 
 
 class TemperatureUnit(Enum):

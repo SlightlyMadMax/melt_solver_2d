@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import fsolve
 from scipy.special import erf
 
-from src.constants import ABS_ZERO
+from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.parameters.thermal import ThermalParameters
 

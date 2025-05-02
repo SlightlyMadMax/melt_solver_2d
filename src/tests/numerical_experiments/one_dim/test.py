@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 
-from src.constants import ABS_ZERO
+from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import (
     BoundaryConditionType,
@@ -40,12 +40,12 @@ else:
     fixed_delta = True
 
 geometry = DomainGeometry(
-    width=1.0,
+    width=2.0,
     height=8.0,
     end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
-    n_x=21,
-    n_y=1001,
-    n_t=100 * 24,
+    n_x=41,
+    n_y=201,
+    n_t=100 * 240,
 )
 
 print(geometry)
@@ -101,15 +101,15 @@ bcs = BoundaryConditions(
 )
 
 heat_transfer_solver = HeatTransferSolver(
-    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+    solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
     geometry=geometry,
     parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
-    max_iters=1,
+    max_iters=10,
     tolerance=1e-6,
-    urf=1.0,
+    urf=0.8,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
@@ -124,9 +124,9 @@ start_time = time.perf_counter()
 for n in range(1, geometry.n_t):
     t = n * geometry.dt
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t)
-    if n % 24 == 0:
+    if n % 240 == 0:
         time_arr.append(t)
-        print(f"ДЕНЬ: {int(n / 24)}")
+        print(f"ДЕНЬ: {int(n / 240)}")
         for j in range(geometry.n_y - 1):
             if (u[j, i] - thermal_params.u_pt_ref) * (
                 u[j + 1, i] - thermal_params.u_pt_ref

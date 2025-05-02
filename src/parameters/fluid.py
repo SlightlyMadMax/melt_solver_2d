@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 from pydantic import BaseModel, Field
 
-from src.constants import G
+from src.core.constants import G
 from src.parameters.mixins import FileIOMixin
 
 

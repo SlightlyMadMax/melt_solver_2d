@@ -6,7 +6,7 @@ from src.core.boundary_conditions import (
     BoundaryConditionType,
     BoundaryConditions,
 )
-from src.constants import ABS_ZERO
+from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.plotting import plot_stream_function

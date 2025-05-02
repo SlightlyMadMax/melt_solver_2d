@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 
-from src.constants import ABS_ZERO
+from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import (
     BoundaryCondition,

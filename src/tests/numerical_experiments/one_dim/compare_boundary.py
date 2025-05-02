@@ -3,7 +3,7 @@ import numpy as np
 
 from scipy.optimize import fsolve
 
-from src.constants import ABS_ZERO
+from src.core.constants import ABS_ZERO
 from src.parameters.thermal import ThermalParameters
 from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import trans_eq
 

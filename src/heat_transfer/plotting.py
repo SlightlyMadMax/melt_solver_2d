@@ -6,7 +6,7 @@ from typing import Optional
 from PIL import Image
 from numpy.typing import NDArray
 
-import src.constants as cfg
+import src.core.constants as cfg
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.utils import TemperatureUnit
