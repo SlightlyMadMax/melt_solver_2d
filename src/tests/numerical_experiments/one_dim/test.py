@@ -156,13 +156,17 @@ u_analytical = (
 ) / thermal_params.delta_u
 
 temp_top = (
-    u_analytical[-1, int(geometry.n_x / 2)] * thermal_params.delta_u + ABS_ZERO + thermal_params.u_ref
+    u_analytical[-1, int(geometry.n_x / 2)] * thermal_params.delta_u
+    + ABS_ZERO
+    + thermal_params.u_ref
 )
 temp_near_top = (
-    u_analytical[-2, int(geometry.n_x / 2)] * thermal_params.delta_u + ABS_ZERO + thermal_params.u_ref
+    u_analytical[-2, int(geometry.n_x / 2)] * thermal_params.delta_u
+    + ABS_ZERO
+    + thermal_params.u_ref
 )
-print(f"Temperature at and near the top boundary: {temp_top}, {temp_near_top}")
-L2_error = np.linalg.norm(u[1:-1, :] - u_analytical[1:-1, :]) / np.sqrt(u[1:-1, :].size)
+print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
+L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(u[1:-1, 1:-1].size)
 print(f"L2 error: {L2_error}")
 
 compare_num_with_analytic(
