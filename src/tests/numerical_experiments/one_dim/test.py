@@ -109,7 +109,7 @@ heat_transfer_solver = HeatTransferSolver(
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
-    max_iters=10,
+    max_iters=1000,
     tolerance=1e-6,
     urf=0.8,
 )
