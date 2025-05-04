@@ -129,16 +129,31 @@ for n in range(1, geometry.n_t):
     if n % 240 == 0:
         time_arr.append(t)
         print(f"ДЕНЬ: {int(n / 240)}")
-        for j in range(geometry.n_y - 1):
-            if (u[j, i] - thermal_params.u_pt_ref) * (
-                u[j + 1, i] - thermal_params.u_pt_ref
-            ) < 0.0:
-                y_0 = (
-                    j * geometry.dy
-                    + ((thermal_params.u_pt_ref - u[j, i]) / (u[j + 1, i] - u[j, i]))
-                    * geometry.dy
-                )
-                boundary.append(y_0)
+        for j in range(geometry.n_y - 2):
+            u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
+            u_ref = thermal_params.u_pt_ref
+
+            if np.min([u0, u1, u2]) <= u_ref <= np.max([u0, u1, u2]):
+                # Fit a quadratic: u(y) = a*y^2 + b*y + c
+                y0 = j * geometry.dy
+                y1 = (j + 1) * geometry.dy
+                y2 = (j + 2) * geometry.dy
+
+                # Solve for a, b, c in u = a*y^2 + b*y + c
+                A = np.array([[y0**2, y0, 1], [y1**2, y1, 1], [y2**2, y2, 1]])
+                u_vals = np.array([u0, u1, u2])
+                try:
+                    a, b, c = np.linalg.solve(A, u_vals)
+                    # Solve a*y^2 + b*y + c = u_ref => a*y^2 + b*y + (c - u_ref) = 0
+                    coeffs = [a, b, c - u_ref]
+                    roots = np.roots(coeffs)
+                    for root in roots:
+                        if np.isreal(root) and y0 <= root <= y2:
+                            boundary.append(float(root))
+                            break
+                except np.linalg.LinAlgError:
+                    print(f"Couldn't find the interface point between {u0, u1, u2}.")
+                    pass  # Skip degenerate system
                 break
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
@@ -166,7 +181,9 @@ temp_near_top = (
     + thermal_params.u_ref
 )
 print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
-L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(u[1:-1, 1:-1].size)
+L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(
+    u[1:-1, 1:-1].size
+)
 print(f"L2 error: {L2_error}")
 
 compare_num_with_analytic(
