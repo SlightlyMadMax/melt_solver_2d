@@ -36,7 +36,9 @@ def bottom_dirichlet_condition(t: float, n: int) -> np.ndarray:
     stand_center = geometry.width / 2
 
     # Logical mask for where the stand is
-    is_stand = (x >= stand_center - stand_half_width) & (x <= stand_center + stand_half_width)
+    is_stand = (x >= stand_center - stand_half_width) & (
+        x <= stand_center + stand_half_width
+    )
 
     # Allocate full array and assign values
     values = np.full(n, (max_temp - thermal_params.u_ref) / thermal_params.delta_u)
@@ -118,10 +120,18 @@ if __name__ == "__main__":
     # u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
     # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
 
-    init_delta = get_mushy_zone_width(
-        u * thermal_params.delta_u + thermal_params.u_ref, u_pt=thermal_params.u_pt
+    dim_u = u * thermal_params.delta_u + thermal_params.u_ref
+    init_delta = np.max(
+        get_mushy_zone_width(
+            u=dim_u,
+            u_pt=thermal_params.u_pt,
+            h_x=geometry.dx,
+            h_y=geometry.dy,
+        )
     )
-    print(f"Mushy zone width for the initial temperature distribution: {init_delta:.2f}")
+    print(
+        f"Mushy zone width for the initial temperature distribution: {init_delta:.2f}"
+    )
 
     # plot_temperature(
     #     u=u * thermal_params.delta_u + thermal_params.u_ref,
