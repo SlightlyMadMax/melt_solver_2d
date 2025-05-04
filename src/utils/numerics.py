@@ -17,3 +17,11 @@ def is_positive_definite(A) -> bool:
         return_eigenvectors=False,
     )
     return np.all(eigvals > 0)
+
+
+@njit
+def compute_gradient(u, i, j, h_x, h_y):
+    """Central difference gradient at (j,i)"""
+    du_dx = (u[j, i + 1] - u[j, i - 1]) / (2 * h_x)
+    du_dy = (u[j + 1, i] - u[j - 1, i]) / (2 * h_y)
+    return (du_dx**2 + du_dy**2) ** 0.5

@@ -2,6 +2,8 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
+from src.utils.numerics import compute_gradient
+
 
 # @njit
 # def get_mushy_zone_width(
@@ -28,14 +30,6 @@ from numpy.typing import NDArray
 #                 max_delta = delta_u if delta_u > max_delta else max_delta
 #                 # break
 #     return max_delta
-
-
-@njit
-def compute_gradient(u, i, j, h_x, h_y):
-    """Central difference gradient at (j,i)"""
-    du_dx = (u[j, i + 1] - u[j, i - 1]) / (2 * h_x)
-    du_dy = (u[j + 1, i] - u[j - 1, i]) / (2 * h_y)
-    return (du_dx**2 + du_dy**2) ** 0.5
 
 
 @njit
