@@ -261,14 +261,14 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
         )
-        delta = (
-            self.parameters.delta
-            if self.fixed_delta
-            else get_mushy_zone_width(
-                u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
-                u_pt=self.parameters.u_pt,
-            )
+        dim_u = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
+        delta = get_mushy_zone_width(
+            u=dim_u,
+            u_pt=self.parameters.u_pt,
+            h_x=self.geometry.dx,
+            h_y=self.geometry.dy,
         )
+
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,

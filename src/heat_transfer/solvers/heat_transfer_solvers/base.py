@@ -75,7 +75,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_ref: float,
         k_solid: float,
         k_liquid: float,
-        delta: float,
+        delta: NDArray[np.float64],
+        # delta: float,
     ) -> None:
         n_y, n_x = u.shape
         inv_c_ref = 1.0 / c_ref
@@ -92,7 +93,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         c_solid=c_solid,
                         c_liquid=c_liquid,
                         l_solid=l_solid,
-                        delta=delta,
+                        # delta=delta,
+                        delta=delta[j, i],
                     )
                     * inv_c_ref
                 )
@@ -103,7 +105,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         u_pt=u_pt,
                         k_solid=k_solid,
                         k_liquid=k_liquid,
-                        delta=delta,
+                        # delta=delta,
+                        delta=delta[j, i],
                     )
                     * inv_k_ref
                 )

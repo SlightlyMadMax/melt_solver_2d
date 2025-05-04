@@ -92,12 +92,15 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
         )
+        dim_u = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
         delta = (
             self.parameters.delta
             if self.fixed_delta
             else get_mushy_zone_width(
-                u=self._iter_u * self.parameters.delta_u + self.parameters.u_ref,
+                u=dim_u,
                 u_pt=self.parameters.u_pt,
+                h_x=self.geometry.dx,
+                h_y=self.geometry.dy,
             )
         )
         self.compute_effective_properties(

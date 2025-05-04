@@ -25,7 +25,7 @@ def calculate_indicator_function(
     u_pt: float,
     eps: float,
     result: NDArray[np.float64],
-    delta: float = 0.0,
+    delta: NDArray[np.float64],
 ) -> None:
     """
     Indicator function for the fictitious domain method.
@@ -44,11 +44,11 @@ def calculate_indicator_function(
 
     for j in range(1, n_y - 1):
         for i in range(1, n_x - 1):
-            if u[j, i] - u_pt < 0.0:
-                result[j, i] = inv_eps_2
-            # result[j, i] = (
-            #     (1.0 - math.erf((u[j, i] - u_pt) / (2**0.5 * delta))) * 0.5 * inv_eps_2
-            # )
+            # if u[j, i] - u_pt < 0.0:
+            #     result[j, i] = inv_eps_2
+            result[j, i] = (
+                (1.0 - math.erf((u[j, i] - u_pt) / (2**0.5 * delta[j, i]))) * 0.5 * inv_eps_2
+            )
             # if u[j, i] - u_pt < 0.0:
             #     result[j, i] = inv_eps_2 * (
             #         2.0

@@ -162,15 +162,17 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
-        # delta = get_max_delta(
-        #     u=u * self.parameters.delta_u + self.parameters.u_ref,
-        #     u_pt=self.parameters.u_pt,
-        # )
+        delta = get_mushy_zone_width(
+            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u_pt=self.parameters.u_pt,
+            h_x=self.geometry.dx,
+            h_y=self.geometry.dy,
+        )
         calculate_indicator_function(
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
-            # delta=delta,
+            delta=delta,
             result=self.c_ind,
         )
         self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
