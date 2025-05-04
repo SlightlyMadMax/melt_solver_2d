@@ -97,7 +97,7 @@ u = init_temperature_with_interface(
 plot_temperature(
     u=u * thermal_params.delta_u + thermal_params.u_ref,
     u_pt=thermal_params.u_pt,
-    geom=geometry,
+    geometry=geometry,
     time=0.0,
     graph_id=0,
     plot_boundary=True,
@@ -162,7 +162,7 @@ for i in range(1, geometry.n_t + 1):
         plot_temperature(
             u=u * thermal_params.delta_u + thermal_params.u_ref,
             u_pt=thermal_params.u_pt,
-            geom=geometry,
+            geometry=geometry,
             time=t,
             graph_id=i,
             plot_boundary=True,

@@ -37,7 +37,7 @@ def _convert_temp_in_display_units(
 def plot_temperature(
     u: NDArray[np.float64],
     u_pt: float,
-    geom: DomainGeometry,
+    geometry: DomainGeometry,
     time: float,
     graph_id: int,
     actual_temp_units: TemperatureUnit = TemperatureUnit.KELVIN,
@@ -62,7 +62,7 @@ def plot_temperature(
 
     :param u: A 2D numpy array of temperature values across the computational domain.
     :param u_pt: The phase transition temperature.
-    :param geom: DomainGeometry object defining the mesh grid and dimensions.
+    :param geometry: DomainGeometry object defining the mesh grid and dimensions.
     :param time: The simulation time at which the temperature is being plotted.
     :param graph_id: Unique identifier for the graph, used in the saved file name.
     :param actual_temp_units: The unit of the temperature values in `u` (default is Kelvin).
@@ -82,7 +82,7 @@ def plot_temperature(
              displays it if `show_graph` is True.
     """
 
-    X, Y = geom.mesh_grid
+    X, Y = geometry.mesh_grid
 
     if not show_graph:
         import matplotlib
@@ -92,7 +92,7 @@ def plot_temperature(
     plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
-        xlim=(0, geom.width), ylim=(0, geom.height), xlabel="x, м", ylabel="y, м"
+        xlim=(0, geometry.width), ylim=(0, geometry.height), xlabel="x, м", ylabel="y, м"
     )
 
     if show_grid:
@@ -117,15 +117,15 @@ def plot_temperature(
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(
             u=u,
-            geom=geom,
+            geom=geometry,
             u_pt=u_pt,
         )
         plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
         ax.legend()
 
     # ax.set_title(
-    #     f"t = {time:.1E} с.\n dx = {geom.dx:.1E} м, "
-    #     f"dy = {geom.dy:.1E} м, dt = {geom.dt:.1E} с"
+    #     f"t = {time:.1E} с.\n dx = {geometry.dx:.1E} м, "
+    #     f"dy = {geometry.dy:.1E} м, dt = {geometry.dt:.1E} с"
     # )
 
     if invert_xaxis:
