@@ -71,8 +71,8 @@ def c_smoothed(
 
     return (
         c_solid
-        + (c_liquid - c_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
-        + l_solid * delta_gauss(u=u, u_0=u_pt, delta=delta)
+        + (c_liquid - c_solid) * step_hyper(u=u, u_0=u_pt, delta=delta)
+        + l_solid * delta_hyper(u=u, u_0=u_pt, delta=delta)
     )
 
 
@@ -97,7 +97,7 @@ def k_smoothed(
     if delta <= 0.0:
         return k_solid if u < u_pt else k_liquid
 
-    return k_solid + (k_liquid - k_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
+    return k_solid + (k_liquid - k_solid) * step_hyper(u=u, u_0=u_pt, delta=delta)
 
 
 @njit
