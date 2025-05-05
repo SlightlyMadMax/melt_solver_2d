@@ -52,8 +52,8 @@ def calculate_indicator_function(
             # if u[j, i] - u_pt < 0.0:
             #     result[j, i] = inv_eps_2 * (
             #         2.0
-            #         + math.exp(-(u[j, i] - u_pt) / delta)
-            #         / (0.5 - math.exp(-(u[j, i] - u_pt) / delta))
+            #         + math.exp(-(u[j, i] - u_pt) / delta[j, i])
+            #         / (0.5 - math.exp(-(u[j, i] - u_pt) / delta[j, i]))
             #     )
 
 
