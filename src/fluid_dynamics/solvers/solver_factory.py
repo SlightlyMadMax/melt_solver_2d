@@ -153,7 +153,7 @@ class NonIterativeNavierStokersSolver:
         parameters: FluidParameters,
         sf_bcs: BoundaryConditions,
         sf_max_iters: int = 10000,
-        sf_stopping_criteria: float = 1e-6,
+        sf_tolerance: float = 1e-6,
     ):
         self.geometry = geometry
         self.parameters = parameters
@@ -177,7 +177,7 @@ class NonIterativeNavierStokersSolver:
             geometry=geometry,
             bcs=sf_bcs,
             max_iters=sf_max_iters,
-            stopping_criteria=sf_stopping_criteria,
+            stopping_criteria=sf_tolerance,
         )
 
         self._vorticity: NDArray[np.float64] = np.empty((geometry.n_y, geometry.n_x))
