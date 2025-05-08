@@ -98,6 +98,7 @@ class ConjugateGradientSolver(BaseSolver):
             top_bc_value=top,
             bottom_bc_value=bottom,
         )
+        # m = self._jacobi_preconditioner(A)
         # m = self._spilu_preconditioner(A=A)
         # m = self._incomp_chol_preconditioner(A=A)
 
