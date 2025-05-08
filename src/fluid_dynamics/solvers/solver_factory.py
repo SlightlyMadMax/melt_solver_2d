@@ -14,6 +14,9 @@ from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
+from src.fluid_dynamics.solvers.vorticity_solvers.vab_fully_implicit import (
+    VabFullyImplicitScheme,
+)
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.fluid import FluidParameters
 
@@ -260,7 +263,6 @@ class NonIterativeNavierStokersSolver:
             u=temperature,
             time=time,
         )
-        return self._stream_function, self._vorticity
 
     def _solve_vorticity(
         self,
