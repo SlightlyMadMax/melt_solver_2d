@@ -123,7 +123,7 @@ time_arr = [0.0]
 i = int(geometry.n_x / 2)
 
 start_time = time.perf_counter()
-for n in range(1, geometry.n_t):
+for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t)
     if n % 240 == 0:
@@ -160,7 +160,7 @@ print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
 u_analytical = (
     get_analytic_solution(
-        t=(geometry.n_t - 1) * geometry.dt,
+        t=geometry.n_t * geometry.dt,
         min_temp=min_temp,
         max_temp=max_temp,
         geometry=geometry,
