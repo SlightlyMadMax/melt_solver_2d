@@ -160,18 +160,31 @@ class NonIterativeNavierStokersSolver:
 
         self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
 
-        vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
-            solver_name=VorticitySolverName.VABISHCHEVICH
+        nonlinearity_predictor_class = VorticitySolverRegistry.get_solver_class(
+            solver_name=VorticitySolverName.EXPLICIT
         )
+        # vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
+        #     solver_name=VorticitySolverName.VABISHCHEVICH
+        # )
         stream_function_solver_class = StreamFunctionSolverRegistry.get_solver_class(
             solver_name=StreamFunctionSolverName.CG
         )
 
-        self.vorticity_solver = vorticity_solver_class(
+        self.nonlinearity_predictor = nonlinearity_predictor_class(
             geometry=geometry,
             parameters=parameters,
             convective_operator=self.convective_operator,
             bc_order=1,
+        )
+        # self.vorticity_solver = vorticity_solver_class(
+        #     geometry=geometry,
+        #     parameters=parameters,
+        #     convective_operator=self.convective_operator,
+        #     bc_order=1,
+        # )
+        self.vorticity_solver = VabFullyImplicitScheme(
+            geometry=geometry,
+            parameters=parameters,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
@@ -201,24 +214,51 @@ class NonIterativeNavierStokersSolver:
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        self._temp_vorticity = self._solve_vorticity(
+        self._temp_vorticity = self._predict_vorticity(
             old_vorticity=w,
-            conv_vorticity=w,
             stream_function=sf,
             temperature=u,
             time=time,
         )
+        # print(np.max(np.abs(self._temp_vorticity)))
+        self._temp_vorticity = self._solve_vorticity(
+            old_vorticity=w,
+            conv_vorticity=self._temp_vorticity,
+            stream_function=sf,
+            temperature=u,
+            time=time,
+        )
+        # print(np.max(np.abs(self._temp_vorticity)))
         self._stream_function = self._solve_stream_function(
             sf_nm1=sf,
             vorticity=self._temp_vorticity,
             conv_vorticity=w,
             time=time,
         )
-        calculate_vorticity_from_sf(
-            sf=self._stream_function,
-            result=self._vorticity,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+        # print(np.max(np.abs(self._stream_function)))
+        # calculate_vorticity_from_sf(
+        #     sf=self._stream_function,
+        #     result=self._vorticity,
+        #     dx=self.geometry.dx / self.geometry.length_scale,
+        #     dy=self.geometry.dy / self.geometry.length_scale,
+        #     c_ind=self.vorticity_solver.c_ind,
+        # )
+        # print(np.max(np.abs(self._vorticity)))
+        # print()
+        return self._stream_function, self._temp_vorticity
+
+    def _predict_vorticity(
+        self,
+        old_vorticity: np.ndarray,
+        stream_function: np.ndarray,
+        temperature: np.ndarray,
+        time: float,
+    ) -> np.ndarray:
+        return self.nonlinearity_predictor.solve(
+            w=old_vorticity,
+            sf=stream_function,
+            u=temperature,
+            time=time,
         )
         return self._stream_function, self._vorticity
 
@@ -245,6 +285,8 @@ class NonIterativeNavierStokersSolver:
         conv_vorticity: np.ndarray,
         time: float,
     ) -> np.ndarray:
+        c_ind = self.vorticity_solver.c_ind
+        rho = self.vorticity_solver.rho
         self.convective_operator(
             w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
         )
@@ -253,16 +295,16 @@ class NonIterativeNavierStokersSolver:
             parameters=self.parameters,
             vorticity=vorticity,
             sf_nm1=sf_nm1,
-            rho=self.vorticity_solver.rho,
-            c_ind=self.vorticity_solver.c_ind,
+            rho=rho,
+            c_ind=c_ind,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
         A = construct_matrix_for_cg(
             geometry=self.geometry,
             parameters=self.parameters,
-            rho=self.vorticity_solver.rho,
-            c_ind=self.vorticity_solver.c_ind,
+            rho=rho,
+            c_ind=c_ind,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
@@ -288,7 +330,7 @@ def construct_rhs_for_cg(
     tau = geometry.dt * parameters.v / geometry.length_scale
     for i in range(1, geometry.n_x - 1):
         for j in range(1, geometry.n_y - 1):
-            b[j, i] = -vorticity[j, i] - 0.5 * tau * (
+            b[j, i] = -vorticity[j, i] - tau * (
                 (c_ind[j, i] + rho[j, i] / parameters.reynolds_number) * sf_nm1[j, i]
                 + (
                     conv_x[j, i, 0] * sf_nm1[j, i + 1]
@@ -317,7 +359,7 @@ def construct_matrix_for_cg(
     inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
     tau = geometry.dt * parameters.v / geometry.length_scale
-    c = 0.5 * tau * (c_ind + rho / parameters.reynolds_number)
+    c = tau * (c_ind + rho / parameters.reynolds_number)
     c_inner_flat = c[1:-1, 1:-1].flatten()
 
     diagonal = -2 / dx2 - 2 / dy2 - c_inner_flat
