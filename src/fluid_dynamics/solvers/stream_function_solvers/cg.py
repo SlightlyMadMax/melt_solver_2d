@@ -99,7 +99,7 @@ class ConjugateGradientSolver(BaseSolver):
             bottom_bc_value=bottom,
         )
         # m = self._jacobi_preconditioner(A)
-        m = self._spilu_preconditioner(A=A)
+        # m = self._spilu_preconditioner(A=A)
 
         initial_guess_inner_flat = initial_guess[1:-1, 1:-1].flatten()
 
@@ -116,7 +116,7 @@ class ConjugateGradientSolver(BaseSolver):
             A=A,
             b=rhs,
             x0=initial_guess_inner_flat,
-            M=m,
+            # M=m,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
         )
