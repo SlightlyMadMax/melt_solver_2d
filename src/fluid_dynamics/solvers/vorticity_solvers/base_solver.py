@@ -3,9 +3,9 @@ from abc import ABC
 import numpy as np
 from numpy.typing import NDArray
 
+from src.convective_operators import BaseConvectiveOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
-from src.convective_operators import BaseConvectiveOperator
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
 from src.fluid_dynamics.utils import VorticityBCMixin
 from src.parameters.fluid import FluidParameters
@@ -48,7 +48,10 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
     def calculate_rho(self):
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
-        dy, dx = self.geometry.dy, self.geometry.dx
+        dy, dx = (
+            self.geometry.dy / self.parameters.l,
+            self.geometry.dx / self.parameters.l,
+        )
 
         rho = np.zeros((n_y, n_x))
 
