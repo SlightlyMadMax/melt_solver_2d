@@ -60,12 +60,12 @@ class VabishchevichScheme(ImplicitVorticitySolver):
                 rhs[i] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
-                    + (
+                    - (
                         conv_x[j, i, 0] * sf[j, i + 1]
                         + conv_x[j, i, 1] * sf[j, i]
                         + conv_x[j, i, 2] * sf[j, i - 1]
                     )
-                    + (
+                    - (
                         conv_y[j, i, 0] * sf[j + 1, i]
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
@@ -133,12 +133,12 @@ class VabishchevichScheme(ImplicitVorticitySolver):
                 rhs[j] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
-                    + (
+                    - (
                         conv_x[j, i, 0] * sf[j, i + 1]
                         + conv_x[j, i, 1] * sf[j, i]
                         + conv_x[j, i, 2] * sf[j, i - 1]
                     )
-                    + (
+                    - (
                         conv_y[j, i, 0] * sf[j + 1, i]
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
