@@ -10,6 +10,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
 from src.utils.thomas import solve_tridiagonal
 
 
@@ -170,11 +171,19 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
+        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        delta = get_mushy_zone_width(
+            u=u_dim,
+            u_pt=self.parameters.u_pt,
+            h_x=self.geometry.dx,
+            h_y=self.geometry.dy,
+        )
         calculate_indicator_function(
-            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u=u_dim,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
             result=self.c_ind,
+            delta=delta,
         )
         self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
 
