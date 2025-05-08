@@ -86,5 +86,5 @@ class ImplicitVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
 
 
 class ExplicitVorticitySolver(BaseVorticitySolver, ABC):
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
