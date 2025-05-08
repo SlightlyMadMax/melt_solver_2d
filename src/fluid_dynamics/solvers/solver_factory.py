@@ -318,9 +318,7 @@ def construct_matrix_for_cg(
 
     tau = geometry.dt * parameters.v / geometry.length_scale
     c = 0.5 * tau * (c_ind + rho / parameters.reynolds_number)
-
-    c_inner = c[1:-1, 1:-1]
-    c_inner_flat = c_inner.flatten()
+    c_inner_flat = c[1:-1, 1:-1].flatten()
 
     diagonal = -2 / dx2 - 2 / dy2 - c_inner_flat
 
