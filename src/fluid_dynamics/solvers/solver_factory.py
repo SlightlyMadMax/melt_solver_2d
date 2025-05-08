@@ -187,6 +187,12 @@ class NonIterativeNavierStokersSolver:
         self._stream_function: NDArray[np.float64] = np.empty(
             (geometry.n_y, geometry.n_x)
         )
+        self._conv_x: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
+        self._conv_y: NDArray[np.float64] = np.empty(
+            (self.geometry.n_y, self.geometry.n_x, 3)
+        )
 
     def solve(
         self,
@@ -202,8 +208,6 @@ class NonIterativeNavierStokersSolver:
             temperature=u,
             time=time,
         )
-        # print(np.max(self._temp_vorticity))
-        # print(np.min(self._temp_vorticity))
         self._stream_function = self._solve_stream_function(
             sf_nm1=sf,
             vorticity=self._temp_vorticity,
@@ -216,11 +220,6 @@ class NonIterativeNavierStokersSolver:
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
         )
-        # print(np.max(self._stream_function))
-        # print(np.min(self._stream_function))
-        # print(np.max(self._vorticity))
-        # print(np.min(self._vorticity))
-        # print()
         return self._stream_function, self._vorticity
 
     def _solve_vorticity(
@@ -246,7 +245,9 @@ class NonIterativeNavierStokersSolver:
         conv_vorticity: np.ndarray,
         time: float,
     ) -> np.ndarray:
-        conv_x, conv_y = self.convective_operator(w=conv_vorticity)
+        self.convective_operator(
+            w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
+        )
         b = construct_rhs_for_cg(
             geometry=self.geometry,
             parameters=self.parameters,
@@ -254,16 +255,16 @@ class NonIterativeNavierStokersSolver:
             sf_nm1=sf_nm1,
             rho=self.vorticity_solver.rho,
             c_ind=self.vorticity_solver.c_ind,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
         )
         A = construct_matrix_for_cg(
             geometry=self.geometry,
             parameters=self.parameters,
             rho=self.vorticity_solver.rho,
             c_ind=self.vorticity_solver.c_ind,
-            conv_x=conv_x,
-            conv_y=conv_y,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
         )
         return self.stream_function_solver.solve(
             initial_guess=sf_nm1,
