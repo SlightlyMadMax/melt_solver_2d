@@ -73,12 +73,18 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         dw_dx[:, :] = 0.0
         dw_dy[:, :] = 0.0
 
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
+                dw_dy[j, i] = (w[j + 1, i] - w[j - 1, i]) * 0.5 * inv_dy
+                dw_dx[j, i] = (w[j, i + 1] - w[j, i - 1]) * 0.5 * inv_dx
+
+        for i in range(n_x):
+            dw_dy[0, i] = (w[1, i] - w[0, i]) * inv_dy
+            dw_dy[n_y - 1, i] = (w[n_y - 1, i] - w[n_y - 2, i]) * inv_dy
+
         for j in range(n_y):
-            for i in range(n_x):
-                if j != n_y - 1 and j != 0:
-                    dw_dy[j, i] = (w[j + 1, i] - w[j - 1, i]) * 0.5 * inv_dy
-                if i != n_x - 1 and i != 0:
-                    dw_dx[j, i] = (w[j, i + 1] - w[j, i - 1]) * 0.5 * inv_dx
+            dw_dx[j, 0] = (w[j, 1] - w[j, 0]) * inv_dx
+            dw_dx[j, n_x - 1] = (w[j, n_x - 1] - w[j, n_x - 2]) * inv_dx
 
     @staticmethod
     @njit
