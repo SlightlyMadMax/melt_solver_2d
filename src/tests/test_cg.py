@@ -248,7 +248,9 @@ def test_cg_elliptic_solver_2():
     A = construct_matrix_for_cg(c=c, dx=geometry.dx, dy=geometry.dy)
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, A=A, b_flat=-f_inner_flat, time=0.0)
+    result = solver.solve(
+        initial_guess=initial_guess, A=A, b_flat=-f_inner_flat, time=0.0
+    )
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
