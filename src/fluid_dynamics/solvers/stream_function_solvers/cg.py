@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.sparse import diags, csr_matrix
-from scipy.sparse.linalg import cg, spilu, LinearOperator, norm, bicgstab
+from scipy.sparse import diags
+from scipy.sparse.linalg import LinearOperator, bicgstab
 
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -42,7 +42,7 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _jacobi_preconditioner(self, A):
+    def _jacobi_preconditioner(self, A) -> LinearOperator:
         diag = A.diagonal()
         if np.any(diag == 0):
             raise ZeroDivisionError("Jacobi preconditioner: zero on diagonal of A")
