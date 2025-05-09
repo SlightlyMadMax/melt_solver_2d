@@ -21,12 +21,9 @@ class SFTransportArgs(BaseModel):
 class EffectiveSFTransportOperator(BaseConvectiveOperator):
     def __init__(self, geometry: DomainGeometry):
         super().__init__(geometry=geometry)
-        self._dw_dx: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._dw_dy: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        self._dw_dx: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._dw_dy: NDArray[np.float64] = np.empty((n_y, n_x))
 
     def __call__(self, conv_x, conv_y, **kwargs) -> None:
         try:

@@ -37,10 +37,11 @@ def init_temperature_with_interface(
     :param solid_temp: Temperature of the solid phase.
     :return: A 2D array of nondimensionilized temperatures initialized based on the interface.
     """
-    u = np.empty((geom.n_y, geom.n_x))
+    n_y, n_x = geom.n_y, geom.n_x
+    u = np.empty((n_y, n_x))
 
-    for i in range(geom.n_x):
-        for j in range(geom.n_y):
+    for i in range(n_x):
+        for j in range(n_y):
             if j * geom.dy < f[i]:
                 u[j, i] = solid_temp + j * geom.dy * (
                     thermal_parameters.u_pt - solid_temp
@@ -84,7 +85,10 @@ def init_temperature(
     :param rect_height: The height of the rectangle filled with solid phase (default: 0.12).
     :return: A 2D array of nondimensionilized initialized based on the specified shape of the domain.
     """
-    u = np.full((geometry.n_y, geometry.n_x), solid_temp)
+    n_y, n_x = geometry.n_y, geometry.n_x
+    dy, dx = geometry.dy, geometry.dx
+    height, width = geometry.height, geometry.width
+    u = np.full((n_y, n_x), solid_temp)
 
     X, Y = geometry.mesh_grid
 
@@ -105,33 +109,29 @@ def init_temperature(
 
     if shape == DomainShape.LINEAR:
         # Linear temperature gradient from bottom (solid phase) to top (liquid phase)
-        u[:, :] = np.linspace(solid_temp, liquid_temp, geometry.n_y).reshape(1, -1)
+        u[:, :] = np.linspace(solid_temp, liquid_temp, n_y).reshape(1, -1)
 
     elif shape == DomainShape.CIRCLE:
         # Single circle centered at domain center with radius threshold
-        mask = (X - geometry.width / 2) ** 2 + (Y - geometry.height / 2) ** 2 < radius ** 2
+        mask = (X - width / 2) ** 2 + (Y - height / 2) ** 2 < radius**2
         u[mask] = liquid_temp
 
     elif shape == DomainShape.DOUBLE_CIRCLE:
         # Two circles centered vertically with specified radius
-        mask1 = (X - geometry.width / 2) ** 2 + (
-                Y - 0.75 * geometry.height
-        ) ** 2 < small_radius ** 2
-        mask2 = (X - geometry.width / 2) ** 2 + (
-                Y - 0.25 * geometry.height
-        ) ** 2 < small_radius ** 2
+        mask1 = (X - width / 2) ** 2 + (Y - 0.75 * height) ** 2 < small_radius**2
+        mask2 = (X - width / 2) ** 2 + (Y - 0.25 * height) ** 2 < small_radius**2
         u[mask1 | mask2] = liquid_temp
 
     elif shape == DomainShape.PACMAN:
-        for i in range(geometry.n_x):
-            for j in range(geometry.n_y):
-                if (i * geometry.dx - geometry.width / 2.0) ** 2 + (
-                        j * geometry.dy - geometry.height / 2.0
+        for i in range(n_x):
+            for j in range(n_y):
+                if (i * dx - width / 2.0) ** 2 + (
+                    j * dy - height / 2.0
                 ) ** 2 < radius**2:
-                    if i * geometry.dx <= j * geometry.dy <= -i * geometry.dx + 1:
+                    if i * dx <= j * dy <= -i * dx + 1:
                         u[j, i] = solid_temp  # Pacman's mouth
-                    elif (i * geometry.dx - eye_offset) ** 2 + (
-                            j * geometry.dy - eye_offset
+                    elif (i * dx - eye_offset) ** 2 + (
+                        j * dy - eye_offset
                     ) ** 2 < eye_radius**2:
                         u[j, i] = solid_temp  # Pacman's eye
                     else:
@@ -140,8 +140,8 @@ def init_temperature(
                     u[j, i] = solid_temp
 
     elif shape == DomainShape.RECTANGLE:
-        center_x = geometry.width / 2
-        center_y = geometry.height / 2
+        center_x = width / 2
+        center_y = height / 2
         half_width = rect_width / 2
         half_height = rect_height / 2
 

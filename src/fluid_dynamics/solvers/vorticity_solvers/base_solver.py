@@ -27,23 +27,17 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.convective_operator = convective_operator
         self.bc_order = bc_order
 
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._conv_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._conv_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self.top_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
-        self.right_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
-        self.bottom_bc: NDArray[np.float64] = np.empty(self.geometry.n_x)
-        self.left_bc: NDArray[np.float64] = np.empty(self.geometry.n_y)
-        self.c_ind: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
+        self._new_w: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self.top_bc: NDArray[np.float64] = np.empty(n_x)
+        self.right_bc: NDArray[np.float64] = np.empty(n_y)
+        self.bottom_bc: NDArray[np.float64] = np.empty(n_x)
+        self.left_bc: NDArray[np.float64] = np.empty(n_y)
+        self.c_ind: NDArray[np.float64] = np.empty((n_y, n_x))
         self.rho = self.calculate_rho()
 
     def calculate_rho(self):

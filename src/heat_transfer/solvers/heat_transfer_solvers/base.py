@@ -37,22 +37,14 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
-
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
         # Pre-allocate some arrays that will be used in the calculations
-        self._iter_u: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._new_u: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._conv_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._conv_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._c_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
-        self._k_eff = np.empty((self.geometry.n_y, self.geometry.n_x))
+        self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._c_eff = np.empty((n_y, n_x))
+        self._k_eff = np.empty((n_y, n_x))
 
     @abstractmethod
     def solve_linear(
