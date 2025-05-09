@@ -52,13 +52,13 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             for i in range(1, n_x - 1):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
-                a_x[i] = -0.5 * dt * inv_re * inv_dx2
+                a_x[i] = -dt * inv_re * inv_dx2
 
-                b_x[i] = 1.0 + dt * inv_re * inv_dx2
+                b_x[i] = 1.0 + 2.0 * dt * inv_re * inv_dx2
 
-                c_x[i] = -0.5 * dt * inv_re * inv_dx2
+                c_x[i] = -dt * inv_re * inv_dx2
 
-                rhs[i] = w[j, i] + 0.5 * dt * (
+                rhs[i] = w[j, i] + dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
@@ -92,9 +92,8 @@ class VabishchevichScheme(ImplicitVorticitySolver):
     @staticmethod
     @njit
     def _compute_sweep_y(
-        w: NDArray[np.float64],
-        conv_x: NDArray[np.float64],
-        conv_y: NDArray[np.float64],
+        w_old: NDArray[np.float64],
+        w_prev: NDArray[np.float64],
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         result: NDArray[np.float64],
@@ -106,45 +105,25 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         dy: float,
         dt: float,
         reynolds_number: float,
-        grashof_number: float,
-        u_pt_ref: float,
-        delta_u: float,
-        c_ind: NDArray[np.float64],
-        rho: NDArray[np.float64],
     ) -> NDArray[np.float64]:
-        n_y, n_x = w.shape
-        inv_dx = 1.0 / dx
-        inv_dx2 = inv_dx * inv_dx
+        n_y, n_x = w_old.shape
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
 
         inv_re = 1.0 / reynolds_number
-        inv_re2 = inv_re * inv_re
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
+                a_y[j] = -dt * inv_re * inv_dy2
 
-                a_y[j] = -0.5 * dt * inv_re * inv_dy2
+                b_y[j] = 1.0 + 2.0 * dt * inv_re * inv_dy2
 
-                b_y[j] = 1.0 + dt * inv_re * inv_dy2
+                c_y[j] = -dt * inv_re * inv_dy2
 
-                c_y[j] = -0.5 * dt * inv_re * inv_dy2
-
-                rhs[j] = w[j, i] + 0.5 * dt * (
-                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
-                    + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
-                    - (
-                        conv_x[j, i, 0] * sf[j, i + 1]
-                        + conv_x[j, i, 1] * sf[j, i]
-                        + conv_x[j, i, 2] * sf[j, i - 1]
-                    )
-                    - (
-                        conv_y[j, i, 0] * sf[j + 1, i]
-                        + conv_y[j, i, 1] * sf[j, i]
-                        + conv_y[j, i, 2] * sf[j - 1, i]
-                    )
-                    - (c_ind[j, i] + inv_re * rho[j, i]) * sf[j, i]
+                rhs[j] = w_prev[j, i] - dt * (
+                    inv_re
+                    * inv_dy2
+                    * (w_old[j + 1, i] - 2.0 * w_old[j, i] + w_old[j - 1, i])
                 )
 
             solve_tridiagonal(
@@ -211,11 +190,10 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         )
         self._new_w = np.copy(self._temp_w)
         self._compute_sweep_y(
-            w=self._temp_w,
+            w_old=w,
+            w_prev=self._temp_w,
             sf=sf,
             u=u,
-            conv_x=self._conv_x,
-            conv_y=self._conv_y,
             result=self._new_w,
             rhs=self._rhs_y,
             a_y=self._a_y,
@@ -224,12 +202,7 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            u_pt_ref=self.parameters.u_pt_ref,
-            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
-            grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
-            rho=self.rho,
         )
 
         return self._new_w
