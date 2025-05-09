@@ -239,13 +239,12 @@ class NonIterativeNavierStokersSolver:
             time=time,
         )
         # print(np.max(np.abs(self._stream_function)))
-        # calculate_vorticity_from_sf(
-        #     sf=self._stream_function,
-        #     result=self._vorticity,
-        #     dx=self.geometry.dx / self.geometry.length_scale,
-        #     dy=self.geometry.dy / self.geometry.length_scale,
-        #     c_ind=self.vorticity_solver.c_ind,
-        # )
+        calculate_vorticity_from_sf(
+            sf=self._stream_function,
+            result=self._vorticity,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+        )
         # print(np.max(np.abs(self._vorticity)))
         # print()
         return self._stream_function, self._temp_vorticity
