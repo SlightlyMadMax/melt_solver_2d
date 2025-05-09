@@ -32,9 +32,6 @@ def test_cg_elliptic_solver():
     # Exact solution
     analytical_solution = -0.5 * (X**2 + Y**2)
 
-    # Right-hand side (-2 everywhere in the domain)
-    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64)
-
     initial_guess = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
 
     c = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
@@ -67,10 +64,23 @@ def test_cg_elliptic_solver():
         stopping_criteria=1e-8,
     )
 
+    dx, dy = geometry.dx, geometry.dy
+
+    # Right-hand side (-2 everywhere in the domain)
+    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64)
+    rhs_inner = rhs[1:-1, 1:-1]
+    rhs_inner[0, :] -= solver.bcs.top.get_value(t=0.0)[1:-1] / dy**2
+    rhs_inner[-1, :] -= solver.bcs.bottom.get_value(t=0.0)[1:-1] / dy**2
+    rhs_inner[:, 0] -= solver.bcs.left.get_value(t=0.0)[1:-1] / dx**2
+    rhs_inner[:, -1] -= solver.bcs.right.get_value(t=0.0)[1:-1] / dx**2
+    rhs_inner_flat = rhs_inner.flatten()
+
     A = construct_matrix_for_cg(c=c, dx=geometry.dx, dy=geometry.dy)
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, A=A, b=-rhs, time=0.0)
+    result = solver.solve(
+        initial_guess=initial_guess, A=A, b_flat=-rhs_inner_flat, time=0.0
+    )
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
@@ -184,16 +194,6 @@ def test_cg_elliptic_solver_2():
         n_y=geometry.n_y,
     )
 
-    f = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
-
-    for j in range(1, geometry.n_y - 1):
-        for i in range(1, geometry.n_x - 1):
-            f[j, i] = -(
-                f0
-                * np.sin(m * np.pi * i * geometry.dx / geometry.width)
-                * np.sin(n * np.pi * j * geometry.dy / geometry.height)
-            )
-
     initial_guess = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
 
     c = 10.0 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64)
@@ -226,10 +226,29 @@ def test_cg_elliptic_solver_2():
         stopping_criteria=1e-8,
     )
 
+    dx, dy = geometry.dx, geometry.dy
+
+    f = np.zeros((geometry.n_y, geometry.n_x), dtype=np.float64)
+
+    for j in range(1, geometry.n_y - 1):
+        for i in range(1, geometry.n_x - 1):
+            f[j, i] = -(
+                f0
+                * np.sin(m * np.pi * i * dx / geometry.width)
+                * np.sin(n * np.pi * j * dy / geometry.height)
+            )
+
+    f_inner = f[1:-1, 1:-1]
+    f_inner[0, :] -= solver.bcs.top.get_value(t=0.0)[1:-1] / dy**2
+    f_inner[-1, :] -= solver.bcs.bottom.get_value(t=0.0)[1:-1] / dy**2
+    f_inner[:, 0] -= solver.bcs.left.get_value(t=0.0)[1:-1] / dx**2
+    f_inner[:, -1] -= solver.bcs.right.get_value(t=0.0)[1:-1] / dx**2
+    f_inner_flat = f_inner.flatten()
+
     A = construct_matrix_for_cg(c=c, dx=geometry.dx, dy=geometry.dy)
 
     start_time = time.perf_counter()
-    result = solver.solve(initial_guess=initial_guess, A=A, b=-f, time=0.0)
+    result = solver.solve(initial_guess=initial_guess, A=A, b_flat=-f_inner_flat, time=0.0)
     print(f"Elapsed time: {time.perf_counter() - start_time:.2f} s.")
 
     error = np.linalg.norm(result - analytical_solution, ord=2)
