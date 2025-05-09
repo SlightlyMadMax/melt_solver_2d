@@ -322,22 +322,23 @@ def construct_rhs_for_cg(
     conv_x: np.ndarray,
     conv_y: np.ndarray,
 ) -> np.ndarray:
-    b = np.zeros((geometry.n_y, geometry.n_x))
     tau = geometry.dt * parameters.v / geometry.length_scale
-    for i in range(1, geometry.n_x - 1):
-        for j in range(1, geometry.n_y - 1):
-            b[j, i] = -vorticity[j, i] - tau * (
-                (c_ind[j, i] + rho[j, i] / parameters.reynolds_number) * sf_nm1[j, i]
-                + (
-                    conv_x[j, i, 0] * sf_nm1[j, i + 1]
-                    + conv_x[j, i, 2] * sf_nm1[j, i - 1]
-                )
-                + (
-                    conv_y[j, i, 0] * sf_nm1[j + 1, i]
-                    + conv_y[j, i, 2] * sf_nm1[j - 1, i]
-                )
-            )
-    return b[1:-1, 1:-1].flatten()
+
+    psi = sf_nm1[1:-1, 1:-1]
+    w = vorticity[1:-1, 1:-1]
+    r = rho[1:-1, 1:-1]
+    c = c_ind[1:-1, 1:-1]
+
+    conv = (
+        conv_x[1:-1, 1:-1, 0] * sf_nm1[1:-1, 2:]
+        + conv_x[1:-1, 1:-1, 2] * sf_nm1[1:-1, :-2]
+        + conv_y[1:-1, 1:-1, 0] * sf_nm1[2:, 1:-1]
+        + conv_y[1:-1, 1:-1, 2] * sf_nm1[:-2, 1:-1]
+    )
+
+    b_int = -w - tau * ((c + r / parameters.reynolds_number) * psi + conv)
+
+    return b_int.ravel()
 
 
 def construct_matrix_for_cg(
