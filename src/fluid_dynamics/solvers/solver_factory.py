@@ -364,26 +364,14 @@ def construct_matrix_for_cg(
     main_diag = -2.0 / dx2 - 2.0 / dy2 - c_inner_flat
 
     # Off-diagonals for interior stencil + convection
-    x_off_right = (1.0 / dx2 + conv_x[1:-1, 1:-1, 0]).flatten()
-    x_off_left = (1.0 / dx2 + conv_x[1:-1, 1:-1, 2]).flatten()
-    y_off_up = (1.0 / dy2 + conv_y[1:-1, 1:-1, 0]).flatten()
-    y_off_down = (1.0 / dy2 + conv_y[1:-1, 1:-1, 2]).flatten()
+    x_off_right = (1.0 / dx2 - tau * conv_x[1:-1, 1:-1, 0]).flatten()
+    x_off_left = (1.0 / dx2 - tau * conv_x[1:-1, 1:-1, 2]).flatten()
+    y_off_up = (1.0 / dy2 - tau * conv_y[1:-1, 1:-1, 0]).flatten()
+    y_off_down = (1.0 / dy2 - tau * conv_y[1:-1, 1:-1, 2]).flatten()
 
-    # Remove wrap-around connections in flattened indexing
     for row in range(1, inner_n_y):
-        wrap_idx = row * inner_n_x - 1
-        x_off_right[wrap_idx] = 0.0
-        x_off_left[wrap_idx] = 0.0
-
-    # Enforce homogeneous Dirichlet: drop neighbor outside domain
-    # at first interior column (i=1) -> no left neighbor
-    for row in range(inner_n_y):
-        idx_start = row * inner_n_x
-        x_off_left[idx_start] = 0.0
-    # at last interior column (i=n_x-2) -> no right neighbor
-    for row in range(inner_n_y):
-        idx_end = row * inner_n_x + (inner_n_x - 1)
-        x_off_right[idx_end] = 0.0
+        x_off_right[row * inner_n_x - 1] = 0.0
+        x_off_left[row * inner_n_x] = 0.0
 
     diagonals = [
         main_diag,
