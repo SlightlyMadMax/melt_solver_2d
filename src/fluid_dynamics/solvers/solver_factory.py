@@ -223,7 +223,6 @@ class NonIterativeNavierStokersSolver:
             temperature=u,
             time=time,
         )
-        # print(np.max(np.abs(self._temp_vorticity)))
         self._temp_vorticity = self._solve_vorticity(
             old_vorticity=w,
             conv_vorticity=self._temp_vorticity,
@@ -231,22 +230,18 @@ class NonIterativeNavierStokersSolver:
             temperature=u,
             time=time,
         )
-        # print(np.max(np.abs(self._temp_vorticity)))
         self._stream_function = self._solve_stream_function(
             sf_nm1=sf,
             vorticity=self._temp_vorticity,
             conv_vorticity=w,
             time=time,
         )
-        # print(np.max(np.abs(self._stream_function)))
         calculate_vorticity_from_sf(
             sf=self._stream_function,
             result=self._vorticity,
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
         )
-        # print(np.max(np.abs(self._vorticity)))
-        # print()
         return self._stream_function, self._temp_vorticity
 
     def _predict_vorticity(
