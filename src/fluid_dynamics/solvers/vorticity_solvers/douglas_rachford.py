@@ -10,6 +10,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
 from src.utils.thomas import solve_tridiagonal
 
 
@@ -104,10 +105,6 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         dy: float,
         dt: float,
         reynolds_number: float,
-        grashof_number: float,
-        u_pt_ref: float,
-        delta_u: float,
-        c_ind: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w_old.shape
         inv_dy = 1.0 / dy
@@ -157,10 +154,18 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
+        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        delta = get_mushy_zone_width(
+            u=u_dim,
+            u_pt=self.parameters.u_pt,
+            h_x=self.geometry.dx,
+            h_y=self.geometry.dy,
+        )
         calculate_indicator_function(
-            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u=u_dim,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
+            delta=delta,
             result=self.c_ind,
         )
         self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
@@ -215,11 +220,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             dx=self.geometry.dx / self.geometry.length_scale,
             dy=self.geometry.dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            u_pt_ref=self.parameters.u_pt_ref,
-            delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
-            grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
         )
 
         return self._new_w
