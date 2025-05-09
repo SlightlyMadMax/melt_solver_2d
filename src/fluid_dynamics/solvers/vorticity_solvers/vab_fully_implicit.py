@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import diags
-from scipy.sparse.linalg import spsolve
+from scipy.sparse import diags, csr_matrix
+from scipy.sparse.linalg import splu
 
 from src.convective_operators import EffectiveSFTransportOperator
 from src.core.geometry import DomainGeometry
@@ -24,19 +24,15 @@ class VabFullyImplicitScheme(BaseSolver):
         self.parameters = parameters
         self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
 
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.zeros(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._conv_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._conv_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self.c_ind: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
+        self._new_w: NDArray[np.float64] = np.zeros((n_y, n_x))
+        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self.c_ind: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._rhs: NDArray[np.float64] = np.empty((n_y - 2) * (n_x - 2))
+        self._implicit_matrix: csr_matrix = self._precompute_matrix()
+        self.lu = splu(self._implicit_matrix.tocsc())
         self.rho = self.calculate_rho()
 
     def calculate_rho(self):
@@ -61,6 +57,37 @@ class VabFullyImplicitScheme(BaseSolver):
 
         return rho
 
+    def _precompute_matrix(self) -> csr_matrix:
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        inner_n_y, inner_n_x = n_y - 2, n_x - 2
+        size = inner_n_x * inner_n_y
+        dx = self.geometry.dx / self.geometry.length_scale
+        dy = self.geometry.dy / self.geometry.length_scale
+        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
+        inv_re = 1.0 / self.parameters.reynolds_number
+
+        main_diag = -2 / dx**2 - 2 / dy**2
+        off_diag_x = 1 / dx**2
+        off_diag_y = 1 / dy**2
+
+        diagonals = [
+            np.full(size, inv_re * main_diag),  # main
+            np.full(size - 1, inv_re * off_diag_x),  # left/right
+            np.full(size - 1, inv_re * off_diag_x),
+            np.full(size - inner_n_x, inv_re * off_diag_y),  # top/bottom
+            np.full(size - inner_n_x, inv_re * off_diag_y),
+        ]
+        offsets = [0, -1, 1, -inner_n_x, inner_n_x]
+
+        # Correct for block structure
+        for row in range(1, inner_n_y):
+            diagonals[2][row * inner_n_x - 1] = 0.0
+            diagonals[1][row * inner_n_x] = 0.0
+
+        A = diags(diagonals, offsets, shape=(size, size), format="csr")
+
+        return (1 / tau) * diags([1.0], [0], shape=(size, size)) - A
+
     def solve(
         self,
         w: NDArray[np.float64],
@@ -69,6 +96,14 @@ class VabFullyImplicitScheme(BaseSolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        dx = self.geometry.dx / self.geometry.length_scale
+        inv_dx = 1.0 / dx
+        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
+        inner_n_y, inner_n_x = n_y - 2, n_x - 2
+        inv_re = 1.0 / self.parameters.reynolds_number
+        inv_re2 = inv_re * inv_re
+
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_width(
@@ -85,18 +120,6 @@ class VabFullyImplicitScheme(BaseSolver):
             result=self.c_ind,
         )
         self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
-        inner_n_y, inner_n_x = n_y - 2, n_x - 2
-        size = inner_n_x * inner_n_y
-
-        dx = self.geometry.dx / self.geometry.length_scale
-        dy = self.geometry.dy / self.geometry.length_scale
-        inv_dx = 1.0 / dx
-
-        inv_re = 1.0 / self.parameters.reynolds_number
-        inv_re2 = inv_re * inv_re
-
-        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
 
         gr = np.where(
             u * self.parameters.delta_u - self.parameters.u_pt_ref < 0.0,
@@ -104,27 +127,6 @@ class VabFullyImplicitScheme(BaseSolver):
             self.parameters.grashof_number,
         )
 
-        main_diag = -2 / dx**2 - 2 / dy**2
-        off_diag_x = 1 / dx**2
-        off_diag_y = 1 / dy**2
-
-        diagonals = [
-            np.full(size, inv_re * main_diag),  # main
-            np.full(size - 1, inv_re * off_diag_x),  # left/right
-            np.full(size - 1, inv_re * off_diag_x),
-            np.full(size - inner_n_x, inv_re * off_diag_y),  # top/bottom
-            np.full(size - inner_n_x, inv_re * off_diag_y),
-        ]
-        offsets = [0, -1, 1, -inner_n_x, inner_n_x]
-
-        # Correct for block structure in x-direction
-        for i in range(1, inner_n_y):
-            diagonals[1][i * inner_n_x - 1] = 0.0  # left of block
-            diagonals[2][i * inner_n_x - 1] = 0.0  # right of block
-
-        A = diags(diagonals, offsets, shape=(size, size), format="csr")
-
-        rhs = np.zeros(size)
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 idx = (j - 1) * inner_n_x + (i - 1)
@@ -135,19 +137,15 @@ class VabFullyImplicitScheme(BaseSolver):
                     + self._conv_y[j, i, 2] * sf[j - 1, i]
                 )
                 dudx = 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
-                rhs[idx] = (
+                self._rhs[idx] = (
                     w[j, i] / tau
                     - conv_term
                     - (inv_re * self.rho[j, i] + self.c_ind[j, i]) * sf[j, i]
                     + gr[j, i] * inv_re2 * dudx
                 )
 
-        # Solve the system
-        omega_inner_flat = spsolve(
-            (1 / tau) * diags([1.0], [0], shape=(size, size)) - A, rhs
-        )
+        omega_inner_flat = self.lu.solve(self._rhs)
 
-        # Embed into full omega array
         self._new_w[1:-1, 1:-1] = omega_inner_flat.reshape((inner_n_y, inner_n_x))
 
         return self._new_w
