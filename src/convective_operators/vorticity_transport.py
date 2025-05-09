@@ -25,20 +25,15 @@ class VorticityTransportOperator(BaseConvectiveOperator):
     def __init__(self, form: ConvectiveTermForm, geometry: DomainGeometry):
         super().__init__(geometry=geometry)
         self.form = form
-        self._v_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-        self._v_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        self._v_x: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._v_y: NDArray[np.float64] = np.empty((n_y, n_x))
 
     def __call__(self, conv_x, conv_y, **kwargs) -> None:
         try:
             parsed = VorticityTransportArgs(**kwargs)
         except ValidationError as e:
-            raise ValueError(
-                f"Invalid arguments for VorticityTransportOperator: {e}"
-            )
+            raise ValueError(f"Invalid arguments for VorticityTransportOperator: {e}")
 
         sf = parsed.sf
         u = parsed.u

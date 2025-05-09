@@ -42,19 +42,17 @@ def get_phase_trans_boundary(
     :return: 1d arrays for x and y coordinates of the phase-transition boundary interface.
     """
     x, y = [], []
-    for j in range(1, geom.n_y - 1):
-        for i in range(1, geom.n_x - 1):
+    n_y, n_x = geom.n_y, geom.n_x
+    dy, dx = geom.dy, geom.dx
+    for j in range(1, n_y - 1):
+        for i in range(1, n_x - 1):
             if (u[j, i] - u_pt) * (u[j + 1, i] - u_pt) <= 0.0:
-                y_0 = (
-                    j * geom.dy + ((u_pt - u[j, i]) / (u[j + 1, i] - u[j, i])) * geom.dy
-                )
+                y_0 = j * dy + ((u_pt - u[j, i]) / (u[j + 1, i] - u[j, i])) * dy
                 y.append(y_0)
-                x.append(i * geom.dx)
+                x.append(i * dx)
             if (u[j, i] - u_pt) * (u[j, i + 1] - u_pt) <= 0.0:
-                x_0 = (
-                    i * geom.dx + ((u_pt - u[j, i]) / (u[j, i + 1] - u[j, i])) * geom.dx
-                )
+                x_0 = i * dx + ((u_pt - u[j, i]) / (u[j, i + 1] - u[j, i])) * dx
                 x.append(x_0)
-                y.append(j * geom.dy)
+                y.append(j * dy)
 
     return x, y
