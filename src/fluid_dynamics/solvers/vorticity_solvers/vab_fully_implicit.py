@@ -25,7 +25,7 @@ class VabFullyImplicitScheme(BaseSolver):
         self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.empty(
+        self._new_w: NDArray[np.float64] = np.zeros(
             (self.geometry.n_y, self.geometry.n_x)
         )
         self._conv_x: NDArray[np.float64] = np.empty(
