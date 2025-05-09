@@ -42,22 +42,18 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _spilu_preconditioner(self, A: csr_matrix):
-        A_csc = A.tocsc()
-        m_inv = spilu(A_csc, drop_tol=1e-4, fill_factor=20)
-        m_in_op = LinearOperator(A.shape, m_inv.solve)
-        return m_in_op
-
     def _jacobi_preconditioner(self, A):
-        M_inv = diags(1 / A.diagonal())  # Inverse of diagonal elements
-        return LinearOperator(A.shape, lambda x: M_inv @ x)
+        diag = A.diagonal()
+        if np.any(diag == 0):
+            raise ZeroDivisionError("Jacobi preconditioner: zero on diagonal of A")
+        inv_diag = 1.0 / diag
+        def matvec(x):
+            return inv_diag * x
+
+        return LinearOperator(A.shape, matvec=matvec)
 
     def solve(
-        self,
-        A: diags,
-        b_flat: np.ndarray,
-        initial_guess: np.ndarray,
-        time: float
+        self, A: diags, b_flat: np.ndarray, initial_guess: np.ndarray, time: float
     ) -> np.ndarray:
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
@@ -70,11 +66,14 @@ class ConjugateGradientSolver(BaseSolver):
         # Initial guess interior flattened
         x0 = initial_guess[1:-1, 1:-1].flatten()
 
+        m = self._jacobi_preconditioner(A)
+
         # Solve A x = b
         solution_inner_flat, info = bicgstab(
             A=A,
             b=b_flat,
             x0=x0,
+            M=m,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
         )
