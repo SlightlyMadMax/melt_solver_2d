@@ -42,26 +42,6 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _construct_rhs(
-        self,
-        f: np.ndarray,
-        right_bc_value: np.ndarray,
-        left_bc_value: np.ndarray,
-        top_bc_value: np.ndarray,
-        bottom_bc_value: np.ndarray,
-    ) -> np.ndarray:
-        dx2 = self.geometry.dx**2
-        dy2 = self.geometry.dy**2
-        rhs_inner = f[1:-1, 1:-1]
-        rhs_inner[0, :] += top_bc_value[1:-1] / dy2
-        rhs_inner[-1, :] += bottom_bc_value[1:-1] / dy2
-        rhs_inner[:, 0] += left_bc_value[1:-1] / dx2
-        rhs_inner[:, -1] += right_bc_value[1:-1] / dx2
-
-        rhs_inner_flat = rhs_inner.flatten()
-
-        return rhs_inner_flat
-
     def _spilu_preconditioner(self, A: csr_matrix):
         A_csc = A.tocsc()
         m_inv = spilu(A_csc, drop_tol=1e-4, fill_factor=20)
@@ -73,17 +53,13 @@ class ConjugateGradientSolver(BaseSolver):
         return LinearOperator(A.shape, lambda x: M_inv @ x)
 
     def solve(
-        self, A: csr_matrix, b: np.ndarray, initial_guess: np.ndarray, time: float
+        self,
+        A: diags,
+        b_flat: np.ndarray,
+        initial_guess: np.ndarray,
+        time: float
     ) -> np.ndarray:
-        """
-        Solve an elliptic equation of the form Δu - c(x,y)u = f(x,y) for a given initial guess, c(x,y) and f(x,y).
-
-        :param initial_guess: The initial guess for the solution.
-        :param b: The right-hand side of the equation.
-        :param time: The current time, used to calculate time-dependent boundary conditions.
-        :return: The final solution as a 2D NumPy array.
-        """
-        n_y, n_x = b.shape
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
         right = self.bcs.right.get_value(t=time)
@@ -91,44 +67,22 @@ class ConjugateGradientSolver(BaseSolver):
         top = self.bcs.top.get_value(t=time)
         bottom = self.bcs.bottom.get_value(t=time)
 
-        rhs = self._construct_rhs(
-            f=b,
-            right_bc_value=right,
-            left_bc_value=left,
-            top_bc_value=top,
-            bottom_bc_value=bottom,
-        )
-        # m = self._jacobi_preconditioner(A)
-        # m = self._spilu_preconditioner(A=A)
+        # Initial guess interior flattened
+        x0 = initial_guess[1:-1, 1:-1].flatten()
 
-        initial_guess_inner_flat = initial_guess[1:-1, 1:-1].flatten()
-
-        # solution_inner_flat, info = cg(
-        #     A=A,
-        #     b=rhs,
-        #     # M=m,
-        #     x0=initial_guess_inner_flat,
-        #     maxiter=self.max_iters,
-        #     rtol=self.stopping_criteria,
-        # )
-
+        # Solve A x = b
         solution_inner_flat, info = bicgstab(
             A=A,
-            b=rhs,
-            x0=initial_guess_inner_flat,
-            # M=m,
+            b=b_flat,
+            x0=x0,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
         )
 
         if info != 0:
-            raise RuntimeError(
-                f"Conjugate Gradient did not converge. Info code: {info}"
-            )
+            raise RuntimeError(f"CG did not converge. Info: {info}")
 
-        solution_inner = solution_inner_flat.reshape((inner_n_y, inner_n_x))
-
-        self._result[1:-1, 1:-1] = solution_inner
+        self._result[1:-1, 1:-1] = solution_inner_flat.reshape((inner_n_y, inner_n_x))
         self._result[:, 0] = left
         self._result[:, -1] = right
         self._result[0, :] = top

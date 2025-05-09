@@ -313,7 +313,7 @@ class NonIterativeNavierStokersSolver:
         return self.stream_function_solver.solve(
             initial_guess=sf_nm1,
             A=-A,
-            b=-b,
+            b_flat=-b,
             time=time,
         )
 
@@ -328,7 +328,7 @@ def construct_rhs_for_cg(
     conv_x: np.ndarray,
     conv_y: np.ndarray,
 ) -> np.ndarray:
-    b = np.zeros_like(sf_nm1)
+    b = np.zeros((geometry.n_y, geometry.n_x))
     tau = geometry.dt * parameters.v / geometry.length_scale
     for i in range(1, geometry.n_x - 1):
         for j in range(1, geometry.n_y - 1):
@@ -343,7 +343,7 @@ def construct_rhs_for_cg(
                     + conv_y[j, i, 2] * sf_nm1[j - 1, i]
                 )
             )
-    return b
+    return b[1:-1, 1:-1].flatten()
 
 
 def construct_matrix_for_cg(
@@ -359,35 +359,44 @@ def construct_matrix_for_cg(
     dy2 = geometry.dy**2
 
     inner_n_y, inner_n_x = n_y - 2, n_x - 2
+    size = inner_n_x * inner_n_y
 
     tau = geometry.dt * parameters.v / geometry.length_scale
     c = tau * (c_ind + rho / parameters.reynolds_number)
     c_inner_flat = c[1:-1, 1:-1].flatten()
 
-    diagonal = -2 / dx2 - 2 / dy2 - c_inner_flat
+    # Main diagonal: Δψ - c ψ
+    main_diag = -2.0 / dx2 - 2.0 / dy2 - c_inner_flat
 
-    size = inner_n_x * inner_n_y
-    main_diag = np.full(size, diagonal)
+    # Off-diagonals for interior stencil + convection
+    x_off_right = (1.0 / dx2 + conv_x[1:-1, 1:-1, 0]).flatten()
+    x_off_left = (1.0 / dx2 + conv_x[1:-1, 1:-1, 2]).flatten()
+    y_off_up = (1.0 / dy2 + conv_y[1:-1, 1:-1, 0]).flatten()
+    y_off_down = (1.0 / dy2 + conv_y[1:-1, 1:-1, 2]).flatten()
 
-    # Off-diagonal elements must be adjusted for staggered indexing
-    x_off_diag_array = (1 / dx2) + conv_x[1:-1, 1:-1, 0].flatten()  # u_{i+1, j}
-    x_off_diag_left_array = (1 / dx2) + conv_x[1:-1, 1:-1, 2].flatten()  # u_{i-1, j}
-    y_off_diag_array = (1 / dy2) + conv_y[1:-1, 1:-1, 0].flatten()  # u_{i, j+1}
-    y_off_diag_bottom_array = (1 / dy2) + conv_y[1:-1, 1:-1, 2].flatten()  # u_{i, j-1}
+    # Remove wrap-around connections in flattened indexing
+    for row in range(1, inner_n_y):
+        wrap_idx = row * inner_n_x - 1
+        x_off_right[wrap_idx] = 0.0
+        x_off_left[wrap_idx] = 0.0
 
-    for i in range(1, inner_n_y):
-        x_off_diag_array[i * inner_n_x - 1] = 0
-        x_off_diag_left_array[i * inner_n_x - 1] = 0
+    # Enforce homogeneous Dirichlet: drop neighbor outside domain
+    # at first interior column (i=1) -> no left neighbor
+    for row in range(inner_n_y):
+        idx_start = row * inner_n_x
+        x_off_left[idx_start] = 0.0
+    # at last interior column (i=n_x-2) -> no right neighbor
+    for row in range(inner_n_y):
+        idx_end = row * inner_n_x + (inner_n_x - 1)
+        x_off_right[idx_end] = 0.0
 
     diagonals = [
         main_diag,
-        x_off_diag_left_array,
-        x_off_diag_array,
-        y_off_diag_bottom_array,
-        y_off_diag_array,
+        x_off_left,
+        x_off_right,
+        y_off_down,
+        y_off_up,
     ]
     offsets = [0, -1, 1, -inner_n_x, inner_n_x]
 
-    m = diags(diagonals, offsets, shape=(size, size), format="csr")
-
-    return m
+    return diags(diagonals, offsets, shape=(size, size), format="csr")
