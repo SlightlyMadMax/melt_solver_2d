@@ -10,6 +10,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
 
 
 @register_solver(VorticitySolverName.EXPLICIT)
@@ -55,14 +56,14 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
                 convection_x = (
-                    conv_x[j][i][0] * w[j, i + 1]
-                    + conv_x[j][i][1] * w[j, i]
-                    + conv_x[j][i][2] * w[j, i - 1]
+                    conv_x[j][i][0] * sf[j, i + 1]
+                    + conv_x[j][i][1] * sf[j, i]
+                    + conv_x[j][i][2] * sf[j, i - 1]
                 )
                 convection_y = (
-                    conv_y[j][i][0] * w[j + 1, i]
-                    + conv_y[j][i][1] * w[j, i]
-                    + conv_y[j][i][2] * w[j - 1, i]
+                    conv_y[j][i][0] * sf[j + 1, i]
+                    + conv_y[j][i][1] * sf[j, i]
+                    + conv_y[j][i][2] * sf[j - 1, i]
                 )
 
                 convection = convection_x + convection_y
@@ -84,11 +85,19 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
+        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=w)
+        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        delta = get_mushy_zone_width(
+            u=u_dim,
+            u_pt=self.parameters.u_pt,
+            h_x=self.geometry.dx,
+            h_y=self.geometry.dy,
+        )
         calculate_indicator_function(
-            u=u * self.parameters.delta_u + self.parameters.u_ref,
+            u=u_dim,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
+            delta=delta,
             result=self.c_ind,
         )
         self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
