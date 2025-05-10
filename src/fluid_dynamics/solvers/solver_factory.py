@@ -205,23 +205,24 @@ class NonIterativeNavierStokersSolver:
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        self._temp_vorticity = self._predict_vorticity(
-            old_vorticity=w,
+        old_vorticity = np.copy(w)
+        self._predict_vorticity(
+            old_vorticity=old_vorticity,
             stream_function=sf,
             temperature=u,
             time=time,
         )
-        self._temp_vorticity = self._solve_vorticity(
-            old_vorticity=w,
+        self._solve_vorticity(
+            old_vorticity=old_vorticity,
             conv_vorticity=self._temp_vorticity,
             stream_function=sf,
             temperature=u,
             time=time,
         )
-        self._stream_function = self._solve_stream_function(
+        self._solve_stream_function(
             sf_nm1=sf,
             vorticity=self._temp_vorticity,
-            conv_vorticity=w,
+            conv_vorticity=old_vorticity,
             time=time,
         )
         calculate_vorticity_from_sf(
@@ -238,8 +239,8 @@ class NonIterativeNavierStokersSolver:
         stream_function: np.ndarray,
         temperature: np.ndarray,
         time: float,
-    ) -> np.ndarray:
-        return self.nonlinearity_predictor.solve(
+    ) -> None:
+        self._temp_vorticity[:, :] = self.nonlinearity_predictor.solve(
             w=old_vorticity,
             sf=stream_function,
             u=temperature,
@@ -253,8 +254,8 @@ class NonIterativeNavierStokersSolver:
         stream_function: np.ndarray,
         temperature: np.ndarray,
         time: float,
-    ) -> np.ndarray:
-        return self.vorticity_solver.solve(
+    ) -> None:
+        self._temp_vorticity[:, :] = self.vorticity_solver.solve(
             w=old_vorticity,
             conv_w=conv_vorticity,
             sf=stream_function,
@@ -268,7 +269,7 @@ class NonIterativeNavierStokersSolver:
         vorticity: np.ndarray,
         conv_vorticity: np.ndarray,
         time: float,
-    ) -> np.ndarray:
+    ) -> None:
         c_ind = self.vorticity_solver.c_ind
         rho = self.vorticity_solver.rho
         self.convective_operator(
@@ -292,7 +293,7 @@ class NonIterativeNavierStokersSolver:
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
-        return self.stream_function_solver.solve(
+        self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_nm1,
             A=-A,
             b_flat=-b,
