@@ -41,15 +41,15 @@ class IterativeNavierStokesSolver:
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
+        self.convective_operator = VorticityTransportOperator(
+            form=convective_term_form, geometry=geometry
+        )
+        n_y, n_x = geometry.n_y, geometry.n_x
 
         if bc_order not in (1, 2):
             raise NotImplementedError(
                 "Only 1st and 2nd order accuracy BCs are supported for vorticity."
             )
-
-        self.convective_operator = VorticityTransportOperator(
-            form=convective_term_form, geometry=geometry
-        )
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
             solver_name=vorticity_solver_name
@@ -72,13 +72,9 @@ class IterativeNavierStokesSolver:
             stopping_criteria=sf_stopping_criteria,
         )
 
-        self._vorticity: NDArray[np.float64] = np.empty((geometry.n_y, geometry.n_x))
-        self._stream_function: NDArray[np.float64] = np.empty(
-            (geometry.n_y, geometry.n_x)
-        )
-        self._iter_stream_function: NDArray[np.float64] = np.empty(
-            (geometry.n_y, geometry.n_x)
-        )
+        self._vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._stream_function: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._iter_stream_function: NDArray[np.float64] = np.empty((n_y, n_x))
 
     def solve(
         self,
@@ -160,8 +156,8 @@ class NonIterativeNavierStokersSolver:
     ):
         self.geometry = geometry
         self.parameters = parameters
-
         self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
+        n_y, n_x = geometry.n_y, geometry.n_x
 
         nonlinearity_predictor_class = VorticitySolverRegistry.get_solver_class(
             solver_name=VorticitySolverName.EXPLICIT
@@ -196,19 +192,11 @@ class NonIterativeNavierStokersSolver:
             stopping_criteria=sf_tolerance,
         )
 
-        self._vorticity: NDArray[np.float64] = np.empty((geometry.n_y, geometry.n_x))
-        self._temp_vorticity: NDArray[np.float64] = np.empty(
-            (geometry.n_y, geometry.n_x)
-        )
-        self._stream_function: NDArray[np.float64] = np.empty(
-            (geometry.n_y, geometry.n_x)
-        )
-        self._conv_x: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
-        self._conv_y: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x, 3)
-        )
+        self._vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._temp_vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._stream_function: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
 
     def solve(
         self,
