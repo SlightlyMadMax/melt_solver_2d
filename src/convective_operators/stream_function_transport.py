@@ -1,7 +1,6 @@
 import numpy as np
 
 from typing import Optional
-from numba import njit
 from numpy.typing import NDArray
 from pydantic import ValidationError, BaseModel
 
