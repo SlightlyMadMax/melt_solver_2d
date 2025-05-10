@@ -44,14 +44,16 @@ def get_phase_trans_boundary(
     x, y = [], []
     n_y, n_x = geom.n_y, geom.n_x
     dy, dx = geom.dy, geom.dx
+    u_diff = u - u_pt
+
     for j in range(1, n_y - 1):
         for i in range(1, n_x - 1):
-            if (u[j, i] - u_pt) * (u[j + 1, i] - u_pt) <= 0.0:
-                y_0 = j * dy + ((u_pt - u[j, i]) / (u[j + 1, i] - u[j, i])) * dy
+            if u_diff[j, i] * u_diff[j + 1, i] <= 0.0:
+                y_0 = j * dy + (-u_diff[j, i] / (u[j + 1, i] - u[j, i])) * dy
                 y.append(y_0)
                 x.append(i * dx)
-            if (u[j, i] - u_pt) * (u[j, i + 1] - u_pt) <= 0.0:
-                x_0 = i * dx + ((u_pt - u[j, i]) / (u[j, i + 1] - u[j, i])) * dx
+            if u_diff[j, i] * u_diff[j, i + 1] <= 0.0:
+                x_0 = i * dx + (-u_diff[j, i] / (u[j, i + 1] - u[j, i])) * dx
                 x.append(x_0)
                 y.append(j * dy)
 
