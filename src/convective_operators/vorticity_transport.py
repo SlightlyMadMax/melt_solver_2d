@@ -1,7 +1,6 @@
 import numpy as np
 
 from typing import Optional
-from numba import njit
 from numpy.typing import NDArray
 from pydantic import BaseModel, ValidationError
 
@@ -100,7 +99,6 @@ class VorticityTransportOperator(BaseConvectiveOperator):
             self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     @staticmethod
-    @njit
     def compute_velocity_from_sf(
         sf: NDArray[np.float64],
         v_x: NDArray[np.float64],
@@ -126,20 +124,16 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         :param dy: Grid spacing in the y-direction.
         :return: None
         """
-        n_y, n_x = sf.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
 
-        v_x[:, :] = 0.0
-        v_y[:, :] = 0.0
+        v_x[:] = 0.0
+        v_y[:] = 0.0
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                v_x[j, i] = (sf[j + 1, i] - sf[j - 1, i]) * 0.5 * inv_dy
-                v_y[j, i] = -(sf[j, i + 1] - sf[j, i - 1]) * 0.5 * inv_dx
+        v_x[1:-1, 1:-1] = inv_2dx * (sf[2:, 1:-1] - sf[:-2, 1:-1])
+        v_y[1:-1, 1:-1] = -inv_2dy * (sf[1:-1, 2:] - sf[1:-1, :-2])
 
     @staticmethod
-    @njit
     def _compute_upwind_components(
         v_x: NDArray[np.float64],
         v_y: NDArray[np.float64],
@@ -148,31 +142,34 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         dx: float,
         dy: float,
     ) -> None:
-        n_y, n_x = v_x.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                v_x_p = 0.5 * (v_x[j, i] + v_x[j, i + 1])
-                v_x_m = 0.5 * (v_x[j, i] + v_x[j, i - 1])
-                v_y_p = 0.5 * (v_y[j, i] + v_y[j + 1, i])
-                v_y_m = 0.5 * (v_y[j, i] + v_y[j - 1, i])
+        jm, jp = slice(1, -1), slice(2, None)
+        im, ip = slice(1, -1), slice(2, None)
+        im2, jm2 = slice(None, -2), slice(None, -2)
 
-                result_x[j, i, 0] = 0.5 * inv_dx * (v_x_p - abs(v_x_p))
-                result_x[j, i, 1] = inv_dx * (
-                    0.5 * (v_x_p + abs(v_x_p)) - 0.5 * (v_x_m - abs(v_x_m))
-                )
-                result_x[j, i, 2] = -0.5 * inv_dx * (v_x_m + abs(v_x_m))
+        vx_c = v_x[jm, im]
+        vx_r = v_x[jm, ip]
+        vx_l = v_x[jm, im2]
+        vy_c = v_y[jm, im]
+        vy_d = v_y[jp, im]
+        vy_u = v_y[jm2, im]
 
-                result_y[j, i, 0] = 0.5 * inv_dy * (v_y_p - abs(v_y_p))
-                result_y[j, i, 1] = inv_dy * (
-                    0.5 * (v_y_p + abs(v_y_p)) - 0.5 * (v_y_m - abs(v_y_m))
-                )
-                result_y[j, i, 2] = -0.5 * inv_dy * (v_y_m + abs(v_y_m))
+        vxp = 0.5 * (vx_c + vx_r)
+        vxm = 0.5 * (vx_c + vx_l)
+        vyp = 0.5 * (vy_c + vy_d)
+        vym = 0.5 * (vy_c + vy_u)
+
+        result_x[jm, im, 0] = inv_2dx * (vxp - np.abs(vxp))
+        result_x[jm, im, 1] = inv_2dx * ((vxp + np.abs(vxp)) - (vxm - np.abs(vxm)))
+        result_x[jm, im, 2] = -inv_2dx * (vxm + np.abs(vxm))
+
+        result_y[jm, im, 0] = inv_2dy * (vyp - np.abs(vyp))
+        result_y[jm, im, 1] = inv_2dy * ((vyp + np.abs(vyp)) - (vym - np.abs(vym)))
+        result_y[jm, im, 2] = -inv_2dy * (vym + np.abs(vym))
 
     @staticmethod
-    @njit
     def _compute_div_components(
         v_x: NDArray[np.float64],
         v_y: NDArray[np.float64],
@@ -181,39 +178,22 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         dx: float,
         dy: float,
     ) -> None:
-        n_y, n_x = v_x.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                if i == 1:
-                    result_x[j, i, 0] = inv_dx * v_x[j, i + 1]
-                    result_x[j, i, 1] = inv_dx * v_x[j, i]
-                    result_x[j, i, 2] = 0.0
-                elif i == n_x - 2:
-                    result_x[j, i, 0] = 0.0
-                    result_x[j, i, 1] = inv_dx * v_x[j, i]
-                    result_x[j, i, 2] = -inv_dx * v_x[j, i - 1]
-                else:
-                    result_x[j, i, 0] = 0.5 * inv_dx * v_x[j, i + 1]
-                    result_x[j, i, 1] = 0.0
-                    result_x[j, i, 2] = -0.5 * inv_dx * v_x[j, i - 1]
-                # if j == 1:
-                #     result_y[j, i, 0] = inv_dy * v_y[j + 1, i]
-                #     result_y[j, i, 1] = inv_dy * v_y[j, i]
-                #     result_y[j, i, 2] = 0.0
-                # elif j == n_y - 1:
-                #     result_y[j, i, 0] = 0.0
-                #     result_y[j, i, 1] = inv_dy * v_y[j, i]
-                #     result_y[j, i, 2] = -inv_dy * v_y[j - 1, i]
-                # else:
-                result_y[j, i, 0] = 0.5 * inv_dy * v_y[j + 1, i]
-                result_y[j, i, 1] = 0.0
-                result_y[j, i, 2] = -0.5 * inv_dy * v_y[j - 1, i]
+        jm, im = slice(1, -1), slice(1, -1)
+        ip, im2 = slice(2, None), slice(None, -2)
+        jp, jm2 = slice(2, None), slice(None, -2)
+
+        result_x[jm, im, 0] = inv_2dx * v_x[jm, ip]  # v_x[j, i+1]
+        result_x[jm, im, 1] = 0.0
+        result_x[jm, im, 2] = -inv_2dx * v_x[jm, im2]  # -v_x[j, i-1]
+
+        result_y[jm, im, 0] = inv_2dy * v_y[jp, im]  # v_y[j+1, i]
+        result_y[jm, im, 1] = 0.0
+        result_y[jm, im, 2] = -inv_2dy * v_y[jm2, im]  # -v_y[j-1, i]
 
     @staticmethod
-    @njit
     def _compute_non_div_components(
         v_x: NDArray[np.float64],
         v_y: NDArray[np.float64],
@@ -222,16 +202,15 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         dx: float,
         dy: float,
     ) -> None:
-        n_y, n_x = v_x.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                result_x[j, i, 0] = 0.5 * inv_dx * v_x[j, i]
-                result_x[j, i, 1] = 0.0
-                result_x[j, i, 2] = -0.5 * inv_dx * v_x[j, i]
+        interior = (slice(1, -1), slice(1, -1))
 
-                result_y[j, i, 0] = 0.5 * inv_dy * v_y[j, i]
-                result_y[j, i, 1] = 0.0
-                result_y[j, i, 2] = -0.5 * inv_dy * v_y[j, i]
+        result_x[interior + (0,)] = inv_2dx * v_x[interior]
+        result_x[interior + (1,)] = 0.0
+        result_x[interior + (2,)] = -inv_2dx * v_x[interior]
+
+        result_y[interior + (0,)] = inv_2dy * v_y[interior]
+        result_y[interior + (1,)] = 0.0
+        result_y[interior + (2,)] = -inv_2dy * v_y[interior]
