@@ -55,7 +55,6 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
             self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     @staticmethod
-    @njit
     def _compute_vorticity_first_derivatives(
         w: NDArray[np.float64],
         dw_dx: NDArray[np.float64],
@@ -63,28 +62,27 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         dx: float,
         dy: float,
     ) -> None:
-        n_y, n_x = w.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        """
+        Compute first derivatives of vorticity using second-order accurate
+        3-point central differences in the interior and 3-point one-sided
+        (forward/backward) differences at the boundaries.
+        """
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
 
         dw_dx[:, :] = 0.0
         dw_dy[:, :] = 0.0
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                dw_dy[j, i] = (w[j + 1, i] - w[j - 1, i]) * 0.5 * inv_dy
-                dw_dx[j, i] = (w[j, i + 1] - w[j, i - 1]) * 0.5 * inv_dx
+        dw_dy[1:-1, 1:-1] = (w[2:, 1:-1] - w[:-2, 1:-1]) * inv_2dy
+        dw_dx[1:-1, 1:-1] = (w[1:-1, 2:] - w[1:-1, :-2]) * inv_2dx
 
-        for i in range(n_x):
-            dw_dy[0, i] = (w[1, i] - w[0, i]) * inv_dy
-            dw_dy[n_y - 1, i] = (w[n_y - 1, i] - w[n_y - 2, i]) * inv_dy
+        dw_dy[0, :] = (-3.0 * w[0, :] + 4.0 * w[1, :] - w[2, :]) * inv_2dy
+        dw_dy[-1, :] = (3.0 * w[-1, :] - 4.0 * w[-2, :] + w[-3, :]) * inv_2dy
 
-        for j in range(n_y):
-            dw_dx[j, 0] = (w[j, 1] - w[j, 0]) * inv_dx
-            dw_dx[j, n_x - 1] = (w[j, n_x - 1] - w[j, n_x - 2]) * inv_dx
+        dw_dx[:, 0] = (-3.0 * w[:, 0] + 4.0 * w[:, 1] - w[:, 2]) * inv_2dx
+        dw_dx[:, -1] = (3.0 * w[:, -1] - 4.0 * w[:, -2] + w[:, -3]) * inv_2dx
 
     @staticmethod
-    @njit
     def _compute_convective_operator(
         dw_dx: NDArray[np.float64],
         dw_dy: NDArray[np.float64],
@@ -93,16 +91,16 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         result_x: NDArray[np.float64],
         result_y: NDArray[np.float64],
     ):
-        n_y, n_x = dw_dx.shape
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
+        inv_4dx = 1.0 / (4.0 * dx)
+        inv_4dy = 1.0 / (4.0 * dy)
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                result_x[j, i, 0] = -0.25 * inv_dx * (dw_dy[j, i] + dw_dy[j, i + 1])
-                result_x[j, i, 1] = 0.0
-                result_x[j, i, 2] = 0.25 * inv_dx * (dw_dy[j, i] + dw_dy[j, i - 1])
+        jm, jp = slice(1, -1), slice(2, None)
+        im, ip = slice(1, -1), slice(2, None)
 
-                result_y[j, i, 0] = 0.25 * inv_dy * (dw_dx[j, i] + dw_dx[j + 1, i])
-                result_y[j, i, 1] = 0.0
-                result_y[j, i, 2] = -0.25 * inv_dy * (dw_dx[j, i] + dw_dx[j - 1, i])
+        result_x[jm, im, 0] = -inv_4dx * (dw_dy[jm, im] + dw_dy[jm, ip])
+        result_x[jm, im, 1] = 0.0
+        result_x[jm, im, 2] = inv_4dx * (dw_dy[jm, im] + dw_dy[jm, slice(None, -2)])
+
+        result_y[jm, im, 0] = inv_4dy * (dw_dx[jm, im] + dw_dx[jp, im])
+        result_y[jm, im, 1] = 0.0
+        result_y[jm, im, 2] = -inv_4dy * (dw_dx[jm, im] + dw_dx[slice(None, -2), im])
