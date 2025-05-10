@@ -14,9 +14,7 @@ def initialize_stream_function(geom: DomainGeometry) -> np.ndarray:
     :return: A 2D numpy array of shape (n_y, n_x) filled with zeros, representing
              the initial stream function values.
     """
-    return np.zeros(
-        (geom.n_y, geom.n_x),
-    )
+    return np.zeros((geom.n_y, geom.n_x))
 
 
 def initialize_vorticity(geom: DomainGeometry) -> np.ndarray:
@@ -30,6 +28,4 @@ def initialize_vorticity(geom: DomainGeometry) -> np.ndarray:
     :return: A 2D numpy array of shape (n_y, n_x) filled with zeros, representing
              the initial vorticity values.
     """
-    return np.zeros(
-        (geom.n_y, geom.n_x),
-    )
+    return np.zeros((geom.n_y, geom.n_x))
