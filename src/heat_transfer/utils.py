@@ -2,7 +2,6 @@ import numpy as np
 from enum import Enum
 
 from numba import njit
-from numpy.typing import NDArray
 from math import sin, cos, pi
 
 import src.core.constants as cfg
@@ -11,24 +10,6 @@ import src.core.constants as cfg
 class TemperatureUnit(Enum):
     CELSIUS = 1, "Celsius"
     KELVIN = 2, "Kelvin"
-
-
-@njit
-def is_frozen(T: NDArray[np.float64]) -> bool:
-    """
-    Определяет, произошло ли замерзание всей воды (отсутствие границы фазового перехода).
-
-    :param T: двумерный массив температур
-    :return: True -- если граница ф.п. отсутствует, иначе False
-    """
-    N_X, N_Y = T.shape
-    for i in range(N_X - 1):
-        for j in range(N_Y - 1):
-            if (T[j + 1, i] - cfg.T_0) * (T[j, i] - cfg.T_0) < 0.0 or (
-                T[j, i + 1] - cfg.T_0
-            ) * (T[j, i] - cfg.T_0) < 0.0:
-                return False
-    return True
 
 
 ###
