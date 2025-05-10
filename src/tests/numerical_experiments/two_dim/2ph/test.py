@@ -155,7 +155,7 @@ for i in range(1, geometry.n_t + 1):
     u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t)
     if i % 24 == 0:
         print(
-            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {i} ч, "
+            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(i / 24)} дней, "
             f"ВРЕМЯ ВЫПОЛНЕНИЯ: {(time.perf_counter() - start_time) / 60:.2f} мин., "
             f"ОСТАЛОСЬ: {get_remaining_time(n=i, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
         )
@@ -175,19 +175,16 @@ for i in range(1, geometry.n_t + 1):
             directory="./results/",
         )
 
+dim_u = u * thermal_params.delta_u - thermal_params.u_pt_ref
+center_i_index = int(geometry.n_x / 2)
 for j in range(1, geometry.n_y - 1):
-    if (
-        u[j, int(geometry.n_x / 2)] * thermal_params.delta_u - thermal_params.u_pt_ref
-    ) * (
-        u[j + 1, int(geometry.n_x / 2)] * thermal_params.delta_u
-        - thermal_params.u_pt_ref
-    ) < 0.0:
+    if (dim_u[j, center_i_index]) * (dim_u[j + 1, center_i_index]) < 0.0:
         y_0 = abs(
             (
-                u[j, int(geometry.n_x / 2)] * (j + 1) * geometry.dy
-                - u[j + 1, int(geometry.n_x / 2)] * j * geometry.dy
+                u[j, center_i_index] * (j + 1) * geometry.dy
+                - u[j + 1, center_i_index] * j * geometry.dy
             )
-            / (u[j, int(geometry.n_x / 2)] - u[j + 1, int(geometry.n_x / 2)])
+            / (u[j, center_i_index] - u[j + 1, center_i_index])
         )
         print(f"Calculated final location of the boundary: {y_0}")
         print(
