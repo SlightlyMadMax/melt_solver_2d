@@ -17,7 +17,6 @@ from src.fluid_dynamics.solvers.vorticity_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers.vab_fully_implicit import (
     VabFullyImplicitScheme,
 )
-from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.fluid import FluidParameters
 
 
@@ -175,16 +174,16 @@ class NonIterativeNavierStokersSolver:
             convective_operator=self.convective_operator,
             bc_order=1,
         )
+        self.vorticity_solver = VabFullyImplicitScheme(
+            geometry=geometry,
+            parameters=parameters,
+        )
         # self.vorticity_solver = vorticity_solver_class(
         #     geometry=geometry,
         #     parameters=parameters,
         #     convective_operator=self.convective_operator,
         #     bc_order=1,
         # )
-        self.vorticity_solver = VabFullyImplicitScheme(
-            geometry=geometry,
-            parameters=parameters,
-        )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
             bcs=sf_bcs,
@@ -206,6 +205,8 @@ class NonIterativeNavierStokersSolver:
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         old_vorticity = np.copy(w)
+        old_sf = np.copy(sf)
+
         self._predict_vorticity(
             old_vorticity=old_vorticity,
             stream_function=sf,
@@ -220,18 +221,17 @@ class NonIterativeNavierStokersSolver:
             time=time,
         )
         self._solve_stream_function(
-            sf_nm1=sf,
+            sf_old=sf,
             vorticity=self._temp_vorticity,
             conv_vorticity=old_vorticity,
             time=time,
         )
-        calculate_vorticity_from_sf(
-            sf=self._stream_function,
-            result=self._vorticity,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+        self._update_vorticity(
+            sf_new=self._stream_function,
+            sf_old=old_sf,
+            temp_vorticity=self._temp_vorticity,
         )
-        return self._stream_function, self._temp_vorticity
+        return self._stream_function, self._vorticity
 
     def _predict_vorticity(
         self,
@@ -265,7 +265,7 @@ class NonIterativeNavierStokersSolver:
 
     def _solve_stream_function(
         self,
-        sf_nm1: np.ndarray,
+        sf_old: np.ndarray,
         vorticity: np.ndarray,
         conv_vorticity: np.ndarray,
         time: float,
@@ -279,7 +279,7 @@ class NonIterativeNavierStokersSolver:
             geometry=self.geometry,
             parameters=self.parameters,
             vorticity=vorticity,
-            sf_nm1=sf_nm1,
+            sf_old=sf_old,
             rho=rho,
             c_ind=c_ind,
             conv_x=self._conv_x,
@@ -294,18 +294,69 @@ class NonIterativeNavierStokersSolver:
             conv_y=self._conv_y,
         )
         self._stream_function[:, :] = self.stream_function_solver.solve(
-            initial_guess=sf_nm1,
+            initial_guess=sf_old,
             A=-A,
             b_flat=-b,
             time=time,
         )
+        # psi_vec = self._stream_function[1:-1, 1:-1].ravel()
+        # residual = (-A).dot(psi_vec) - (-b).ravel()
+        # print("‖residual‖₂:", np.linalg.norm(residual, 2))
+
+    def _update_vorticity(
+        self,
+        sf_new,
+        sf_old,
+        temp_vorticity,
+    ):
+        c_ind = self.vorticity_solver.c_ind
+        rho = self.vorticity_solver.rho
+        conv_x_arr = self._conv_x
+        conv_y_arr = self._conv_y
+        omega = self._vorticity
+        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
+        inv_reynolds = 1.0 / self.parameters.reynolds_number
+        inv_dx2 = 1.0 / self.geometry.dx**2
+        inv_dy2 = 1.0 / self.geometry.dy**2
+        dsf = sf_new - sf_old
+
+        # Define slices for interior points (1:-1, 1:-1)
+        interior = (slice(1, -1), slice(1, -1))
+
+        dsf_right = dsf[interior[0], 2:]  # dsf[j, i+1]
+        dsf_left = dsf[interior[0], :-2]  # dsf[j, i-1]
+        dsf_up = dsf[2:, interior[1]]  # dsf[j+1, i]
+        dsf_down = dsf[:-2, interior[1]]  # dsf[j-1, i]
+
+        conv_x_0 = conv_x_arr[interior[0], interior[1], 0]
+        conv_x_2 = conv_x_arr[interior[0], interior[1], 2]
+        conv_y_0 = conv_y_arr[interior[0], interior[1], 0]
+        conv_y_2 = conv_y_arr[interior[0], interior[1], 2]
+
+        term_x0 = conv_x_0 * dsf_right
+        term_x2 = conv_x_2 * dsf_left
+        term_y0 = conv_y_0 * dsf_up
+        term_y2 = conv_y_2 * dsf_down
+        Vphi = term_x0 + term_x2 + term_y0 + term_y2
+
+        # Compute combined Linv and Cphi terms
+        linv_cphi = (inv_reynolds * rho[interior] + c_ind[interior]) * dsf[interior]
+
+        # Update vorticity for interior points
+        omega[interior] = temp_vorticity[interior] + tau * (Vphi + linv_cphi)
+
+        # Apply boundary conditions
+        omega[-1, :] = -2.0 * sf_new[-2, :] * inv_dy2  # Top boundary
+        omega[:, -1] = -2.0 * sf_new[:, -2] * inv_dx2  # Right boundary
+        omega[0, :] = -2.0 * sf_new[1, :] * inv_dy2  # Bottom boundary
+        omega[:, 0] = -2.0 * sf_new[:, 1] * inv_dx2  # Left boundary
 
 
 def construct_rhs_for_cg(
     geometry: DomainGeometry,
     parameters: FluidParameters,
     vorticity: np.ndarray,
-    sf_nm1: np.ndarray,
+    sf_old: np.ndarray,
     rho: np.ndarray,
     c_ind: np.ndarray,
     conv_x: np.ndarray,
@@ -313,16 +364,16 @@ def construct_rhs_for_cg(
 ) -> np.ndarray:
     tau = geometry.dt * parameters.v / geometry.length_scale
 
-    psi = sf_nm1[1:-1, 1:-1]
+    psi = sf_old[1:-1, 1:-1]
     w = vorticity[1:-1, 1:-1]
     r = rho[1:-1, 1:-1]
     c = c_ind[1:-1, 1:-1]
 
     conv = (
-        conv_x[1:-1, 1:-1, 0] * sf_nm1[1:-1, 2:]
-        + conv_x[1:-1, 1:-1, 2] * sf_nm1[1:-1, :-2]
-        + conv_y[1:-1, 1:-1, 0] * sf_nm1[2:, 1:-1]
-        + conv_y[1:-1, 1:-1, 2] * sf_nm1[:-2, 1:-1]
+        conv_x[1:-1, 1:-1, 0] * sf_old[1:-1, 2:]
+        + conv_x[1:-1, 1:-1, 2] * sf_old[1:-1, :-2]
+        + conv_y[1:-1, 1:-1, 0] * sf_old[2:, 1:-1]
+        + conv_y[1:-1, 1:-1, 2] * sf_old[:-2, 1:-1]
     )
 
     b_int = -w - tau * ((c + r / parameters.reynolds_number) * psi + conv)
