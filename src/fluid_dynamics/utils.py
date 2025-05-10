@@ -1,31 +1,17 @@
-import math
 import numpy as np
-
 from numba import njit
+
+from scipy.special import erf
 from numpy.typing import NDArray
 
 
-@njit
-def c_new(u: float, u_pt: float, eps: float, delta: float) -> float:
-    # if u - u_pt < 0.0:
-    #     return 1.0 / (eps * eps)
-    # if u - u_pt < 0.0:
-    #     return (
-    #         2.0 + math.exp(-(u - u_pt) / delta) / (0.5 - math.exp(-(u - u_pt) / delta))
-    #     ) / (eps * eps)
-    # return 0.5 * (1.0 - math.erf((u - u_pt) / (2**0.5 * delta))) / (eps * eps)
-    # return 0.0
-    l_frac = 0.5 * (1.0 + math.erf((u - u_pt) / (2**0.5 * delta)))
-    return 1.6e3 * (1.0 - l_frac) ** 2 / (l_frac**3 + 1e-3)
-
-
-@njit
 def calculate_indicator_function(
     u: NDArray[np.float64],
     u_pt: float,
     eps: float,
     result: NDArray[np.float64],
     delta: NDArray[np.float64],
+    # delta: float,
 ) -> None:
     """
     Indicator function for the fictitious domain method.
@@ -37,29 +23,61 @@ def calculate_indicator_function(
     :param result: A ndarray for storing the calculated indicator function values.
     :return: None.
     """
-    n_y, n_x = u.shape
-
     result[:, :] = 0.0
-    inv_eps_2 = 1.0 / (eps * eps)
 
-    for j in range(1, n_y - 1):
-        for i in range(1, n_x - 1):
-            # if u[j, i] - u_pt < 0.0:
-            #     result[j, i] = inv_eps_2
-            result[j, i] = (
-                (1.0 - math.erf((u[j, i] - u_pt) / (2**0.5 * delta[j, i]))) * 0.5 * inv_eps_2
-            )
-            # if u[j, i] - u_pt < 0.0:
-            #     result[j, i] = inv_eps_2 * (
-            #         2.0
-            #         + math.exp(-(u[j, i] - u_pt) / delta[j, i])
-            #         / (0.5 - math.exp(-(u[j, i] - u_pt) / delta[j, i]))
-            #     )
+    inv_eps2 = 1.0 / (eps * eps)
+    interior = (slice(1, -1), slice(1, -1))
+
+    diff_u = u[interior] - u_pt
+    delta_inner = delta[interior]
+
+    # --- Variant 1: sharp step ----------------------
+    # mask = (diff_u < 0.0)
+    # result_interior = np.zeros_like(diff_u)
+    # result_interior[mask] = inv_eps2
+    # result[interior] = result_interior
+
+    # --- Variant 2: error‐function form -------------------
+    # result[interior] = (
+    #     0.5 * inv_eps2
+    #     * (1.0 - erf( diff_u / (np.sqrt(2.0) * delta_inner) ))
+    # )
+
+    # --- Variant 3: hyperbolic‐tangent form ---------------
+    # result[interior] = (
+    #     0.5 * inv_eps2
+    #     * (
+    #         1.0
+    #         - np.tanh(
+    #             3.0 * diff_u
+    #             / np.sqrt(delta_inner*delta_inner - diff_u*diff_u)
+    #         )
+    #     )
+    # )
+
+    # --- Variant 4: exponential form (two-sided smoothing) ----------------------
+    # exp_term = np.exp(-diff_u / delta_inner)
+    # result[interior] = (
+    #     inv_eps2
+    #     * 0.5
+    #     * (
+    #         2.0
+    #         + exp_term
+    #           / (0.5 - exp_term)
+    #     )
+    # )
+
+    result[interior] = (
+        0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta_inner)))
+    )
 
 
 @njit
 def calculate_vorticity_from_sf(
-    sf: NDArray[np.float64], result: NDArray[np.float64], dx: float, dy: float
+    sf: NDArray[np.float64],
+    result: NDArray[np.float64],
+    dx: float,
+    dy: float,
 ):
     n_y, n_x = sf.shape
     inv_dx2 = 1.0 / dx**2
@@ -80,7 +98,6 @@ def calculate_vorticity_from_sf(
 
 class VorticityBCMixin:
     @staticmethod
-    @njit
     def calculate_boundary_conditions(
         sf: NDArray[np.float64],
         top_bc: NDArray[np.float64],
@@ -91,20 +108,20 @@ class VorticityBCMixin:
         dx: float,
         dy: float,
     ) -> None:
-        inv_dx = 1.0 / dx
-        inv_dy = 1.0 / dy
-        inv_dx2 = inv_dx * inv_dx
-        inv_dy2 = inv_dy * inv_dy
+        dx2_2_inv = 2.0 / dx**2
+        dy2_2_inv = 2.0 / dy**2
+        inv_2dx2 = 1.0 / (2.0 * dx**2)
+        inv_2dy2 = 1.0 / (2.0 * dy**2)
 
         if order == 1:
-            top_bc[:] = -2.0 * inv_dy2 * sf[-2, :]
-            right_bc[:] = -2.0 * inv_dx2 * sf[:, -2]
-            bottom_bc[:] = -2.0 * inv_dy2 * sf[1, :]
-            left_bc[:] = -2.0 * inv_dx2 * sf[:, 1]
+            top_bc[:] = -dy2_2_inv * sf[-2, :]
+            right_bc[:] = -dx2_2_inv * sf[:, -2]
+            bottom_bc[:] = -dy2_2_inv * sf[1, :]
+            left_bc[:] = -dx2_2_inv * sf[:, 1]
         elif order == 2:
-            top_bc[:] = 0.5 * inv_dy2 * (sf[-3, :] - 8.0 * sf[-2, :])
-            right_bc[:] = 0.5 * inv_dx2 * (sf[:, -3] - 8.0 * sf[:, -2])
-            bottom_bc[:] = 0.5 * inv_dy2 * (sf[2, :] - 8.0 * sf[1, :])
-            left_bc[:] = 0.5 * inv_dx2 * (sf[:, 2] - 8.0 * sf[:, 1])
+            top_bc[:] = inv_2dy2 * (sf[-3, :] - 8.0 * sf[-2, :])
+            right_bc[:] = inv_2dx2 * (sf[:, -3] - 8.0 * sf[:, -2])
+            bottom_bc[:] = inv_2dy2 * (sf[2, :] - 8.0 * sf[1, :])
+            left_bc[:] = inv_2dx2 * (sf[:, 2] - 8.0 * sf[:, 1])
         else:
             raise NotImplementedError
