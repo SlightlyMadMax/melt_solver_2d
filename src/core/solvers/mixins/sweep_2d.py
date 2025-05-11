@@ -123,37 +123,37 @@ class Sweep2DMixin:
     @staticmethod
     @njit
     def _solve_sweep_x(
-        n_y: int,
-        a_x: NDArray[np.float64],
-        b_x: NDArray[np.float64],
-        c_x: NDArray[np.float64],
-        rhs_x: NDArray[np.float64],
+        n: int,
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         result: NDArray[np.float64],
     ) -> None:
-        for j in range(1, n_y - 1):
+        for j in range(1, n - 1):
             solve_tridiagonal(
-                a=a_x[j, :],
-                b=b_x[j, :],
-                c=c_x[j, :],
-                f=rhs_x[j, :],
+                a=a[j, :],
+                b=b[j, :],
+                c=c[j, :],
+                f=rhs[j, :],
                 result=result[j, :],
             )
 
     @staticmethod
     @njit
     def _solve_sweep_y(
-        n_x: int,
-        a_y: NDArray[np.float64],
-        b_y: NDArray[np.float64],
-        c_y: NDArray[np.float64],
-        rhs_y: NDArray[np.float64],
+        n: int,
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         result: NDArray[np.float64],
     ) -> None:
-        for i in range(1, n_x - 1):
+        for i in range(1, n - 1):
             solve_tridiagonal(
-                a=a_y[i, :],
-                b=b_y[i, :],
-                c=c_y[i, :],
-                f=rhs_y[i, :],
+                a=a[i, :],
+                b=b[i, :],
+                c=c[i, :],
+                f=rhs[i, :],
                 result=result[:, i],
             )

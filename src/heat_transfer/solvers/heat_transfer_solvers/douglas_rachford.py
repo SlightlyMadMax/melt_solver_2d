@@ -283,11 +283,11 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         self._new_u = np.copy(u)
 
         self._solve_sweep_x(
-            n_y=n_y,
-            a_x=self._a_x,
-            b_x=self._b_x,
-            c_x=self._c_x,
-            rhs_x=self._rhs_x,
+            n=n_y,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
             result=self._new_u,
         )
 
@@ -309,10 +309,10 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         self._apply_boundary_conditions_y(time=time)
 
         self._solve_sweep_y(
-            n_x=n_x,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
-            rhs_y=self._rhs_y,
+            n=n_x,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
             result=self._new_u,
         )

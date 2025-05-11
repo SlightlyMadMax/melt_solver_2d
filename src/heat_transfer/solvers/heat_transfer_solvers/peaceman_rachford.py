@@ -27,9 +27,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         dy: float,
         dt: float,
         peclet_number: float,
-        a_x: NDArray[np.float64],
-        b_x: NDArray[np.float64],
-        c_x: NDArray[np.float64],
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
@@ -48,7 +48,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a_x[j, i] = (
+                a[j, i] = (
                     dt
                     * 0.5
                     * (
@@ -58,13 +58,13 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[j, i] = 1.0 + dt * 0.5 * (
+                b[j, i] = 1.0 + dt * 0.5 * (
                     conv_x[j, i, 1]
                     + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c_x[j, i] = (
+                c[j, i] = (
                     dt
                     * 0.5
                     * (
@@ -145,9 +145,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         dy: float,
         dt: float,
         peclet_number: float,
-        a_y: NDArray[np.float64],
-        b_y: NDArray[np.float64],
-        c_y: NDArray[np.float64],
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
@@ -166,7 +166,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a_y[i, j] = (
+                a[i, j] = (
                     dt
                     * 0.5
                     * (
@@ -176,13 +176,13 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[i, j] = 1.0 + dt * 0.5 * (
+                b[i, j] = 1.0 + dt * 0.5 * (
                     conv_y[j, i, 1]
                     + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c_y[i, j] = (
+                c[i, j] = (
                     dt
                     * 0.5
                     * (
@@ -298,9 +298,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             dy=dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             peclet_number=self.parameters.peclet_number,
-            a_x=self._a_x,
-            b_x=self._b_x,
-            c_x=self._c_x,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
             rhs=self._rhs_x,
         )
 
@@ -309,11 +309,11 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         self._new_u = np.copy(u)
 
         self._solve_sweep_x(
-            n_y=n_y,
-            a_x=self._a_x,
-            b_x=self._b_x,
-            c_x=self._c_x,
-            rhs_x=self._rhs_x,
+            n=n_y,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
             result=self._new_u,
         )
 
@@ -327,19 +327,19 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             dy=dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             peclet_number=self.parameters.peclet_number,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
             rhs=self._rhs_y,
         )
 
         self._apply_boundary_conditions_y(time=time)
 
         self._solve_sweep_y(
-            n_x=n_x,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
-            rhs_y=self._rhs_y,
+            n=n_x,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
             result=self._new_u,
         )
