@@ -73,11 +73,6 @@ class ImplicitVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
 
         self._initialize_sweep_arrays()
 
-        # Pre-allocate some arrays that will be used in the calculations
-        self._temp_w: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self.apply_dirichlet(
             a=self._a_x,

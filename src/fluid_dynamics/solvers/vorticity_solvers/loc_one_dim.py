@@ -169,7 +169,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         )
 
         self._compute_sweep_y_coeff(
-            w=self._temp_w,
+            w=self._new_w,
             sf=sf,
             u=u,
             conv_y=self._conv_y,

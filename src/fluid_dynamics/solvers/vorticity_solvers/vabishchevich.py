@@ -158,7 +158,7 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         )
         self._apply_boundary_conditions_x(time=time)
 
-        self._temp_w = np.copy(w)
+        self._new_w = np.copy(w)
 
         self._solve_sweep_x(
             n=n_y,
@@ -166,12 +166,12 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             b=self._b_x,
             c=self._c_x,
             rhs=self._rhs_x,
-            result=self._temp_w,
+            result=self._new_w,
         )
 
         self._compute_sweep_y_coeff(
             w_old=w,
-            w_prev=self._temp_w,
+            w_prev=self._new_w,
             dy=dy / length_scale,
             dt=dt * self.parameters.v / length_scale,
             reynolds_number=self.parameters.reynolds_number,

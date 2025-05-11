@@ -110,11 +110,6 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
 
         self._initialize_sweep_arrays()
 
-        # Pre-allocate some arrays that will be used in the calculations
-        self._temp_u: NDArray[np.float64] = np.empty(
-            (self.geometry.n_y, self.geometry.n_x)
-        )
-
     @abstractmethod
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
