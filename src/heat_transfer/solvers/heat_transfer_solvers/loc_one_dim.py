@@ -60,49 +60,26 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
                 rhs[j, i] = u[j, i]
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
-        if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
-            self.apply_dirichlet(
-                a=self._a_x,
-                b=self._b_x,
-                c=self._c_x,
-                rhs=self._rhs_x,
-                value=self.bcs.left.get_value(t=time),
-                side=0,
-            )
-        elif self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN:
-            k = self._k_eff[:, 0] * self.parameters.thermal_conductivity_ref
-            self.apply_neumann_first_order(
-                a=self._a_x,
-                b=self._b_x,
-                c=self._c_x,
-                rhs=self._rhs_x,
-                flux=self.bcs.left.get_flux(t=time) / k,
-                side=0,
-            )
-        else:
-            raise NotImplementedError("Boundary condition type not implemented")
-
-        if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
-            self.apply_dirichlet(
-                a=self._a_x,
-                b=self._b_x,
-                c=self._c_x,
-                rhs=self._rhs_x,
-                value=self.bcs.right.get_value(t=time),
-                side=1,
-            )
-        elif self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN:
-            k = self._k_eff[:, -1] * self.parameters.thermal_conductivity_ref
-            self.apply_neumann_first_order(
-                a=self._a_x,
-                b=self._b_x,
-                c=self._c_x,
-                rhs=self._rhs_x,
-                flux=self.bcs.right.get_flux(t=time) / k,
-                side=1,
-            )
-        else:
-            raise NotImplementedError("Boundary condition type not implemented")
+        self._apply_standard_bc(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            bc=self.bcs.left,
+            side=0,
+            time=time,
+            k_eff_slice=self._k_eff[:, 0],
+        )
+        self._apply_standard_bc(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            bc=self.bcs.right,
+            side=1,
+            time=time,
+            k_eff_slice=self._k_eff[:, -1],
+        )
 
     @staticmethod
     @njit
@@ -149,49 +126,26 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
                 rhs[i, j] = u[j, i]
 
     def _apply_boundary_conditions_y(self, time: float) -> None:
-        if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
-            self.apply_dirichlet(
-                a=self._a_y,
-                b=self._b_y,
-                c=self._c_y,
-                rhs=self._rhs_y,
-                value=self.bcs.bottom.get_value(t=time),
-                side=0,
-            )
-        elif self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN:
-            k = self._k_eff[0, :] * self.parameters.thermal_conductivity_ref
-            self.apply_neumann_first_order(
-                a=self._a_y,
-                b=self._b_y,
-                c=self._c_y,
-                rhs=self._rhs_y,
-                flux=self.bcs.bottom.get_flux(t=time) / k,
-                side=0,
-            )
-        else:
-            raise NotImplementedError("Boundary condition type not implemented")
-
-        if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
-            self.apply_dirichlet(
-                a=self._a_y,
-                b=self._b_y,
-                c=self._c_y,
-                rhs=self._rhs_y,
-                value=self.bcs.top.get_value(t=time),
-                side=1,
-            )
-        elif self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN:
-            k = self._k_eff[-1, :] * self.parameters.thermal_conductivity_ref
-            self.apply_neumann_first_order(
-                a=self._a_y,
-                b=self._b_y,
-                c=self._c_y,
-                rhs=self._rhs_y,
-                flux=self.bcs.top.get_flux(t=time) / k,
-                side=1,
-            )
-        else:
-            raise NotImplementedError("Boundary condition type not implemented")
+        self._apply_standard_bc(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            bc=self.bcs.bottom,
+            side=0,
+            time=time,
+            k_eff_slice=self._k_eff[0, :],
+        )
+        self._apply_standard_bc(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            bc=self.bcs.top,
+            side=1,
+            time=time,
+            k_eff_slice=self._k_eff[-1, :],
+        )
 
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
