@@ -22,7 +22,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         parameters: ThermalParameters,
         convective_operator: BaseConvectiveOperator,
         bcs: Optional[BoundaryConditions] = None,
-        bcs_order: int = 1,
         fixed_delta: bool = False,
         max_iters: int = 5,
         tolerance: float = 1e-6,
@@ -33,7 +32,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         super().__init__(geometry=geometry, bcs=bcs)
 
         self.parameters = parameters
-        self.bcs_order = bcs_order
         self.convective_operator = convective_operator
         self.fixed_delta = fixed_delta
         self.max_iters = max_iters
