@@ -11,26 +11,19 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
 from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
-from src.utils.thomas import solve_tridiagonal
 
 
 @register_solver(VorticitySolverName.PEACEMAN_RACHFORD)
 class PRNavierStokesScheme(ImplicitVorticitySolver):
     @staticmethod
     @njit
-    def _compute_sweep_x(
+    def _compute_sweep_x_coeff(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        left_bc: NDArray[np.float64],
-        right_bc: NDArray[np.float64],
-        result: NDArray[np.float64],
-        rhs: NDArray[np.float64],
-        a_x: NDArray[np.float64],
-        b_x: NDArray[np.float64],
-        c_x: NDArray[np.float64],
+        c_ind: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -38,8 +31,11 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         grashof_number: float,
         u_pt_ref: float,
         delta_u: float,
-        c_ind: NDArray[np.float64],
-    ) -> NDArray[np.float64]:
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
+        rhs: NDArray[np.float64],
+    ) -> None:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
         inv_dx2 = inv_dx * inv_dx
@@ -53,13 +49,13 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             for i in range(1, n_x - 1):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
-                a_x[i] = 0.5 * dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
+                a[j, i] = 0.5 * dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
-                b_x[i] = 1.0 + 0.5 * dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
+                b[j, i] = 1.0 + 0.5 * dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
 
-                c_x[i] = 0.5 * dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
+                c[j, i] = 0.5 * dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
-                rhs[i] = w[j, i] + 0.5 * dt * (
+                rhs[j, i] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
@@ -70,36 +66,15 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                     - c_ind[j, i] * sf[j, i]
                 )
 
-            solve_tridiagonal(
-                a=a_x,
-                b=b_x,
-                c=c_x,
-                f=rhs,
-                result=result[j, :],
-                left_type=1,  # Dirichlet
-                left_value=left_bc[j],
-                right_type=1,  # Dirichlet
-                right_value=right_bc[j],
-                h=dx,
-            )
-
-        return result
-
     @staticmethod
     @njit
-    def _compute_sweep_y(
+    def _compute_sweep_y_coeff(
         w: NDArray[np.float64],
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        top_bc: NDArray[np.float64],
-        bottom_bc: NDArray[np.float64],
-        result: NDArray[np.float64],
-        rhs: NDArray[np.float64],
-        a_y: NDArray[np.float64],
-        b_y: NDArray[np.float64],
-        c_y: NDArray[np.float64],
+        c_ind: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -107,8 +82,11 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         grashof_number: float,
         u_pt_ref: float,
         delta_u: float,
-        c_ind: NDArray[np.float64],
-    ) -> NDArray[np.float64]:
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
+        rhs: NDArray[np.float64],
+    ) -> None:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
         inv_dx2 = inv_dx * inv_dx
@@ -118,17 +96,17 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
 
-        for i in range(1, n_x - 1):
-            for j in range(1, n_y - 1):
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
-                a_y[j] = 0.5 * dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
+                a[i, j] = 0.5 * dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
-                b_y[j] = 1.0 + 0.5 * dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
+                b[i, j] = 1.0 + 0.5 * dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
 
-                c_y[j] = 0.5 * dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
+                c[i, j] = 0.5 * dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
-                rhs[j] = w[j, i] + 0.5 * dt * (
+                rhs[i, j] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
@@ -139,21 +117,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                     - c_ind[j, i] * sf[j, i]
                 )
 
-            solve_tridiagonal(
-                a=a_y,
-                b=b_y,
-                c=c_y,
-                f=rhs,
-                result=result[:, i],
-                left_type=1,  # Dirichlet
-                left_value=bottom_bc[i],
-                right_type=1,  # Dirichlet
-                right_value=top_bc[i],
-                h=dy,
-            )
-
-        return result
-
     def solve(
         self,
         w: NDArray[np.float64],
@@ -161,13 +124,16 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
+        dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
+        n_x, n_y = self.geometry.n_x, self.geometry.n_y
+        length_scale = self.geometry.length_scale
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_width(
             u=u_dim,
             u_pt=self.parameters.u_pt,
-            h_x=self.geometry.dx,
-            h_y=self.geometry.dy,
+            h_x=dx,
+            h_y=dy,
         )
         calculate_indicator_function(
             u=u_dim,
@@ -176,9 +142,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             delta=delta,
             result=self.c_ind,
         )
-        self.c_ind *= self.geometry.length_scale**3 / self.parameters.v
-
-        self._temp_w = np.copy(w)
+        self.c_ind *= length_scale**3 / self.parameters.v
 
         self.calculate_boundary_conditions(
             sf=sf,
@@ -187,53 +151,72 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             bottom_bc=self.bottom_bc,
             left_bc=self.left_bc,
             order=self.bc_order,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=dx / length_scale,
+            dy=dy / length_scale,
         )
-        self._compute_sweep_x(
+
+        self._compute_sweep_x_coeff(
             w=w,
             sf=sf,
             u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            left_bc=self.left_bc,
-            right_bc=self.right_bc,
-            result=self._temp_w,
-            rhs=self._rhs_x,
-            a_x=self._a_x,
-            b_x=self._b_x,
-            c_x=self._c_x,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            c_ind=self.c_ind,
+            dx=dx / length_scale,
+            dy=dy / length_scale,
+            dt=dt * self.parameters.v / length_scale,
             u_pt_ref=self.parameters.u_pt_ref,
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
         )
-        self._new_w = np.copy(self._temp_w)
-        self._compute_sweep_y(
-            w=self._temp_w,
+
+        self._apply_boundary_conditions_x(time=time)
+
+        self._new_w = np.copy(w)
+
+        self._solve_sweep_x(
+            n=n_y,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            result=self._new_w,
+        )
+
+        self._compute_sweep_y_coeff(
+            w=self._new_w,
             sf=sf,
             u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            top_bc=self.top_bc,
-            bottom_bc=self.bottom_bc,
-            result=self._new_w,
-            rhs=self._rhs_y,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            c_ind=self.c_ind,
+            dx=dx / length_scale,
+            dy=dy / length_scale,
+            dt=dt * self.parameters.v / length_scale,
             u_pt_ref=self.parameters.u_pt_ref,
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
             grashof_number=self.parameters.grashof_number,
-            c_ind=self.c_ind,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+        )
+
+        self._apply_boundary_conditions_y(time=time)
+
+        self._solve_sweep_y(
+            n=n_x,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            result=self._new_w,
         )
 
         return self._new_w
