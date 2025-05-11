@@ -51,6 +51,20 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None: ...
 
+    def compute_k_eff(self, u: float, delta: float) -> float:
+        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        k_eff = (
+            k_smoothed(
+                u=u_dim,
+                u_pt=self.parameters.u_pt,
+                k_solid=self.parameters.thermal_conductivity_solid,
+                k_liquid=self.parameters.thermal_conductivity_liquid,
+                delta=delta,
+            )
+            / self.parameters.thermal_conductivity_ref
+        )
+        return k_eff
+
     @staticmethod
     @njit
     def compute_effective_properties(
@@ -74,13 +88,13 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         inv_c_ref = 1.0 / c_ref
         inv_k_ref = 1.0 / k_ref
 
+        u_dim = u * delta_u + u_ref
+
         for j in range(n_y):
             for i in range(n_x):
-                T = u[j, i] * delta_u + u_ref
-
                 c_eff[j, i] = (
                     c_smoothed(
-                        u=T,
+                        u=u_dim[j, i],
                         u_pt=u_pt,
                         c_solid=c_solid,
                         c_liquid=c_liquid,
@@ -93,7 +107,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
 
                 k_eff[j, i] = (
                     k_smoothed(
-                        u=T,
+                        u=u_dim[j, i],
                         u_pt=u_pt,
                         k_solid=k_solid,
                         k_liquid=k_liquid,
