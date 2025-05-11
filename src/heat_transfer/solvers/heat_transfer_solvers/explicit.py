@@ -44,9 +44,9 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
-                k_i1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
+                k_ip1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
                 k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
-                k_ij1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
+                k_ijp1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 advection_x = (
@@ -67,12 +67,12 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
                     * (
                         inv_dx
                         * (
-                            k_i1j * inv_dx * (u[j, i + 1] - u[j, i])
+                            k_ip1j * inv_dx * (u[j, i + 1] - u[j, i])
                             - k_im1j * inv_dx * (u[j, i] - u[j, i - 1])
                         )
                         + inv_dy
                         * (
-                            k_ij1 * inv_dy * (u[j + 1, i] - u[j, i])
+                            k_ijp1 * inv_dy * (u[j + 1, i] - u[j, i])
                             - k_ijm1 * inv_dy * (u[j - 1, i] - u[j, i])
                         )
                     )
