@@ -6,22 +6,26 @@ from src.utils.thomas import solve_tridiagonal
 
 def test_solve_tridiagonal_bc_1():
     n = 10
-    a = np.ones(n - 1, dtype=np.float64)
-    b = -2 * np.ones(n - 1, dtype=np.float64)
-    c = np.ones(n - 1, dtype=np.float64)
+    a = np.ones(n, dtype=np.float64)
+    b = -2 * np.ones(n, dtype=np.float64)
+    c = np.ones(n, dtype=np.float64)
     f = np.ones(n)
 
-    # Dirichlet boundary conditions
-    left_type = 1
-    right_type = 1
     left_value = 2.5
     right_value = 2.5
 
+    # Dirichlet boundary conditions
+    a[0] = 0.0
+    b[0] = 1.0
+    f[0] = left_value
+
+    b[n - 1] = 1.0
+    c[n - 1] = 0.0
+    f[n - 1] = right_value
+
     result = np.zeros(n)
 
-    solve_tridiagonal(
-        a, b, c, f, result, left_type, right_type, left_value, right_value
-    )
+    solve_tridiagonal(a, b, c, f, result)
 
     a = np.ones(n - 3, dtype=np.float64)
     b = -2 * np.ones(n - 2, dtype=np.float64)
@@ -47,31 +51,27 @@ def test_solve_tridiagonal_bc_1():
 
 def test_solve_tridiagonal_bc_2():
     n = 10
-    a = np.ones(n - 1, dtype=np.float64)
-    b = -2 * np.ones(n - 1, dtype=np.float64)
-    c = np.ones(n - 1, dtype=np.float64)
+    a = np.ones(n, dtype=np.float64)
+    b = -2 * np.ones(n, dtype=np.float64)
+    c = np.ones(n, dtype=np.float64)
     f = np.ones(n)
-    h = 0.5
-    # Dirichlet boundary conditions
-    left_type = 2
-    right_type = 1
+
     left_flux = 0.0
     right_value = 2.5
 
+    # Neumann bc on the left
+    a[0] = 1.0
+    b[0] = -1.0
+    f[0] = left_flux
+
+    # Dirichlet bc on the right
+    b[n - 1] = 1.0
+    c[n - 1] = 0.0
+    f[n - 1] = right_value
+
     result = np.zeros(n)
 
-    solve_tridiagonal(
-        a,
-        b,
-        c,
-        f,
-        result,
-        left_type,
-        right_type,
-        left_flux=left_flux,
-        right_value=right_value,
-        h=h,
-    )
+    solve_tridiagonal(a, b, c, f, result)
 
     a = np.ones(n - 1, dtype=np.float64)
     b = -2 * np.ones(n, dtype=np.float64)
@@ -87,7 +87,7 @@ def test_solve_tridiagonal_bc_2():
     A[-1, -1] = -1
     A[-1, -2] = 0
 
-    f[0] = h * left_flux
+    f[0] = left_flux
     f[-1] = -right_value
 
     expected_result = np.linalg.solve(A, f)
