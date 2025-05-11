@@ -62,7 +62,6 @@ class IterativeNavierStokesSolver:
             parameters=parameters,
             convective_operator=self.convective_operator,
             bc_order=bc_order,
-            incorporated_bc=False,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
