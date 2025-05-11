@@ -27,10 +27,10 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         dy: float,
         dt: float,
         peclet_number: float,
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
         rhs: NDArray[np.float64],
-        a_x: NDArray[np.float64],
-        b_x: NDArray[np.float64],
-        c_x: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
@@ -48,18 +48,18 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a_x[j, i] = dt * (
+                a[j, i] = dt * (
                     conv_x[j, i, 0] - k_i1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[j, i] = 1.0 + dt * (
+                b[j, i] = 1.0 + dt * (
                     conv_x[j, i, 1]
                     + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c_x[j, i] = dt * (
+                c[j, i] = dt * (
                     conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
@@ -133,9 +133,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         dy: float,
         dt: float,
         peclet_number: float,
-        a_y: NDArray[np.float64],
-        b_y: NDArray[np.float64],
-        c_y: NDArray[np.float64],
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u_old.shape
@@ -150,18 +150,18 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a_y[i, j] = dt * (
+                a[i, j] = dt * (
                     conv_y[j, i, 0] - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[i, j] = 1.0 + dt * (
+                b[i, j] = 1.0 + dt * (
                     conv_y[j, i, 1]
                     + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c_y[i, j] = dt * (
+                c[i, j] = dt * (
                     conv_y[j, i, 2] - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
@@ -272,9 +272,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             dy=self.geometry.dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             peclet_number=self.parameters.peclet_number,
-            a_x=self._a_x,
-            b_x=self._b_x,
-            c_x=self._c_x,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
             rhs=self._rhs_x,
         )
 
@@ -300,9 +300,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             dy=dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             peclet_number=self.parameters.peclet_number,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
             rhs=self._rhs_y,
         )
 
