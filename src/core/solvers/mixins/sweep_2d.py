@@ -5,6 +5,8 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
+from src.utils.thomas import solve_tridiagonal
+
 if TYPE_CHECKING:
     from src.core.geometry import DomainGeometry
 
@@ -31,26 +33,127 @@ class Sweep2DMixin:
     _rhs_y: NDArray[np.float64]
 
     def _initialize_sweep_arrays(self: HasGeometry) -> None:
-        """Preallocate arrays used for Thomas algorithm in X and Y directions."""
-        self._a_x = np.empty(self.geometry.n_x - 1)
-        self._b_x = np.empty(self.geometry.n_x - 1)
-        self._c_x = np.empty(self.geometry.n_x - 1)
-        self._a_y = np.empty(self.geometry.n_y - 1)
-        self._b_y = np.empty(self.geometry.n_y - 1)
-        self._c_y = np.empty(self.geometry.n_y - 1)
-        self._rhs_x = np.empty(self.geometry.n_x)
-        self._rhs_y = np.empty(self.geometry.n_y)
+        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        self._a_x = np.empty((n_y, n_x))
+        self._b_x = np.empty((n_y, n_x))
+        self._c_x = np.empty((n_y, n_x))
+        self._a_y = np.empty((n_x, n_y))
+        self._b_y = np.empty((n_x, n_y))
+        self._c_y = np.empty((n_x, n_y))
+        self._rhs_x = np.empty((n_y, n_x))
+        self._rhs_y = np.empty((n_x, n_y))
 
     @staticmethod
     @abstractmethod
     @njit
-    def _compute_sweep_x(*args, **kwargs) -> NDArray[np.float64]:
-        """Override in subclass with X-direction sweep implementation."""
-        ...
+    def _compute_sweep_x_coeff(*args, **kwargs) -> None: ...
 
     @staticmethod
     @abstractmethod
     @njit
-    def _compute_sweep_y(*args, **kwargs) -> NDArray[np.float64]:
-        """Override in subclass with Y-direction sweep implementation."""
-        ...
+    def _compute_sweep_y_coeff(*args, **kwargs) -> None: ...
+
+    @abstractmethod
+    def _apply_boundary_conditions_x(self, *args, **kwargs) -> None: ...
+
+    @abstractmethod
+    def _apply_boundary_conditions_y(self, *args, **kwargs) -> None: ...
+
+    @staticmethod
+    def apply_dirichlet(
+        a: np.ndarray,
+        b: np.ndarray,
+        c: np.ndarray,
+        rhs: np.ndarray,
+        value: np.ndarray,
+        side: int,
+    ) -> None:
+        """
+        Enforce a Dirichlet boundary condition along one edge of a 2D tridiagonal coefficient grid
+        (either left/right for x-sweep or top/bottom for y-sweep).
+        :param a: sub-diagonal coefficients, shape (n_rows, n_cols) for x-sweep or (n_cols, n_rows) for y-sweep.
+        :param b: diagonal coefficients, same shape as a.
+        :param c: super-diagonal coefficients, same shape as a.
+        :param rhs: right-hand side, same shape as a.
+        :param value: Dirichlet values to impose along the boundary; should have length n_rows for x-sweep
+        (one value per row) or length n_cols for y-sweep.
+        :param side: boundary side: 0 for the "left" or "bottom" boundary (index 0), 1 for the "right" or "top" boundary (last index).
+        :return: None
+        """
+        n, m = b.shape
+        idx = 0 if side == 0 else m - 1
+        a[:, idx] = 0.0
+        b[:, idx] = 1.0
+        c[:, idx] = 0.0
+        rhs[:, idx] = value
+
+    @staticmethod
+    def apply_neumann_first_order(
+        a: np.ndarray,
+        b: np.ndarray,
+        c: np.ndarray,
+        rhs: np.ndarray,
+        flux: np.ndarray,
+        side: int,
+    ) -> None:
+        """
+        Enforce a Neumann boundary condition along one edge of a 2D tridiagonal coefficient grid
+        (either left/right for x-sweep or top/bottom for y-sweep).
+        This function uses first-order accuracy approximation.
+        :param a: sub-diagonal coefficients, shape (n_rows, n_cols) for x-sweep or (n_cols, n_rows) for y-sweep.
+        :param b: diagonal coefficients, same shape as a.
+        :param c: super-diagonal coefficients, same shape as a.
+        :param rhs: right-hand side, same shape as a.
+        :param flux: flux values to impose along the boundary; should have length n_rows for x-sweep (one value per row) or length n_cols for y-sweep.
+        :param side: boundary side: 0 for the "left" or "bottom" boundary (index 0), 1 for the "right" or "top" boundary (last index).
+        :return: None
+        """
+        n, m = b.shape
+        if side == 0:
+            a[:, 0] = 1.0
+            b[:, 0] = -1.0
+            c[:, 0] = 0.0
+            rhs[:, 0] = flux
+        else:
+            a[:, m - 1] = 0.0
+            b[:, m - 1] = 1.0
+            c[:, m - 1] = -1.0
+            rhs[:, m - 1] = flux
+
+    @staticmethod
+    @njit
+    def _solve_sweep_x(
+        n_y: int,
+        a_x: NDArray[np.float64],
+        b_x: NDArray[np.float64],
+        c_x: NDArray[np.float64],
+        rhs_x: NDArray[np.float64],
+        result: NDArray[np.float64],
+    ) -> None:
+        for j in range(1, n_y - 1):
+            solve_tridiagonal(
+                a=a_x[j, :],
+                b=b_x[j, :],
+                c=c_x[j, :],
+                f=rhs_x[j, :],
+                result=result[j, :],
+            )
+
+    @staticmethod
+    @njit
+    def _solve_sweep_y(
+        n_x: int,
+        a_y: NDArray[np.float64],
+        b_y: NDArray[np.float64],
+        c_y: NDArray[np.float64],
+        rhs_y: NDArray[np.float64],
+        result: NDArray[np.float64],
+    ) -> None:
+        for i in range(1, n_x - 1):
+            solve_tridiagonal(
+                a=a_y[i, :],
+                b=b_y[i, :],
+                c=c_y[i, :],
+                f=rhs_y[i, :],
+                result=result[:, i],
+            )
