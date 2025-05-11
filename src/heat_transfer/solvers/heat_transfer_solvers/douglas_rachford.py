@@ -11,40 +11,27 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.utils.thomas import solve_tridiagonal
 
 
 @register_solver(HeatTransferSolverName.DOUGLAS_RACHFORD)
 class DouglasRachfordSolver(ImplicitHeatTransferSolver):
     @staticmethod
     @njit
-    def _compute_sweep_x(
+    def _compute_sweep_x_coeff(
         u: NDArray[np.float64],
-        iter_u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        result: NDArray[np.float64],
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        dx: float,
+        dy: float,
+        dt: float,
+        peclet_number: float,
         rhs: NDArray[np.float64],
         a_x: NDArray[np.float64],
         b_x: NDArray[np.float64],
         c_x: NDArray[np.float64],
-        dx: float,
-        dy: float,
-        dt: float,
-        c_eff: NDArray[np.float64],
-        k_eff: NDArray[np.float64],
-        peclet_number: float,
-        rbc_type: int,
-        lbc_type: int,
-        right_value: NDArray[np.float64] = None,
-        left_value: NDArray[np.float64] = None,
-        right_flux: NDArray[np.float64] = None,
-        left_flux: NDArray[np.float64] = None,
-        right_psi: NDArray[np.float64] = None,
-        left_psi: NDArray[np.float64] = None,
-        right_phi: NDArray[np.float64] = None,
-        left_phi: NDArray[np.float64] = None,
-    ) -> NDArray[np.float64]:
+    ) -> None:
         n_y, n_x = u.shape
         inv_dx = 1.0 / dx
         inv_dx2 = inv_dx * inv_dx
@@ -55,29 +42,28 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
-
                 k_i1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
                 k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
                 k_ij1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a_x[i] = dt * (
+                a_x[j, i] = dt * (
                     conv_x[j, i, 0] - k_i1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b_x[i] = 1.0 + dt * (
+                b_x[j, i] = 1.0 + dt * (
                     conv_x[j, i, 1]
                     + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c_x[i] = dt * (
+                c_x[j, i] = dt * (
                     conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
-                rhs[i] = u[j, i] + dt * inv_c_eff * (
+                rhs[j, i] = u[j, i] + dt * inv_c_eff * (
                     inv_dy2
                     * inv_peclet_number
                     * (
@@ -91,97 +77,96 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                     )
                 )
 
-            # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
-            # "CALL_FUNCTION_EX with **kwargs not supported"
-            lv: float = left_value[j] if left_value is not None else 0.0
-            lf: float = left_flux[j] if left_flux is not None else 0.0
-            lpsi: float = left_psi[j] if left_psi is not None else 0.0
-            lphi: float = left_phi[j] if left_phi is not None else 0.0
-            rv: float = right_value[j] if right_value is not None else 0.0
-            rf: float = right_flux[j] if right_flux is not None else 0.0
-            rpsi: float = right_psi[j] if right_psi is not None else 0.0
-            rphi: float = right_phi[j] if right_phi is not None else 0.0
-
-            solve_tridiagonal(
-                a=a_x,
-                b=b_x,
-                c=c_x,
-                f=rhs,
-                result=result[j, :],
-                left_type=lbc_type,
-                left_value=lv,
-                left_flux=lf,
-                left_psi=lpsi,
-                left_phi=lphi,
-                right_type=rbc_type,
-                right_value=rv,
-                right_flux=rf,
-                right_psi=rpsi,
-                right_phi=rphi,
-                h=dx,
+    def _apply_boundary_conditions_x(self, time: float) -> None:
+        if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
+            self.apply_dirichlet(
+                a=self._a_x,
+                b=self._b_x,
+                c=self._c_x,
+                rhs=self._rhs_x,
+                value=self.bcs.left.get_value(t=time),
+                side=0,
             )
+        elif self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN:
+            k = self._k_eff[:, 0] * self.parameters.thermal_conductivity_ref
+            self.apply_neumann_first_order(
+                a=self._a_x,
+                b=self._b_x,
+                c=self._c_x,
+                rhs=self._rhs_x,
+                flux=self.bcs.left.get_flux(t=time) / k,
+                side=0,
+            )
+        else:
+            raise NotImplementedError("Boundary condition type not implemented")
 
-        return result
+        if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
+            self.apply_dirichlet(
+                a=self._a_x,
+                b=self._b_x,
+                c=self._c_x,
+                rhs=self._rhs_x,
+                value=self.bcs.right.get_value(t=time),
+                side=1,
+            )
+        elif self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN:
+            k = self._k_eff[:, -1] * self.parameters.thermal_conductivity_ref
+            self.apply_neumann_first_order(
+                a=self._a_x,
+                b=self._b_x,
+                c=self._c_x,
+                rhs=self._rhs_x,
+                flux=self.bcs.right.get_flux(t=time) / k,
+                side=1,
+            )
+        else:
+            raise NotImplementedError("Boundary condition type not implemented")
 
     @staticmethod
     @njit
-    def _compute_sweep_y(
+    def _compute_sweep_y_coeff(
         u_old: NDArray[np.float64],
         u_prev: NDArray[np.float64],
-        iter_u: NDArray[np.float64],
-        conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        result: NDArray[np.float64],
-        rhs: NDArray[np.float64],
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        dy: float,
+        dt: float,
+        peclet_number: float,
         a_y: NDArray[np.float64],
         b_y: NDArray[np.float64],
         c_y: NDArray[np.float64],
-        dx: float,
-        dy: float,
-        dt: float,
-        c_eff: NDArray[np.float64],
-        k_eff: NDArray[np.float64],
-        peclet_number: float,
-        tbc_type: int,
-        bbc_type: int,
-        top_value: NDArray[np.float64] = None,
-        bottom_value: NDArray[np.float64] = None,
-        top_flux: NDArray[np.float64] = None,
-        bottom_flux: NDArray[np.float64] = None,
-        top_psi: NDArray[np.float64] = None,
-        bottom_psi: NDArray[np.float64] = None,
-        top_phi: NDArray[np.float64] = None,
-        bottom_phi: NDArray[np.float64] = None,
-    ) -> NDArray[np.float64]:
+        rhs: NDArray[np.float64],
+    ) -> None:
         n_y, n_x = u_old.shape
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
         inv_peclet_number = 1.0 / peclet_number
 
-        for i in range(1, n_x - 1):
-            for j in range(1, n_y - 1):
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
                 k_ij1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a_y[j] = dt * (
+                a_y[i, j] = dt * (
                     conv_y[j, i, 0] - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[j] = 1.0 + dt * (
+                b_y[i, j] = 1.0 + dt * (
                     conv_y[j, i, 1]
                     + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c_y[j] = dt * (
+                c_y[i, j] = dt * (
                     conv_y[j, i, 2] - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Right-hand side of the equation
-                rhs[j] = u_prev[j, i] - dt * inv_c_eff * (
+                rhs[i, j] = u_prev[j, i] - dt * inv_c_eff * (
                     inv_dy2
                     * inv_peclet_number
                     * (
@@ -195,41 +180,56 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                     )
                 )
 
-            # pre-define arguments of "solve_tridiagonal" so as not to trigger numba's
-            # "CALL_FUNCTION_EX with **kwargs not supported"
-            lv: float = bottom_value[i] if bottom_value is not None else 0.0
-            lf: float = bottom_flux[i] if bottom_flux is not None else 0.0
-            lpsi: float = bottom_psi[i] if bottom_psi is not None else 0.0
-            lphi: float = bottom_phi[i] if bottom_phi is not None else 0.0
-            rv: float = top_value[i] if top_value is not None else 0.0
-            rf: float = top_flux[i] if top_flux is not None else 0.0
-            rpsi: float = top_psi[i] if top_psi is not None else 0.0
-            rphi: float = top_phi[i] if top_phi is not None else 0.0
-
-            solve_tridiagonal(
-                a=a_y,
-                b=b_y,
-                c=c_y,
-                f=rhs,
-                result=result[:, i],
-                left_type=bbc_type,
-                left_value=lv,
-                left_flux=lf,
-                left_psi=lpsi,
-                left_phi=lphi,
-                right_type=tbc_type,
-                right_value=rv,
-                right_flux=rf,
-                right_psi=rpsi,
-                right_phi=rphi,
-                h=dy,
+    def _apply_boundary_conditions_y(self, time: float) -> None:
+        if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
+            self.apply_dirichlet(
+                a=self._a_y,
+                b=self._b_y,
+                c=self._c_y,
+                rhs=self._rhs_y,
+                value=self.bcs.bottom.get_value(t=time),
+                side=0,
             )
+        elif self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN:
+            k = self._k_eff[0, :] * self.parameters.thermal_conductivity_ref
+            self.apply_neumann_first_order(
+                a=self._a_y,
+                b=self._b_y,
+                c=self._c_y,
+                rhs=self._rhs_y,
+                flux=self.bcs.bottom.get_flux(t=time) / k,
+                side=0,
+            )
+        else:
+            raise NotImplementedError("Boundary condition type not implemented")
 
-        return result
+        if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
+            self.apply_dirichlet(
+                a=self._a_y,
+                b=self._b_y,
+                c=self._c_y,
+                rhs=self._rhs_y,
+                value=self.bcs.top.get_value(t=time),
+                side=1,
+            )
+        elif self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN:
+            k = self._k_eff[-1, :] * self.parameters.thermal_conductivity_ref
+            self.apply_neumann_first_order(
+                a=self._a_y,
+                b=self._b_y,
+                c=self._c_y,
+                rhs=self._rhs_y,
+                flux=self.bcs.top.get_flux(t=time) / k,
+                side=1,
+            )
+        else:
+            raise NotImplementedError("Boundary condition type not implemented")
 
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None:
+        dx, dy = self.geometry.dx, self.geometry.dy
+        n_x, n_y = self.geometry.n_x, self.geometry.n_y
         self.convective_operator(
             conv_x=self._conv_x,
             conv_y=self._conv_y,
@@ -238,16 +238,13 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             u_pt=self.parameters.u_pt,
         )
         dim_u = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
-        delta = (
-            self.parameters.delta
-            if self.fixed_delta
-            else get_mushy_zone_width(
-                u=dim_u,
-                u_pt=self.parameters.u_pt,
-                h_x=self.geometry.dx,
-                h_y=self.geometry.dy,
-            )
+        delta = get_mushy_zone_width(
+            u=dim_u,
+            u_pt=self.parameters.u_pt,
+            h_x=dx,
+            h_y=dy,
         )
+
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
@@ -265,129 +262,57 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             delta=delta,
         )
 
-        self._temp_u = np.copy(u)
-
-        # Run the x-direction sweep iterations
-        self._compute_sweep_x(
+        self._compute_sweep_x_coeff(
             u=u,
-            iter_u=self._iter_u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            result=self._temp_u,
-            rhs=self._rhs_x,
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            peclet_number=self.parameters.peclet_number,
             a_x=self._a_x,
             b_x=self._b_x,
             c_x=self._c_x,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            peclet_number=self.parameters.peclet_number,
-            rbc_type=self.bcs.right.boundary_type.value,
-            lbc_type=self.bcs.left.boundary_type.value,
-            right_value=(
-                self.bcs.right.get_value(t=time)
-                if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET
-                else None
-            ),
-            left_value=(
-                self.bcs.left.get_value(t=time)
-                if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET
-                else None
-            ),
-            right_flux=(
-                self.bcs.right.get_flux(t=time)
-                if self.bcs.right.boundary_type == BoundaryConditionType.NEUMANN
-                else None
-            ),
-            left_flux=(
-                self.bcs.left.get_flux(t=time)
-                if self.bcs.left.boundary_type == BoundaryConditionType.NEUMANN
-                else None
-            ),
-            right_psi=(
-                self.bcs.right.get_psi(t=time)
-                if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            left_psi=(
-                self.bcs.left.get_psi(t=time)
-                if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            right_phi=(
-                self.bcs.right.get_phi(t=time)
-                if self.bcs.right.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            left_phi=(
-                self.bcs.left.get_phi(t=time)
-                if self.bcs.left.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
+            rhs=self._rhs_x,
         )
 
-        self._new_u = np.copy(self._temp_u)
+        self._apply_boundary_conditions_x(time=time)
 
-        # Run the y-direction sweep iterations
-        self._compute_sweep_y(
-            u_old=u,
-            u_prev=self._temp_u,
-            iter_u=self._iter_u,
-            conv_x=self._conv_x,
-            conv_y=self._conv_y,
+        self._new_u = np.copy(u)
+
+        self._solve_sweep_x(
+            n_y=n_y,
+            a_x=self._a_x,
+            b_x=self._b_x,
+            c_x=self._c_x,
+            rhs_x=self._rhs_x,
             result=self._new_u,
-            rhs=self._rhs_y,
+        )
+
+        self._compute_sweep_y_coeff(
+            u_old=u,
+            u_prev=self._new_u,
+            conv_y=self._conv_y,
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            dy=dy / self.geometry.length_scale,
+            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
+            peclet_number=self.parameters.peclet_number,
             a_y=self._a_y,
             b_y=self._b_y,
             c_y=self._c_y,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            peclet_number=self.parameters.peclet_number,
-            tbc_type=self.bcs.top.boundary_type.value,
-            bbc_type=self.bcs.bottom.boundary_type.value,
-            top_value=(
-                self.bcs.top.get_value(t=time)
-                if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET
-                else None
-            ),
-            bottom_value=(
-                self.bcs.bottom.get_value(t=time)
-                if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET
-                else None
-            ),
-            top_flux=(
-                self.bcs.top.get_flux(t=time)
-                if self.bcs.top.boundary_type == BoundaryConditionType.NEUMANN
-                else None
-            ),
-            bottom_flux=(
-                self.bcs.bottom.get_flux(t=time)
-                if self.bcs.bottom.boundary_type == BoundaryConditionType.NEUMANN
-                else None
-            ),
-            top_psi=(
-                self.bcs.top.get_psi(t=time)
-                if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            bottom_psi=(
-                self.bcs.bottom.get_psi(t=time)
-                if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            top_phi=(
-                self.bcs.top.get_phi(t=time)
-                if self.bcs.top.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
-            bottom_phi=(
-                self.bcs.bottom.get_phi(t=time)
-                if self.bcs.bottom.boundary_type == BoundaryConditionType.ROBIN
-                else None
-            ),
+            rhs=self._rhs_y,
+        )
+
+        self._apply_boundary_conditions_y(time=time)
+
+        self._solve_sweep_y(
+            n_x=n_x,
+            a_y=self._a_y,
+            b_y=self._b_y,
+            c_y=self._c_y,
+            rhs_y=self._rhs_y,
+            result=self._new_u,
         )
