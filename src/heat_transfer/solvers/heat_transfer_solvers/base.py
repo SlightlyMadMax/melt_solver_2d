@@ -26,6 +26,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         max_iters: int = 5,
         tolerance: float = 1e-6,
         urf: float = 0.5,
+        bc_order: int = 1,
         *args,
         **kwargs,
     ):
@@ -37,6 +38,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
+        self.bc_order = bc_order
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
         # Pre-allocate some arrays that will be used in the calculations
         self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))

@@ -23,7 +23,13 @@ class HeatTransferSolver:
         max_iters: int = 5,
         tolerance: float = 1e-6,
         urf: float = 0.5,
+        bc_order: int = 1,
     ):
+        if bc_order not in (1, 2):
+            raise NotImplementedError(
+                "Only 1st and 2nd order accuracy BCs are supported for the heat equation."
+            )
+
         solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
         self.convective_operator = VorticityTransportOperator(
@@ -39,6 +45,7 @@ class HeatTransferSolver:
             max_iters=max_iters,
             tolerance=tolerance,
             urf=urf,
+            bc_order=bc_order,
         )
 
     def solve(
