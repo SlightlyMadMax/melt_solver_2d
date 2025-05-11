@@ -78,6 +78,42 @@ class ImplicitVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
             (self.geometry.n_y, self.geometry.n_x)
         )
 
+    def _apply_boundary_conditions_x(self, time: float) -> None:
+        self.apply_dirichlet(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            value=self.left_bc,
+            side=0,
+        )
+        self.apply_dirichlet(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            value=self.right_bc,
+            side=1,
+        )
+
+    def _apply_boundary_conditions_y(self, time: float) -> None:
+        self.apply_dirichlet(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            value=self.bottom_bc,
+            side=0,
+        )
+        self.apply_dirichlet(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            value=self.top_bc,
+            side=1,
+        )
+
 
 class ExplicitVorticitySolver(BaseVorticitySolver, ABC):
     def __init__(self, *args, **kwargs):
