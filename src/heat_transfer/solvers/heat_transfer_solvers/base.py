@@ -6,7 +6,11 @@ from numba import njit
 from numpy.typing import NDArray
 
 from src.convective_operators import BaseConvectiveOperator
-from src.core.boundary_conditions import BoundaryConditions
+from src.core.boundary_conditions import (
+    BoundaryConditions,
+    BoundaryCondition,
+    BoundaryConditionType,
+)
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
@@ -130,6 +134,45 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None: ...
+
+    def _apply_standard_bc(
+        self,
+        a: np.ndarray,
+        b: np.ndarray,
+        c: np.ndarray,
+        rhs: np.ndarray,
+        bc: BoundaryCondition,
+        side: int,
+        time: float,
+        k_eff_slice: np.ndarray,
+    ) -> bool:
+        """
+        Common Dirichlet / first-order Neumann.
+        a,b,c,rhs are the full 2D coefficient arrays for one sweep.
+        bc is one of self.bcs.left/right or bottom/top.
+        side is 0 or 1.
+        k_eff_slice is the 1D array of k_eff on that boundary.
+        """
+        if bc.boundary_type == BoundaryConditionType.DIRICHLET:
+            self.apply_dirichlet(
+                a=a, b=b, c=c, rhs=rhs, value=bc.get_value(t=time), side=side
+            )
+        elif bc.boundary_type == BoundaryConditionType.NEUMANN:
+            if self.bc_order == 1:
+                # first-order ghost
+                flux = bc.get_flux(t=time) / (
+                    k_eff_slice * self.parameters.thermal_conductivity_ref
+                )
+                self.apply_neumann_first_order(
+                    a=a, b=b, c=c, rhs=rhs, flux=flux, side=side
+                )
+            else:
+                # signal to caller: we need second-order BC here
+                return False
+        else:
+            raise NotImplementedError("BC type not supported")
+
+        return True
 
 
 class ExplicitHeatTransferSolver(BaseHeatTransferSolver):
