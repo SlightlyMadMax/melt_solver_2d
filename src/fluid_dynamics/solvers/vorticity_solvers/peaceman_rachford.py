@@ -41,7 +41,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
-
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
 
@@ -92,7 +91,6 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
-
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
 
