@@ -38,6 +38,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
         inv_peclet_number = 1.0 / peclet_number
+        dt_half = 0.5 * dt
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -48,33 +49,23 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a[j, i] = (
-                    dt
-                    * 0.5
-                    * (
-                        conv_x[j, i, 0]
-                        - k_i1j * inv_peclet_number * inv_c_eff * inv_dx2
-                    )
+                a[j, i] = dt_half * (
+                    conv_x[j, i, 0] - k_i1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
-                b[j, i] = 1.0 + dt * 0.5 * (
+                b[j, i] = 1.0 + dt_half * (
                     conv_x[j, i, 1]
                     + (k_i1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c[j, i] = (
-                    dt
-                    * 0.5
-                    * (
-                        conv_x[j, i, 2]
-                        - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
-                    )
+                c[j, i] = dt_half * (
+                    conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
                 # Right-hand side of the equation
-                rhs[j, i] = u[j, i] + dt * 0.5 * inv_c_eff * (
+                rhs[j, i] = u[j, i] + dt_half * inv_c_eff * (
                     inv_dy2
                     * inv_peclet_number
                     * (
@@ -164,35 +155,26 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
                 k_ij1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
+                dt_half = 0.5 * dt
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a[i, j] = (
-                    dt
-                    * 0.5
-                    * (
-                        conv_y[j, i, 0]
-                        - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy2
-                    )
+                a[i, j] = dt_half * (
+                    conv_y[j, i, 0] - k_ij1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b[i, j] = 1.0 + dt * 0.5 * (
+                b[i, j] = 1.0 + dt_half * (
                     conv_y[j, i, 1]
                     + (k_ij1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c[i, j] = (
-                    dt
-                    * 0.5
-                    * (
-                        conv_y[j, i, 2]
-                        - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
-                    )
+                c[i, j] = dt_half * (
+                    conv_y[j, i, 2] - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
                 )
 
                 # Right-hand side of the equation
-                rhs[i, j] = u[j, i] + dt * 0.5 * inv_c_eff * (
+                rhs[i, j] = u[j, i] + dt_half * inv_c_eff * (
                     inv_dx2
                     * inv_peclet_number
                     * (

@@ -43,18 +43,19 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_dy2 = inv_dy * inv_dy
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
+        dt_half = 0.5 * dt
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
-                a[j, i] = 0.5 * dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
+                a[j, i] = dt_half * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
-                b[j, i] = 1.0 + 0.5 * dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
+                b[j, i] = 1.0 + dt_half * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
 
-                c[j, i] = 0.5 * dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
+                c[j, i] = dt_half * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
-                rhs[j, i] = w[j, i] + 0.5 * dt * (
+                rhs[j, i] = w[j, i] + dt_half * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
@@ -93,18 +94,19 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         inv_dy2 = inv_dy * inv_dy
         inv_re = 1.0 / reynolds_number
         inv_re2 = inv_re * inv_re
+        dt_half = 0.5 * dt
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 gr = 0.0 if u[j, i] * delta_u - u_pt_ref < 0.0 else grashof_number
 
-                a[i, j] = 0.5 * dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
+                a[i, j] = dt_half * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
-                b[i, j] = 1.0 + 0.5 * dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
+                b[i, j] = 1.0 + dt_half * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
 
-                c[i, j] = 0.5 * dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
+                c[i, j] = dt_half * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
-                rhs[i, j] = w[j, i] + 0.5 * dt * (
+                rhs[i, j] = w[j, i] + dt_half * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
