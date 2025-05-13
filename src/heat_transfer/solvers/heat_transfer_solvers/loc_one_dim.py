@@ -3,7 +3,7 @@ from numba import njit
 from numpy.typing import NDArray
 
 from src.core.boundary_conditions import BoundaryConditionType
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ImplicitHeatTransferSolver,
 )
@@ -160,7 +160,7 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
             u_pt=self.parameters.u_pt,
         )
         u_dim = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
-        delta = get_mushy_zone_width(
+        delta = get_mushy_zone_temperature_range(
             u=u_dim,
             u_pt=self.parameters.u_pt,
             h_x=dx,
