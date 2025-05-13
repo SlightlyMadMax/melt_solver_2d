@@ -5,6 +5,14 @@ from numba import njit
 
 @njit
 def step_erf(u: float, u_0: float, delta: float) -> float:
+    """
+    Smooth approximation of a step function using the error function, centered at u_0.
+
+    :param u: Input value.
+    :param u_0: Center point of the step.
+    :param delta: Smoothing parameter controlling the transition width.
+    :return: Value of the step function approximation at u.
+    """
     return 0.5 * (1.0 + math.erf((u - u_0) / (2**0.5 * delta)))
 
 
@@ -13,23 +21,30 @@ def delta_gauss(u: float, u_0: float, delta: float) -> float:
     """
     Smoothed approximation of the delta function, centered at u_0.
 
-    :param u: Temperature value.
+    :param u: Input value.
     :param u_0: The point where the delta function is centered.
     :param delta: The smoothing parameter.
     :return: The value of the smoothed delta function at the point u.
     """
-    return math.exp(-(u - u_0) * (u - u_0) / (2.0 * delta * delta)) / (
+    return math.exp(-((u - u_0) ** 2) / (2.0 * delta**2)) / (
         (2.0 * math.pi) ** 0.5 * delta
     )
 
 
 @njit
 def step_hyper(u: float, u_0: float, delta: float) -> float:
-    if abs(u - u_0) < delta:
-        return 0.5 * (
-            1.0 + math.tanh(3.0 * (u - u_0) / (delta**2 - (u - u_0) ** 2) ** 0.5)
-        )
-    elif u < u_0 - delta:
+    """
+    Smooth approximation of a step function using a hyperbolic tangent, with compact support.
+
+    :param u: Input value.
+    :param u_0: Center point of the step.
+    :param delta: Transition width parameter.
+    :return: Value of the step function approximation at u.
+    """
+    diff = u - u_0
+    if abs(diff) < delta:
+        return 0.5 * (1.0 + math.tanh(3.0 * diff / (delta**2 - diff**2) ** 0.5))
+    elif u < u_0:
         return 0.0
     else:
         return 1.0
@@ -37,24 +52,50 @@ def step_hyper(u: float, u_0: float, delta: float) -> float:
 
 @njit
 def delta_hyper(u: float, u_0: float, delta: float) -> float:
-    if abs(u - u_0) < delta:
+    """
+    Derivative of the hyperbolic step function, serving as a delta approximation with compact support.
+
+    :param u: Input value.
+    :param u_0: Center point of the delta function.
+    :param delta: Width parameter of the support.
+    :return: Value of the delta approximation at u.
+    """
+    diff = u - u_0
+    if abs(diff) < delta:
         return (
             1.5
-            * (delta**2 / (delta**2 - (u - u_0) ** 2) ** 1.5)
-            / math.cosh(3.0 * (u - u_0) / (delta**2 - (u - u_0) ** 2) ** 0.5) ** 2
+            * (delta**2 / (delta**2 - diff**2) ** 1.5)
+            / math.cosh(3.0 * diff / (delta**2 - diff**2) ** 0.5) ** 2
         )
     return 0.0
 
 
 @njit
 def delta_parabolic(u: float, u_0: float, delta: float) -> float:
-    if abs(u - u_0) <= delta:
-        return 0.75 * (1.0 - u * u / (delta * delta)) / delta
+    """
+    Parabolic approximation of the delta function with compact support, centered at u_0.
+
+    :param u: Input value.
+    :param u_0: Center point of the delta function.
+    :param delta: Width parameter of the support.
+    :return: Value of the parabolic delta approximation at u.
+    """
+    diff = u - u_0
+    if abs(diff) <= delta:
+        return 0.75 * (1.0 - diff**2 / (delta**2)) / delta
     return 0.0
 
 
 @njit
 def delta_const(u: float, u_pt: float, delta: float) -> float:
+    """
+    Boxcar (constant) approximation of the delta function with compact support, centered at u_0.
+
+    :param u: Input value.
+    :param u_0: Center point of the delta function.
+    :param delta: Width parameter of the support.
+    :return: Value of the boxcar delta approximation at u.
+    """
     if abs(u - u_pt) <= delta:
         return 0.5 / delta
     return 0.0
@@ -85,8 +126,8 @@ def c_smoothed(
 
     return (
         c_solid
-        + (c_liquid - c_solid) * step_hyper(u=u, u_0=u_pt, delta=delta)
-        + l_solid * delta_hyper(u=u, u_0=u_pt, delta=delta)
+        + (c_liquid - c_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
+        + l_solid * delta_gauss(u=u, u_0=u_pt, delta=delta)
     )
 
 
@@ -111,37 +152,4 @@ def k_smoothed(
     if delta <= 0.0:
         return k_solid if u < u_pt else k_liquid
 
-    return k_solid + (k_liquid - k_solid) * step_hyper(u=u, u_0=u_pt, delta=delta)
-
-
-@njit
-def c_simple(
-    u: float,
-    u_pt: float,
-    c_solid: float,
-    c_liquid: float,
-    l_solid: float,
-    delta: float,
-) -> float:
-    if abs(u - u_pt) <= delta:
-        return 0.5 * (c_liquid + c_solid) + l_solid * delta_const(u, delta)
-    elif u < u_pt - delta:
-        return c_solid
-    else:
-        return c_liquid
-
-
-@njit
-def k_simple(
-    u: float,
-    u_pt: float,
-    k_solid: float,
-    k_liquid: float,
-    delta: float,
-) -> float:
-    if abs(u - u_pt) <= delta:
-        return k_liquid + 0.5 * (k_liquid - k_solid) * (u - u_pt - delta) / delta
-    elif u < u_pt - delta:
-        return k_solid
-    else:
-        return k_liquid
+    return k_solid + (k_liquid - k_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
