@@ -7,7 +7,9 @@ from src.convective_operators import EffectiveSFTransportOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+)
 from src.parameters.fluid import FluidParameters
 
 
