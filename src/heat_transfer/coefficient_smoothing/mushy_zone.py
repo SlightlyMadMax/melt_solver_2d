@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit, List, types
+from numba import njit
 
 from src.utils.array_masks import dilate_mask
 from src.utils.numerics import compute_gradient
