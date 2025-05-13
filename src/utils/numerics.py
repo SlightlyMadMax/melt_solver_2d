@@ -25,3 +25,15 @@ def compute_gradient(u, i, j, h_x, h_y):
     du_dx = (u[j, i + 1] - u[j, i - 1]) / (2 * h_x)
     du_dy = (u[j + 1, i] - u[j - 1, i]) / (2 * h_y)
     return (du_dx**2 + du_dy**2) ** 0.5
+
+
+@njit
+def compute_gradient_components(u: np.ndarray, i: int, j: int, hx: float, hy: float):
+    """
+    Compute the x- and y-components of ∇u at node (j,i) via central differences:
+      ∂u/∂x ≈ (u[j, i+1] - u[j, i-1]) / (2*hx)
+      ∂u/∂y ≈ (u[j+1, i] - u[j-1, i]) / (2*hy)
+    """
+    dudx = (u[j, i+1] - u[j, i-1]) / (2.0 * hx)
+    dudy = (u[j+1, i] - u[j-1, i]) / (2.0 * hy)
+    return dudx, dudy
