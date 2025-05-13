@@ -73,28 +73,33 @@ def mark_mushy(u_dim, u_pt, delta, mushy_mask):
     n_y, n_x = u_dim.shape
     for j in range(n_y):
         for i in range(n_x):
-            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta
+            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta[j, i]
 
 
 @njit
-def collect_mushy_cells(mushy_mask):
-    idxs = List.empty_list(types.UniTuple(types.int64, 2))
-    n_y, n_x = mushy_mask.shape
-    for j in range(n_y):
-        for i in range(n_x):
-            if mushy_mask[j, i]:
-                idxs.append((j, i))
-    return idxs
-
-
-@njit
-def get_mushy_cells(
+def get_dilated_mushy_mask(
     u_dim: np.ndarray, u_pt: float, delta: np.ndarray, extend_by: int = 1
 ) -> np.ndarray:
     mushy_mask = np.empty_like(u_dim, dtype=np.uint8)
     mushy_dilated = np.copy(mushy_mask)
-    mushy_mask = mark_mushy(u_dim, u_pt, delta, mushy_mask)
+    mark_mushy(u_dim, u_pt, delta, mushy_mask)
     dilate_mask(mushy_mask, mushy_dilated, extend_by)
-    mushy_cells = collect_mushy_cells(mushy_mask)
 
-    return mushy_cells
+    return mushy_dilated
+
+
+@njit
+def collect_mushy_cells(mushy_mask):
+    n_y, n_x = mushy_mask.shape
+    max_cells = n_y * n_x
+    idx_j = np.empty(max_cells, dtype=np.int64)
+    idx_i = np.empty(max_cells, dtype=np.int64)
+    count = 0
+    for j in range(n_y):
+        for i in range(n_x):
+            if mushy_mask[j, i]:
+                idx_j[count] = j
+                idx_i[count] = i
+                count += 1
+    # return only the filled portion
+    return idx_j[:count], idx_i[:count]

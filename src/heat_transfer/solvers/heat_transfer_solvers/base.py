@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from abc import abstractmethod
@@ -16,6 +18,7 @@ from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
 from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+from src.heat_transfer.coefficient_smoothing.mushy_zone import collect_mushy_cells
 from src.parameters.thermal import ThermalParameters
 
 
@@ -86,7 +89,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid: float,
         k_liquid: float,
         delta: NDArray[np.float64],
-        # delta: float,
+        mushy_mask: NDArray[np.uint8],
     ) -> None:
         n_y, n_x = u_dim.shape
         inv_c_ref = 1.0 / c_ref
@@ -96,28 +99,65 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
             for i in range(n_x):
                 c_eff[j, i] = (
                     c_smoothed(
-                        u=u_dim[j, i],
-                        u_pt=u_pt,
-                        c_solid=c_solid,
-                        c_liquid=c_liquid,
-                        l_solid=l_solid,
-                        # delta=delta,
-                        delta=delta[j, i],
+                        u_dim[j, i], u_pt, c_solid, c_liquid, l_solid, delta[j, i]
                     )
                     * inv_c_ref
                 )
 
                 k_eff[j, i] = (
-                    k_smoothed(
-                        u=u_dim[j, i],
-                        u_pt=u_pt,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        # delta=delta,
-                        delta=delta[j, i],
-                    )
+                    k_smoothed(u_dim[j, i], u_pt, k_solid, k_liquid, delta[j, i])
                     * inv_k_ref
                 )
+
+        js, is_ = collect_mushy_cells(mushy_mask)
+
+        # Offsets for node-centered half-cell quadrature
+        offsets = (-0.25, 0.25)
+
+        for n in range(js.shape[0]):
+            j = js[n]
+            i = is_[n]
+            c_sum = 0.0
+
+            for dy in offsets:
+                for dx in offsets:
+                    # Global sample point inside the node-centered volume
+                    x = i + dx
+                    y = j + dy
+
+                    # Find the lower-left corner of the interpolation cell
+                    i0 = int(math.floor(x))
+                    j0 = int(math.floor(y))
+
+                    # Local coordinates within the interpolation cell
+                    tx = x - i0
+                    ty = y - j0
+
+                    # Bilinear interpolation of temperature at (x, y)
+                    T00 = u_dim[j0, i0]
+                    T10 = u_dim[j0, i0 + 1]
+                    T01 = u_dim[j0 + 1, i0]
+                    T11 = u_dim[j0 + 1, i0 + 1]
+
+                    Ti = (
+                        T00 * (1 - tx) * (1 - ty)
+                        + T10 * tx * (1 - ty)
+                        + T01 * (1 - tx) * ty
+                        + T11 * tx * ty
+                    )
+
+                    # Accumulate apparent heat capacity at sample point
+                    c_sum += c_smoothed(
+                        u=Ti,
+                        u_pt=u_pt,
+                        c_solid=c_solid,
+                        c_liquid=c_liquid,
+                        l_solid=l_solid,
+                        delta=delta[j, i],
+                    )
+
+            # Average over 4 points and normalize
+            c_eff[j, i] = (c_sum * 0.25) * inv_c_ref
 
 
 class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):

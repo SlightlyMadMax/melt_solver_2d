@@ -3,7 +3,10 @@ from numba import njit
 from numpy.typing import NDArray
 
 from src.core.boundary_conditions import BoundaryConditionType
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+    get_dilated_mushy_mask,
+)
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ImplicitHeatTransferSolver,
 )
@@ -394,6 +397,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             h_x=dx,
             h_y=dy,
         )
+        mushy_mask = get_dilated_mushy_mask(
+            u_dim=u_dim, u_pt=self.parameters.u_pt, delta=delta, extend_by=1
+        )
 
         self.compute_effective_properties(
             c_eff=self._c_eff,
@@ -408,6 +414,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             k_solid=self.parameters.thermal_conductivity_solid,
             k_liquid=self.parameters.thermal_conductivity_liquid,
             delta=delta,
+            mushy_mask=mushy_mask,
         )
 
         self._compute_sweep_x_coeff(
