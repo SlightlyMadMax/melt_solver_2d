@@ -191,9 +191,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             u=u * self.parameters.delta_u + self.parameters.u_ref,
             u_pt=self.parameters.u_pt,
         )
-        dim_u = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
+        u_dim = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_width(
-            u=dim_u,
+            u=u_dim,
             u_pt=self.parameters.u_pt,
             h_x=dx,
             h_y=dy,
@@ -202,10 +202,8 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
-            u=self._iter_u,
-            u_ref=self.parameters.u_ref,
+            u_dim=u_dim,
             u_pt=self.parameters.u_pt,
-            delta_u=self.parameters.delta_u,
             c_ref=self.parameters.volumetric_heat_capacity_ref,
             c_solid=self.parameters.volumetric_heat_capacity_solid,
             c_liquid=self.parameters.volumetric_heat_capacity_liquid,

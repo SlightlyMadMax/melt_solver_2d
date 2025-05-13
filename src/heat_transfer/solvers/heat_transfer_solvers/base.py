@@ -76,10 +76,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
     def compute_effective_properties(
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
-        u: NDArray[np.float64],
-        u_ref: float,
+        u_dim: NDArray[np.float64],
         u_pt: float,
-        delta_u: float,
         c_ref: float,
         c_solid: float,
         c_liquid: float,
@@ -90,11 +88,9 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         delta: NDArray[np.float64],
         # delta: float,
     ) -> None:
-        n_y, n_x = u.shape
+        n_y, n_x = u_dim.shape
         inv_c_ref = 1.0 / c_ref
         inv_k_ref = 1.0 / k_ref
-
-        u_dim = u * delta_u + u_ref
 
         for j in range(n_y):
             for i in range(n_x):
