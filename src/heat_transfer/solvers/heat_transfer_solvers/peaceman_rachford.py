@@ -392,10 +392,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         )
         u_dim = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_temperature_range(
-            u=u_dim,
-            u_pt=self.parameters.u_pt,
-            h_x=dx,
-            h_y=dy,
+            u=u_dim, u_pt=self.parameters.u_pt, h_x=dx, h_y=dy
         )
         mushy_mask = get_dilated_mushy_mask(
             u_dim=u_dim, u_pt=self.parameters.u_pt, delta=delta, extend_by=1
