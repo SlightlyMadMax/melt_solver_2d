@@ -31,7 +31,7 @@ def init_temperature_icicle(
     rect_width: float = 0.04,
     rect_height: float = 0.12,
 ) -> np.ndarray:
-    u = np.full((geometry.n_y, geometry.n_x), solid_temp)
+    u = np.full((geometry.n_y, geometry.n_x), liquid_temp)
 
     X, Y = geometry.mesh_grid
 
@@ -55,7 +55,7 @@ def init_temperature_icicle(
     # Combined mask
     mask = rect_mask | semicircle_mask
 
-    u[mask] = liquid_temp
+    u[mask] = solid_temp
 
     u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
 
