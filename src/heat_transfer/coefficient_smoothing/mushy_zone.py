@@ -22,11 +22,11 @@ def get_mushy_zone_temperature_range(
     for i in range(n_x - 1):
         for j in range(n_y - 1):
             if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                delta_u = abs(u[j + 1, i] - u[j, i])
-                max_delta = delta_u if delta_u > max_delta else max_delta
+                du = abs(u[j + 1, i] - u[j, i])
+                max_delta = du if du > max_delta else max_delta
             if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                delta_u = abs(u[j, i + 1] - u[j, i])
-                max_delta = delta_u if delta_u > max_delta else max_delta
+                du = abs(u[j, i + 1] - u[j, i])
+                max_delta = du if du > max_delta else max_delta
 
     delta.fill(max_delta)
 
