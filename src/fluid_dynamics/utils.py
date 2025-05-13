@@ -39,33 +39,24 @@ def calculate_indicator_function(
 
     # --- Variant 2: error‐function form -------------------
     # result[interior] = (
-    #     0.5 * inv_eps2
-    #     * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta_inner)))
+    #     0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta_inner)))
     # )
 
     # --- Variant 3: hyperbolic‐tangent form ---------------
     # result[interior] = (
-    #     0.5 * inv_eps2
+    #     0.5
+    #     * inv_eps2
     #     * (
     #         1.0
     #         - np.tanh(
-    #             3.0 * diff_u
-    #             / np.sqrt(delta_inner*delta_inner - diff_u*diff_u)
+    #             3.0 * diff_u / np.sqrt(delta_inner * delta_inner - diff_u * diff_u)
     #         )
     #     )
     # )
 
     # --- Variant 4: exponential form (two-sided smoothing) ----------------------
     # exp_term = np.exp(-diff_u / delta_inner)
-    # result[interior] = (
-    #     inv_eps2
-    #     * 0.5
-    #     * (
-    #         2.0
-    #         + exp_term
-    #           / (0.5 - exp_term)
-    #     )
-    # )
+    # result[interior] = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
 
 
 @njit
