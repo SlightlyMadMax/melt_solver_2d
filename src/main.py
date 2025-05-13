@@ -22,63 +22,43 @@ from src.fluid_dynamics.init_values import (
 )
 from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.utils import TemperatureUnit
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_width
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+)
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.fluid import FluidParameters
 from src.parameters.thermal import ThermalParameters
+from src.utils.plot_latent_heat import plot_latent_heat_field
 from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
     geometry = DomainGeometry(
-        width=0.4,
-        height=0.2,
+        width=0.0889,
+        height=0.0635,
         end_time=60.0 * 60.0 * 24.0,
-        n_x=801,
-        n_y=401,
-        n_t=60 * 60 * 24 * 400,
+        n_x=151,
+        n_y=111,
+        n_t=60 * 60 * 4800,
     )
 
     print(geometry)
 
-    min_temp = 273.14
-    max_temp = 281.15
-    reference_temperature = 0.5 * (min_temp + max_temp)
-    delta_u = (max_temp - min_temp) / 2
+    min_temp = 301.45
+    max_temp = 311.15
+    # reference_temperature = 0.5 * (min_temp + max_temp)
+    # delta_u = (max_temp - min_temp) / 2
     # reference_temperature = max_temp
 
-    thermal_params = ThermalParameters(
-        u_pt=273.15,
-        u_ref=reference_temperature,
-        delta_u=delta_u,
-        v=0.04,
-        l=geometry.length_scale,
-        specific_heat_liquid=4120.7,
-        specific_heat_solid=2056.8,
-        specific_latent_heat=333000.0,
-        density_liquid=999.84,
-        density_solid=918.9,
-        thermal_conductivity_liquid=0.59,
-        thermal_conductivity_solid=2.21,
+    thermal_params = ThermalParameters.load_from_file(
+        "./parameter_sets/gallium/thermal_params_6_10_5.json"
     )
 
     print(thermal_params)
 
-    fluid_params = FluidParameters(
-        u_pt=273.15,
-        u_ref=reference_temperature,
-        delta_u=delta_u,
-        v=0.04,
-        l=geometry.length_scale,
-        epsilon=0.00075,
-        kinematic_viscosity_coeffs=[
-            0.000108963453,
-            -9.28722151e-07,
-            2.65889022e-09,
-            -2.54761652e-12,
-        ],
-        volumetric_thermal_exp_coeffs=[-0.0114630054, 6.86739177e-05, -9.84848485e-08],
+    fluid_params = FluidParameters.load_from_file(
+        "./parameter_sets/gallium/fluid_params_6_10_5.json"
     )
 
     print(fluid_params)
@@ -91,44 +71,42 @@ if __name__ == "__main__":
     print(f"Ra = {fluid_params.grashof_number * pr:.2f}\n")
 
     u = init_temperature(
-        geom=geometry,
+        geometry=geometry,
         thermal_parameters=thermal_params,
-        shape=DomainShape.RECTANGLE,
-        rect_width=0.04,
-        rect_height=0.12,
-        solid_temp=max_temp,
-        liquid_temp=min_temp,
+        shape=DomainShape.UNIFORM_SOLID,
+        solid_temp=min_temp,
     )
 
-    # u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
+    u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
     # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
 
     dim_u = u * thermal_params.delta_u + thermal_params.u_ref
+    # init_delta = get_mushy_zone_width(
+    #     u=dim_u,
+    #     u_pt=thermal_params.u_pt,
+    # )
     init_delta = np.max(
-        get_mushy_zone_width(
-            u=dim_u,
-            u_pt=thermal_params.u_pt,
-            h_x=geometry.dx,
-            h_y=geometry.dy,
+        get_mushy_zone_temperature_range(
+            u=dim_u, u_pt=thermal_params.u_pt, h_x=geometry.dx, h_y=geometry.dy
         )
     )
     print(
         f"Mushy zone width for the initial temperature distribution: {init_delta:.2f}"
     )
 
-    plot_temperature(
-        u=u * thermal_params.delta_u + thermal_params.u_ref,
-        u_pt=thermal_params.u_pt,
-        geometry=geometry,
-        time=0.0,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-    )
+    # plot_temperature(
+    #     u=u * thermal_params.delta_u + thermal_params.u_ref,
+    #     u_pt=thermal_params.u_pt,
+    #     geometry=geometry,
+    #     time=0.0,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    #     min_temp=min_temp + ABS_ZERO,
+    #     max_temp=max_temp + ABS_ZERO,
+    #     actual_temp_units=TemperatureUnit.KELVIN,
+    #     display_temp_units=TemperatureUnit.CELSIUS,
+    # )
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
@@ -136,33 +114,33 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
         right=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
+            boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (min_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
         bottom=BoundaryCondition(
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (272.15 - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
         left=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
+            boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
             flux_func=lambda t, n: np.zeros(n),
-            # value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            # / thermal_params.delta_u
-            # * np.ones(n),
+            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
+            / thermal_params.delta_u
+            * np.ones(n),
         ),
     )
 
@@ -203,52 +181,65 @@ if __name__ == "__main__":
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
+        bc_order=1,
     )
 
-    navier_solver = IterativeNavierStokesSolver(
-        geometry=geometry,
-        parameters=fluid_params,
-        sf_bcs=sf_bcs,
-        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.UPWIND,
-        stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
-        max_iters=1,
-        urf=1.0,
-    )
-
-    # navier_solver = NonIterativeNavierStokersSolver(
+    # navier_solver = IterativeNavierStokesSolver(
     #     geometry=geometry,
     #     parameters=fluid_params,
     #     sf_bcs=sf_bcs,
-    #     sf_max_iters=geometry.n_x * geometry.n_y,
-    #     sf_tolerance=1e-6,
+    #     vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
+    #     convective_term_form=ConvectiveTermForm.UPWIND,
+    #     stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
+    #     max_iters=1,
+    #     tolerance=1e-10,
+    #     urf=1.0,
     # )
 
-    u_temp = np.copy(u)
-    sf_temp, w_temp = np.copy(sf), np.copy(w)
+    navier_solver = NonIterativeNavierStokersSolver(
+        geometry=geometry,
+        parameters=fluid_params,
+        sf_bcs=sf_bcs,
+        sf_max_iters=geometry.n_y * geometry.n_x,
+        sf_tolerance=1e-6,
+    )
+    u_temp, sf_temp = np.copy(u), np.copy(sf)
 
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
 
         u_temp = heat_transfer_solver.solve(u=u, sf=sf, time=t)
-        sf_temp, w_temp = navier_solver.solve(w=w, sf=sf, u=u_temp, time=t)
-
+        sf_temp, _ = navier_solver.solve(w=w, sf=sf, u=u_temp, time=t)
         u = heat_transfer_solver.solve(u=u, sf=sf_temp, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, time=t)
 
         if n % 2000 == 0:
             # np.savez_compressed(f"../data/experiment2/u_{n}.npz", u=u)
-            d = get_mushy_zone_width(
-                u * thermal_params.delta_u + thermal_params.u_ref,
-                u_pt=thermal_params.u_pt,
-            )
-            if d <= 0.0:
-                break
+            #
+            # d = get_mushy_zone_width(
+            #     u * thermal_params.delta_u + thermal_params.u_ref,
+            #     u_pt=thermal_params.u_pt,
+            #     h_x=geometry.dx,
+            #     h_y=geometry.dy,
+            #     bruh=True,
+            # )
+            # plot_latent_heat_field(
+            #     u=u * thermal_params.delta_u + thermal_params.u_ref,
+            #     u_pt=thermal_params.u_pt,
+            #     delta=d,
+            #     l_solid=thermal_params.volumetric_latent_heat,
+            #     geometry=geometry,
+            # )
+            t_min = t / 60
+            if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
+                np.savez_compressed(f"../data/gallium/bruh/u_{n}.npz", u=u)
+                print("bruh")
+
             # plot_temperature(
             #     u=u * thermal_params.delta_u + thermal_params.u_ref,
             #     u_pt=thermal_params.u_pt,
-            #     geom=geometry,
+            #     geometry=geometry,
             #     time=t,
             #     graph_id=n,
             #     plot_boundary=True,
@@ -292,4 +283,4 @@ if __name__ == "__main__":
             print()
 
     # print("Creating animation...")
-    # create_gif_from_images(output_filename="hyper_coeff.gif", duration=300)
+    # create_gif_from_images(output_filename="exp5", duration=200)

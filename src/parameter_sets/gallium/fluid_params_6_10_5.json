@@ -4,7 +4,7 @@
     "delta_u": 8.22,
     "v": 0.045,
     "l": 0.0635,
-    "epsilon": 0.0003,
+    "epsilon": 0.00008,
     "kinematic_viscosity_coeffs": [
         2.97e-07
     ],

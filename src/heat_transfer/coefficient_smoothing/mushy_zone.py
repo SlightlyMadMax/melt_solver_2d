@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 
 from src.utils.array_masks import dilate_mask
-from src.utils.numerics import compute_gradient
+from src.utils.numerics import compute_gradient_components
 
 
 @njit
@@ -11,59 +11,50 @@ def get_mushy_zone_temperature_range(
     u_pt: float,
     h_x: float,
     h_y: float,
-    alpha: float = 2.0,
     min_delta: float = 1e-3,
-    max_radius: int = 3,  # grid points
 ) -> np.ndarray:
     n_y, n_x = u.shape
     delta = np.full_like(u, min_delta, dtype=np.float64)
 
-    max_delta = 0.0
-    for i in range(n_x - 1):
-        for j in range(n_y - 1):
-            if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                du = abs(u[j + 1, i] - u[j, i])
-                max_delta = du if du > max_delta else max_delta
-            if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                du = abs(u[j, i + 1] - u[j, i])
-                max_delta = du if du > max_delta else max_delta
+    # max_delta = 0.0
+    # for i in range(n_x - 1):
+    #     for j in range(n_y - 1):
+    #         if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
+    #             du = abs(u[j + 1, i] - u[j, i])
+    #             max_delta = du if du > max_delta else max_delta
+    #         if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
+    #             du = abs(u[j, i + 1] - u[j, i])
+    #             max_delta = du if du > max_delta else max_delta
+    #
+    # delta.fill(max_delta)
 
-    delta.fill(max_delta)
+    for j in range(1, n_y - 1):
+        for i in range(1, n_x - 1):
+            u1 = u[j, i]
+            local_max_jump = 0.0
+            for dj, di in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                u2 = u[j + dj, i + di]
+                if (u1 - u_pt) * (u2 - u_pt) <= 0.0:
+                    jump = abs(u2 - u1)
+                    if jump > local_max_jump:
+                        local_max_jump = jump
 
-    # # Detect interface points
-    # h_min = min(h_x, h_y)
-    # boundary_points = []
-    # for j in range(1, n_y - 1):
-    #     for i in range(1, n_x - 1):
-    #         for dj, di in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-    #             u1 = u[j, i]
-    #             u2 = u[j + dj, i + di]
-    #             if (u1 - u_pt) * (u2 - u_pt) <= 0.0:
-    #                 grad = compute_gradient(u, i, j, h_x, h_y)
-    #                 delta_val = max(min_delta, alpha * h_min * grad)
-    #                 boundary_points.append((j, i, delta_val))
-    #                 delta_T[j, i] = delta_val
-    #                 break
-    #
-    # # Propagate locally within limited radius
-    # for j in range(1, n_y - 1):
-    #     for i in range(1, n_x - 1):
-    #         if delta_T[j, i] != min_delta:
-    #             continue  # Already a boundary point
-    #
-    #         min_dist2 = 1e10
-    #         closest_delta = min_delta
-    #         for jb, ib, delta_b in boundary_points:
-    #             dj = jb - j
-    #             di = ib - i
-    #             if abs(dj) > max_radius or abs(di) > max_radius:
-    #                 continue  # Outside search window
-    #             dist2 = dj * dj + di * di
-    #             if dist2 < min_dist2:
-    #                 min_dist2 = dist2
-    #                 closest_delta = delta_b
-    #
-    #         delta_T[j, i] = closest_delta
+            if local_max_jump > 0.0:
+                delta[j, i] = max(min_delta, local_max_jump)
+
+                gx, gy = compute_gradient_components(u, i, j, h_x, h_y)
+
+                sx = 1 if gx > 0 else (-1 if gx < 0 else 0)
+                sy = 1 if gy > 0 else (-1 if gy < 0 else 0)
+
+                for k in range(1, 11):
+                    for dj, di in [(sy * k, sx * k), (-sy * k, -sx * k)]:
+                        jj = j + dj
+                        ii = i + di
+                        if 0 <= jj < n_y and 0 <= ii < n_x:
+                            delta[jj, ii] = max(
+                                delta[jj, ii], max(min_delta, local_max_jump)
+                            )
 
     return delta
 
