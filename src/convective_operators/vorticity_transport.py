@@ -132,8 +132,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         v_x[:] = 0.0
         v_y[:] = 0.0
 
-        v_x[1:-1, 1:-1] = inv_2dx * (sf[2:, 1:-1] - sf[:-2, 1:-1])
-        v_y[1:-1, 1:-1] = -inv_2dy * (sf[1:-1, 2:] - sf[1:-1, :-2])
+        v_x[1:-1, 1:-1] = inv_2dy * (sf[2:, 1:-1] - sf[:-2, 1:-1])
+        v_y[1:-1, 1:-1] = -inv_2dx * (sf[1:-1, 2:] - sf[1:-1, :-2])
 
     @staticmethod
     def _compute_upwind_components(
