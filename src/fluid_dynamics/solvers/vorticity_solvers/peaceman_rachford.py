@@ -10,7 +10,9 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+)
 
 
 @register_solver(VorticitySolverName.PEACEMAN_RACHFORD)
