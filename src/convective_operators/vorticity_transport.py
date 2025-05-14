@@ -37,13 +37,15 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         sf = parsed.sf
         u = parsed.u
         u_pt = parsed.u_pt
+        dx = self.geometry.dx / self.geometry.length_scale
+        dy = self.geometry.dy / self.geometry.length_scale
 
         self.compute_velocity_from_sf(
             sf=sf,
             v_x=self._v_x,
             v_y=self._v_y,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=dx,
+            dy=dy,
         )
         if self.form == ConvectiveTermForm.UPWIND:
             self._compute_upwind_components(
@@ -51,8 +53,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
                 v_y=self._v_y,
                 result_x=conv_x,
                 result_y=conv_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
+                dx=dx,
+                dy=dy,
             )
         elif self.form == ConvectiveTermForm.DIVERGENT_CENTRAL:
             self._compute_div_components(
@@ -60,8 +62,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
                 v_y=self._v_y,
                 result_x=conv_x,
                 result_y=conv_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
+                dx=dx,
+                dy=dy,
             )
         elif self.form == ConvectiveTermForm.NON_DIVERGENT_CENTRAL:
             self._compute_non_div_components(
@@ -69,8 +71,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
                 v_y=self._v_y,
                 result_x=conv_x,
                 result_y=conv_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
+                dx=dx,
+                dy=dy,
             )
         elif self.form == ConvectiveTermForm.SYMMETRIC:
             self._compute_div_components(
@@ -78,8 +80,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
                 v_y=self._v_y,
                 result_x=conv_x,
                 result_y=conv_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
+                dx=dx,
+                dy=dy,
             )
             temp_x, temp_y = np.copy(conv_x), np.copy(conv_y)
             self._compute_non_div_components(
@@ -87,8 +89,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
                 v_y=self._v_y,
                 result_x=conv_x,
                 result_y=conv_y,
-                dx=self.geometry.dx / self.geometry.length_scale,
-                dy=self.geometry.dy / self.geometry.length_scale,
+                dx=dx,
+                dy=dy,
             )
             conv_x = 0.5 * (temp_x + conv_x)
             conv_y = 0.5 * (temp_y + conv_y)
