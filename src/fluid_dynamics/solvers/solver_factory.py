@@ -315,8 +315,10 @@ class NonIterativeNavierStokersSolver:
         omega = self._vorticity
         tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
         inv_reynolds = 1.0 / self.parameters.reynolds_number
-        inv_dx2 = 1.0 / self.geometry.dx**2
-        inv_dy2 = 1.0 / self.geometry.dy**2
+        dx = self.geometry.dx / self.geometry.length_scale
+        dy = self.geometry.dy / self.geometry.length_scale
+        inv_dx2 = 1.0 / dx**2
+        inv_dy2 = 1.0 / dy**2
         dsf = sf_new - sf_old
 
         # Define slices for interior points (1:-1, 1:-1)
@@ -389,8 +391,10 @@ def construct_matrix_for_cg(
     conv_y: np.ndarray,
 ):
     n_y, n_x = geometry.n_y, geometry.n_x
-    dx2 = geometry.dx**2
-    dy2 = geometry.dy**2
+    dx = geometry.dx / geometry.length_scale
+    dy = geometry.dy / geometry.length_scale
+    dx2 = dx**2
+    dy2 = dy**2
 
     inner_n_y, inner_n_x = n_y - 2, n_x - 2
     size = inner_n_x * inner_n_y
