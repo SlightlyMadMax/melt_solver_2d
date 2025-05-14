@@ -16,8 +16,8 @@ from src.fluid_dynamics.solvers.stream_function_solvers.matrix_sweep import (
 
 def test_matrix_sweep_poisson_solver():
     geometry = DomainGeometry(
-        width=1.0,
-        height=1.0,
+        width=2.0,
+        height=0.5,
         end_time=100,
         n_x=100,
         n_y=100,
@@ -32,7 +32,7 @@ def test_matrix_sweep_poisson_solver():
     analytical_solution = -0.5 * (X**2 + Y**2)
 
     # Right-hand side (-2 everywhere in the domain)
-    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64)
+    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64) * geometry.length_scale**2
 
     solver = MatrixSweepPoissonSolver(
         geometry=geometry,
