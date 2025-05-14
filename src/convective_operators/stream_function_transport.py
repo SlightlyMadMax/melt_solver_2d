@@ -33,21 +33,19 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         w = parsed.w
         u = parsed.u
         u_pt = parsed.u_pt
+        dx = self.geometry.dx / self.geometry.length_scale
+        dy = self.geometry.dy / self.geometry.length_scale
 
         self._compute_vorticity_first_derivatives(
-            w=w,
-            dw_dx=self._dw_dx,
-            dw_dy=self._dw_dy,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            w=w, dw_dx=self._dw_dx, dw_dy=self._dw_dy, dx=dx, dy=dy
         )
         self._compute_convective_operator(
             dw_dx=self._dw_dx,
             dw_dy=self._dw_dy,
             result_x=conv_x,
             result_y=conv_y,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=dx,
+            dy=dy,
         )
 
         if u is not None and u_pt is not None:
