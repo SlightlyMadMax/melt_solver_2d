@@ -393,13 +393,13 @@ def construct_matrix_for_cg(
     n_y, n_x = geometry.n_y, geometry.n_x
     dx = geometry.dx / geometry.length_scale
     dy = geometry.dy / geometry.length_scale
+    tau = geometry.dt * parameters.v / geometry.length_scale
     dx2 = dx**2
     dy2 = dy**2
 
     inner_n_y, inner_n_x = n_y - 2, n_x - 2
     size = inner_n_x * inner_n_y
 
-    tau = geometry.dt * parameters.v / geometry.length_scale
     c = tau * (c_ind + rho / parameters.reynolds_number)
     c_inner_flat = c[1:-1, 1:-1].flatten()
 
