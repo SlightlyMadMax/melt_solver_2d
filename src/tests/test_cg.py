@@ -266,10 +266,18 @@ def test_cg_elliptic_solver_2():
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     axes[0].imshow(
-        analytical_solution, extent=[0, geometry.width, 0, geometry.height], origin="lower", cmap="viridis"
+        analytical_solution,
+        extent=[0, geometry.width, 0, geometry.height],
+        origin="lower",
+        cmap="viridis",
     )
     axes[0].set_title("Analytical Solution")
-    axes[1].imshow(result, extent=[0, geometry.width, 0, geometry.height], origin="lower", cmap="viridis")
+    axes[1].imshow(
+        result,
+        extent=[0, geometry.width, 0, geometry.height],
+        origin="lower",
+        cmap="viridis",
+    )
     axes[1].set_title(f"Numerical Solution")
     axes[2].imshow(
         result - analytical_solution,
