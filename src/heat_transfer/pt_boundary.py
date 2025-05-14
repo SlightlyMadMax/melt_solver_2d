@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import math
@@ -7,7 +7,9 @@ from numpy.typing import NDArray
 from src.core.geometry import DomainGeometry
 
 
-def init_crevasse_boundary(geom: DomainGeometry, water_th: float, crev_depth: float):
+def init_crevasse_boundary(
+    geom: DomainGeometry, water_th: float, crev_depth: float
+) -> np.ndarray:
     """
     Initialize the position of the boundary interface for an ice crevasse filled with water.
 
@@ -58,3 +60,23 @@ def get_phase_trans_boundary(
                 y.append(j * dy)
 
     return x, y
+
+
+def get_pt_quadratic(
+    u0: float, u1: float, u2: float, u_pt: float, y0: float, y1: float, y2: float
+) -> Optional[float]:
+    if np.min([u0, u1, u2]) <= u_pt <= np.max([u0, u1, u2]):
+        # Solve for a, b, c in u = a*y^2 + b*y + c
+        A = np.array([[y0**2, y0, 1], [y1**2, y1, 1], [y2**2, y2, 1]])
+        u_vals = np.array([u0, u1, u2])
+        try:
+            a, b, c = np.linalg.solve(A, u_vals)
+            # Solve a*y^2 + b*y + c = u_ref => a*y^2 + b*y + (c - u_ref) = 0
+            coeffs = [a, b, c - u_pt]
+            roots = np.roots(coeffs)
+            for root in roots:
+                if np.isreal(root) and y0 <= root <= y2:
+                    return float(root)
+        except np.linalg.LinAlgError:
+            print(f"Couldn't find the interface point between {u0, u1, u2}.")
+    return None

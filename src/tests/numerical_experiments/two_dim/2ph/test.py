@@ -14,6 +14,7 @@ from src.core.boundary_conditions import (
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.init_values import init_temperature_with_interface
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
+from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.thermal import ThermalParameters
@@ -175,20 +176,22 @@ for i in range(1, geometry.n_t + 1):
             directory="./results/",
         )
 
-dim_u = u * thermal_params.delta_u - thermal_params.u_pt_ref
+u_dim = u * thermal_params.delta_u - thermal_params.u_pt_ref
 center_i_index = int(geometry.n_x / 2)
-for j in range(1, geometry.n_y - 1):
-    if (dim_u[j, center_i_index]) * (dim_u[j + 1, center_i_index]) < 0.0:
-        y_0 = abs(
-            (
-                u[j, center_i_index] * (j + 1) * geometry.dy
-                - u[j + 1, center_i_index] * j * geometry.dy
-            )
-            / (u[j, center_i_index] - u[j + 1, center_i_index])
-        )
-        print(f"Calculated final location of the boundary: {y_0}")
+for j in range(geometry.n_y - 2):
+    u0, u1, u2 = (
+        u_dim[j, center_i_index],
+        u_dim[j + 1, center_i_index],
+        u_dim[j + 2, center_i_index],
+    )
+    y0 = j * geometry.dy
+    y1 = (j + 1) * geometry.dy
+    y2 = (j + 2) * geometry.dy
+    pt = get_pt_quadratic(u0, u1, u2, thermal_params.u_pt_ref, y0, y1, y2)
+    if pt is not None:
+        print(f"Calculated final location of the boundary: {pt}")
         print(
-            f"Absolute error: {abs(y_0 - 1 + b_lim)}, relative: {round(abs(y_0 - 1 + b_lim) * 100 / b_lim, 2)}%"
+            f"Absolute error: {abs(pt - 1 + b_lim)}, relative: {round(abs(pt - 1 + b_lim) * 100 / b_lim, 2)}%"
         )
         break
 

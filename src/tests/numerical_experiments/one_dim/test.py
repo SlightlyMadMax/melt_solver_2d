@@ -12,6 +12,7 @@ from src.core.boundary_conditions import (
     BoundaryCondition,
 )
 from src.core.geometry import DomainGeometry
+from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.thermal import ThermalParameters
 from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
@@ -47,7 +48,7 @@ geometry = DomainGeometry(
     end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
     n_x=21,
     n_y=201,
-    n_t=100 * 240,
+    n_t=24 * 100 * 10,
 )
 
 print(geometry)
@@ -103,15 +104,15 @@ bcs = BoundaryConditions(
 )
 
 heat_transfer_solver = HeatTransferSolver(
-    solver_name=HeatTransferSolverName.DOUGLAS_RACHFORD,
+    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     geometry=geometry,
     parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
-    max_iters=1000,
+    max_iters=1,
     tolerance=1e-6,
-    urf=0.8,
+    urf=1.0,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
@@ -132,28 +133,12 @@ for n in range(1, geometry.n_t + 1):
         for j in range(geometry.n_y - 2):
             u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
             u_ref = thermal_params.u_pt_ref
-
-            if np.min([u0, u1, u2]) <= u_ref <= np.max([u0, u1, u2]):
-                # Fit a quadratic: u(y) = a*y^2 + b*y + c
-                y0 = j * geometry.dy
-                y1 = (j + 1) * geometry.dy
-                y2 = (j + 2) * geometry.dy
-
-                # Solve for a, b, c in u = a*y^2 + b*y + c
-                A = np.array([[y0**2, y0, 1], [y1**2, y1, 1], [y2**2, y2, 1]])
-                u_vals = np.array([u0, u1, u2])
-                try:
-                    a, b, c = np.linalg.solve(A, u_vals)
-                    # Solve a*y^2 + b*y + c = u_ref => a*y^2 + b*y + (c - u_ref) = 0
-                    coeffs = [a, b, c - u_ref]
-                    roots = np.roots(coeffs)
-                    for root in roots:
-                        if np.isreal(root) and y0 <= root <= y2:
-                            boundary.append(float(root))
-                            break
-                except np.linalg.LinAlgError:
-                    print(f"Couldn't find the interface point between {u0, u1, u2}.")
-                    pass  # Skip degenerate system
+            y0 = j * geometry.dy
+            y1 = (j + 1) * geometry.dy
+            y2 = (j + 2) * geometry.dy
+            pt = get_pt_quadratic(u0, u1, u2, u_ref, y0, y1, y2)
+            if pt is not None:
+                boundary.append(pt)
                 break
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
