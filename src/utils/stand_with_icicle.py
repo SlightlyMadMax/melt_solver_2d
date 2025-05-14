@@ -42,15 +42,15 @@ def init_temperature_icicle(
     half_height = rect_height / 2
 
     # Rectangle part
-    rect_mask = (np.abs(X - center_x) < half_width) & (
-        np.abs(Y - center_y) < half_height
+    rect_mask = (np.abs(X - center_x) <= half_width) & (
+        np.abs(Y - center_y) <= half_height
     )
 
     # Semicircle part (top cap)
     semicircle_center_y = center_y + half_height
     dx = X - center_x
     dy = Y - semicircle_center_y
-    semicircle_mask = dx**2 + dy**2 < radius**2
+    semicircle_mask = dx**2 + dy**2 <= radius**2
 
     # Combined mask
     mask = rect_mask | semicircle_mask
