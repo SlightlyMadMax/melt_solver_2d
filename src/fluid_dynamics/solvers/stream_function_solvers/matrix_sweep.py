@@ -75,7 +75,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
         beta_m_list = [beta_m]
 
         for m in range(1, n_x - 1):
-            f_m = f[1:-1, m] * self.geometry.dx**2
+            f_m = f[1:-1, m] * (self.geometry.dx / self.geometry.length_scale) ** 2
             f_m[0] -= mu * top_value[m]
             f_m[-1] -= mu * bottom_value[m]
 
