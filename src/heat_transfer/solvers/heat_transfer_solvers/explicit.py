@@ -3,7 +3,9 @@ from numba import njit
 from numpy.typing import NDArray
 
 from src.core.boundary_conditions import BoundaryConditionType
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+)
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ExplicitHeatTransferSolver,
 )
@@ -85,6 +87,8 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
     def solve_linear(
         self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
     ) -> None:
+        dx = self.geometry.dx
+        dy = self.geometry.dy
         self.convective_operator(
             conv_x=self._conv_x,
             conv_y=self._conv_y,
@@ -97,10 +101,7 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             self.parameters.delta
             if self.fixed_delta
             else get_mushy_zone_temperature_range(
-                u=dim_u,
-                u_pt=self.parameters.u_pt,
-                h_x=self.geometry.dx,
-                h_y=self.geometry.dy,
+                u=dim_u, u_pt=self.parameters.u_pt, h_x=dx, h_y=dy
             )
         )
         self.compute_effective_properties(
@@ -118,6 +119,8 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             k_solid=self.parameters.thermal_conductivity_solid,
             k_liquid=self.parameters.thermal_conductivity_liquid,
             delta=delta,
+            h_x=dx,
+            h_y=dy,
         )
 
         self._compute_temperature(
@@ -125,8 +128,8 @@ class ExplicitHeatSolver(ExplicitHeatTransferSolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             result=self._new_u,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=dx / self.geometry.length_scale,
+            dy=dy / self.geometry.length_scale,
             dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
