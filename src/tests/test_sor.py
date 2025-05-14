@@ -17,13 +17,13 @@ def test_sor_poisson_solver():
         width=1.0,
         height=1.0,
         end_time=100,
-        n_x=300,
-        n_y=300,
+        n_x=100,
+        n_y=100,
         n_t=100,
     )
 
-    x = np.linspace(0, 1, geometry.n_x, dtype=np.float64)
-    y = np.linspace(0, 1, geometry.n_y, dtype=np.float64)
+    x = np.linspace(0, geometry.width, geometry.n_x, dtype=np.float64)
+    y = np.linspace(0, geometry.height, geometry.n_y, dtype=np.float64)
     X, Y = np.meshgrid(x, y)
 
     # Exact solution
@@ -43,12 +43,12 @@ def test_sor_poisson_solver():
             right=BoundaryCondition(
                 boundary_type=BoundaryConditionType.DIRICHLET,
                 n=geometry.n_y,
-                value_func=lambda t, n: -0.5 * (1 + y**2),
+                value_func=lambda t, n: -0.5 * (geometry.width**2 + y**2),
             ),
             bottom=BoundaryCondition(
                 boundary_type=BoundaryConditionType.DIRICHLET,
                 n=geometry.n_x,
-                value_func=lambda t, n: -0.5 * (x**2 + 1),
+                value_func=lambda t, n: -0.5 * (x**2 + geometry.height**2),
             ),
             left=BoundaryCondition(
                 boundary_type=BoundaryConditionType.DIRICHLET,
@@ -70,14 +70,22 @@ def test_sor_poisson_solver():
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     axes[0].imshow(
-        analytical_solution, extent=[0, 1, 0, 1], origin="lower", cmap="viridis"
+        analytical_solution,
+        extent=[0, geometry.width, 0, geometry.height],
+        origin="lower",
+        cmap="viridis",
     )
     axes[0].set_title("Analytical Solution")
-    axes[1].imshow(result, extent=[0, 1, 0, 1], origin="lower", cmap="viridis")
+    axes[1].imshow(
+        result,
+        extent=[0, geometry.width, 0, geometry.height],
+        origin="lower",
+        cmap="viridis",
+    )
     axes[1].set_title(f"Numerical Solution")
     axes[2].imshow(
         result - analytical_solution,
-        extent=[0, 1, 0, 1],
+        extent=[0, geometry.width, 0, geometry.height],
         origin="lower",
         cmap="coolwarm",
     )
