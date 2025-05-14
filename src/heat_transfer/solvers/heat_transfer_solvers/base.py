@@ -90,6 +90,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_liquid: float,
         delta: NDArray[np.float64],
         mushy_mask: NDArray[np.uint8],
+        h_x: float,
+        h_y: float,
     ) -> None:
         n_y, n_x = u_dim.shape
         inv_c_ref = 1.0 / c_ref
@@ -111,29 +113,28 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
 
         js, is_ = collect_mushy_cells(mushy_mask)
 
-        # Offsets for node-centered half-cell quadrature
-        offsets = (-0.25, 0.25)
+        oxs = (-0.25 * h_x, +0.25 * h_x)
+        oys = (-0.25 * h_y, +0.25 * h_y)
 
         for n in range(js.shape[0]):
             j = js[n]
             i = is_[n]
             c_sum = 0.0
 
-            for dy in offsets:
-                for dx in offsets:
-                    # Global sample point inside the node-centered volume
-                    x = i + dx
-                    y = j + dy
+            x_center = i * h_x
+            y_center = j * h_y
 
-                    # Find the lower-left corner of the interpolation cell
-                    i0 = int(math.floor(x))
-                    j0 = int(math.floor(y))
+            for oy in oys:
+                for ox in oxs:
+                    x_phys = x_center + ox
+                    y_phys = y_center + oy
 
-                    # Local coordinates within the interpolation cell
-                    tx = x - i0
-                    ty = y - j0
+                    i0 = i if ox >= 0.0 else i - 1
+                    j0 = j if oy >= 0.0 else j - 1
 
-                    # Bilinear interpolation of temperature at (x, y)
+                    tx = (x_phys - i0 * h_x) / h_x
+                    ty = (y_phys - j0 * h_y) / h_y
+
                     T00 = u_dim[j0, i0]
                     T10 = u_dim[j0, i0 + 1]
                     T01 = u_dim[j0 + 1, i0]
@@ -146,7 +147,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         + T11 * tx * ty
                     )
 
-                    # Accumulate apparent heat capacity at sample point
+                    # accumulate apparent capacity
                     c_sum += c_smoothed(
                         u=Ti,
                         u_pt=u_pt,
@@ -156,7 +157,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         delta=delta[j, i],
                     )
 
-            # Average over 4 points and normalize
+            # Average over 4 points
             c_eff[j, i] = (c_sum * 0.25) * inv_c_ref
 
 

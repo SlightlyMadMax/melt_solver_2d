@@ -186,6 +186,8 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
             k_liquid=self.parameters.thermal_conductivity_liquid,
             delta=delta,
             mushy_mask=mushy_mask,
+            h_y=dy,
+            h_x=dx,
         )
         self._compute_sweep_x_coeff(
             u=u,
