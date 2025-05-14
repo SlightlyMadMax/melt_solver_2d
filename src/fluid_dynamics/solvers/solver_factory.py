@@ -313,10 +313,10 @@ class NonIterativeNavierStokersSolver:
         conv_x_arr = self._conv_x
         conv_y_arr = self._conv_y
         omega = self._vorticity
-        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
         inv_reynolds = 1.0 / self.parameters.reynolds_number
         dx = self.geometry.dx / self.geometry.length_scale
         dy = self.geometry.dy / self.geometry.length_scale
+        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
         inv_dx2 = 1.0 / dx**2
         inv_dy2 = 1.0 / dy**2
         dsf = sf_new - sf_old
