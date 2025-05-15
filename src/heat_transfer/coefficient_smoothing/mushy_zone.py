@@ -12,6 +12,7 @@ def get_mushy_zone_temperature_range(
     h_x: float,
     h_y: float,
     min_delta: float = 1e-3,
+    width: int = 3,
 ) -> np.ndarray:
     n_y, n_x = u.shape
     delta = np.full_like(u, min_delta, dtype=np.float64)
@@ -47,7 +48,7 @@ def get_mushy_zone_temperature_range(
                 sx = 1 if gx > 0 else (-1 if gx < 0 else 0)
                 sy = 1 if gy > 0 else (-1 if gy < 0 else 0)
 
-                for k in range(1, 11):
+                for k in range(1, width + 1):
                     for dj, di in [(sy * k, sx * k), (-sy * k, -sx * k)]:
                         jj = j + dj
                         ii = i + di
