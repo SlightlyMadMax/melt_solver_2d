@@ -29,7 +29,7 @@ def calculate_indicator_function(
     interior = (slice(1, -1), slice(1, -1))
 
     diff_u = u[interior] - u_pt
-    delta_inner = delta[interior]
+    # delta_inner = delta[interior]
 
     # --- Variant 1: sharp step ----------------------
     mask = (diff_u < 0.0)
