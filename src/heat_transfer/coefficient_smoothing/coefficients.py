@@ -6,6 +6,8 @@ from numba import njit
 class StepScheme(Enum):
     ERF = "erf"
     HYPER = "hyper"
+    LINEAR = "linear"
+    CONST = "const"
 
 
 class DeltaScheme(Enum):
@@ -26,6 +28,26 @@ def step_hyper(u, u0, delta):
     if abs(diff) < delta:
         return 0.5 * (1.0 + math.tanh(3.0 * diff / math.sqrt(delta**2 - diff**2)))
     return 1.0 if u > u0 else 0.0
+
+
+@njit
+def step_lin(u, u0, delta):
+    diff = u - u0
+    if diff >= delta:
+        return 1.0
+    elif diff <= -delta:
+        return 0.0
+    return (diff + delta) / (2.0 * delta)
+
+
+@njit
+def step_lin(u, u0, delta):
+    diff = u - u0
+    if diff >= delta:
+        return 1.0
+    elif diff <= -delta:
+        return 0.0
+    return 0.5
 
 
 @njit
@@ -59,12 +81,12 @@ def delta_box(u, u0, delta):
 
 
 def get_step_fn(scheme: StepScheme):
-    if scheme is StepScheme.ERF:
-        return step_erf
-    elif scheme is StepScheme.HYPER:
-        return step_hyper
-    else:
-        raise ValueError("Unknown step scheme")
+    return {
+        StepScheme.ERF: step_erf,
+        StepScheme.HYPER: step_hyper,
+        StepScheme.LINEAR: step_lin,
+        StepScheme.CONST: step_const,
+    }[scheme]
 
 
 def get_delta_fn(scheme: DeltaScheme):
