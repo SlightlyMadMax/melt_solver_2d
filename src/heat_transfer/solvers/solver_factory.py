@@ -7,6 +7,7 @@ from src.convective_operators import (
 )
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
+from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.solvers.heat_transfer_solvers import *
 from src.parameters.thermal import ThermalParameters
 
@@ -24,6 +25,8 @@ class HeatTransferSolver:
         tolerance: float = 1e-6,
         urf: float = 0.5,
         bc_order: int = 1,
+        step_scheme: StepScheme = StepScheme.ERF,
+        delta_scheme: DeltaScheme = DeltaScheme.GAUSS,
     ):
         if bc_order not in (1, 2):
             raise NotImplementedError(
@@ -46,6 +49,8 @@ class HeatTransferSolver:
             tolerance=tolerance,
             urf=urf,
             bc_order=bc_order,
+            step_scheme=step_scheme,
+            delta_scheme=delta_scheme,
         )
 
     def solve(
