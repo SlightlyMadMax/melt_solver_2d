@@ -96,13 +96,13 @@ class ThermalParameters(BaseModel, FileIOMixin):
         """
         Calculate the smoothed volumetric heat capacity at the reference temperature.
         """
-        return c_smoothed(
-            u=self.u_ref,
-            u_pt=self.u_pt,
-            c_solid=self.volumetric_heat_capacity_solid,
-            c_liquid=self.volumetric_heat_capacity_liquid,
-            l_solid=self.volumetric_latent_heat,
-            delta=self.delta_u,
+        if self.u_ref < self.u_pt:
+            return self.volumetric_heat_capacity_solid
+        elif self.u_ref > self.u_pt:
+            return self.volumetric_heat_capacity_liquid
+
+        return 0.5 * (
+            self.volumetric_heat_capacity_solid + self.volumetric_heat_capacity_liquid
         )
 
     @property
@@ -110,12 +110,13 @@ class ThermalParameters(BaseModel, FileIOMixin):
         """
         Calculate the smoothed thermal conductivity at the reference temperature.
         """
-        return k_smoothed(
-            u=self.u_ref,
-            u_pt=self.u_pt,
-            k_solid=self.thermal_conductivity_solid,
-            k_liquid=self.thermal_conductivity_liquid,
-            delta=self.delta_u,
+        if self.u_ref < self.u_pt:
+            return self.thermal_conductivity_solid
+        elif self.u_ref > self.u_pt:
+            return self.thermal_conductivity_liquid
+
+        return 0.5 * (
+            self.thermal_conductivity_solid + self.thermal_conductivity_liquid
         )
 
     @property
@@ -137,9 +138,7 @@ class ThermalParameters(BaseModel, FileIOMixin):
         Calculate the Stefan number for liquid phase.
         Formula: Ste = specific_heat_liquid * temperature_difference / specific_latent_heat
         """
-        return (
-            self.specific_heat_liquid * self.delta_u / self.specific_latent_heat
-        )
+        return self.specific_heat_liquid * self.delta_u / self.specific_latent_heat
 
     def __str__(self):
         s = (

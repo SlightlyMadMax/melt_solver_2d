@@ -1,104 +1,79 @@
 import math
-
+from enum import Enum
 from numba import njit
 
 
+class StepScheme(Enum):
+    ERF = "erf"
+    HYPER = "hyper"
+
+
+class DeltaScheme(Enum):
+    GAUSS = "gauss"
+    HYPER = "hyper"
+    PARABOLIC = "parabolic"
+    BOX = "box"
+
+
 @njit
-def step_erf(u: float, u_0: float, delta: float) -> float:
-    """
-    Smooth approximation of a step function using the error function, centered at u_0.
-
-    :param u: Input value.
-    :param u_0: Center point of the step.
-    :param delta: Smoothing parameter controlling the transition width.
-    :return: Value of the step function approximation at u.
-    """
-    return 0.5 * (1.0 + math.erf((u - u_0) / (2**0.5 * delta)))
+def step_erf(u, u0, delta):
+    return 0.5 * (1.0 + math.erf((u - u0) / (math.sqrt(2) * delta)))
 
 
 @njit
-def delta_gauss(u: float, u_0: float, delta: float) -> float:
-    """
-    Smoothed approximation of the delta function, centered at u_0.
+def step_hyper(u, u0, delta):
+    diff = u - u0
+    if abs(diff) < delta:
+        return 0.5 * (1.0 + math.tanh(3.0 * diff / math.sqrt(delta**2 - diff**2)))
+    return 1.0 if u > u0 else 0.0
 
-    :param u: Input value.
-    :param u_0: The point where the delta function is centered.
-    :param delta: The smoothing parameter.
-    :return: The value of the smoothed delta function at the point u.
-    """
-    return math.exp(-((u - u_0) ** 2) / (2.0 * delta**2)) / (
-        (2.0 * math.pi) ** 0.5 * delta
+
+@njit
+def delta_gauss(u, u0, delta):
+    return math.exp(-((u - u0) ** 2) / (2 * delta**2)) / (
+        math.sqrt(2 * math.pi) * delta
     )
 
 
 @njit
-def step_hyper(u: float, u_0: float, delta: float) -> float:
-    """
-    Smooth approximation of a step function using a hyperbolic tangent, with compact support.
-
-    :param u: Input value.
-    :param u_0: Center point of the step.
-    :param delta: Transition width parameter.
-    :return: Value of the step function approximation at u.
-    """
-    diff = u - u_0
+def delta_hyper(u, u0, delta):
+    diff = u - u0
     if abs(diff) < delta:
-        return 0.5 * (1.0 + math.tanh(3.0 * diff / (delta**2 - diff**2) ** 0.5))
-    elif u < u_0:
-        return 0.0
-    else:
-        return 1.0
-
-
-@njit
-def delta_hyper(u: float, u_0: float, delta: float) -> float:
-    """
-    Derivative of the hyperbolic step function, serving as a delta approximation with compact support.
-
-    :param u: Input value.
-    :param u_0: Center point of the delta function.
-    :param delta: Width parameter of the support.
-    :return: Value of the delta approximation at u.
-    """
-    diff = u - u_0
-    if abs(diff) < delta:
-        return (
-            1.5
-            * (delta**2 / (delta**2 - diff**2) ** 1.5)
-            / math.cosh(3.0 * diff / (delta**2 - diff**2) ** 0.5) ** 2
+        return (1.5 * (delta**2 / (delta**2 - diff**2) ** 1.5)) / (
+            math.cosh(3.0 * diff / math.sqrt(delta**2 - diff**2)) ** 2
         )
     return 0.0
 
 
 @njit
-def delta_parabolic(u: float, u_0: float, delta: float) -> float:
-    """
-    Parabolic approximation of the delta function with compact support, centered at u_0.
-
-    :param u: Input value.
-    :param u_0: Center point of the delta function.
-    :param delta: Width parameter of the support.
-    :return: Value of the parabolic delta approximation at u.
-    """
-    diff = u - u_0
+def delta_parabolic(u, u0, delta):
+    diff = u - u0
     if abs(diff) <= delta:
-        return 0.75 * (1.0 - diff**2 / (delta**2)) / delta
+        return 0.75 * (1 - diff**2 / delta**2) / delta
     return 0.0
 
 
 @njit
-def delta_const(u: float, u_pt: float, delta: float) -> float:
-    """
-    Boxcar (constant) approximation of the delta function with compact support, centered at u_0.
+def delta_box(u, u0, delta):
+    return (0.5 / delta) if abs(u - u0) <= delta else 0.0
 
-    :param u: Input value.
-    :param u_0: Center point of the delta function.
-    :param delta: Width parameter of the support.
-    :return: Value of the boxcar delta approximation at u.
-    """
-    if abs(u - u_pt) <= delta:
-        return 0.5 / delta
-    return 0.0
+
+def get_step_fn(scheme: StepScheme):
+    if scheme is StepScheme.ERF:
+        return step_erf
+    elif scheme is StepScheme.HYPER:
+        return step_hyper
+    else:
+        raise ValueError("Unknown step scheme")
+
+
+def get_delta_fn(scheme: DeltaScheme):
+    return {
+        DeltaScheme.GAUSS: delta_gauss,
+        DeltaScheme.HYPER: delta_hyper,
+        DeltaScheme.PARABOLIC: delta_parabolic,
+        DeltaScheme.BOX: delta_box,
+    }[scheme]
 
 
 @njit
@@ -109,25 +84,15 @@ def c_smoothed(
     c_liquid: float,
     l_solid: float,
     delta: float,
+    step_fn: callable,
+    delta_fn: callable,
 ) -> float:
-    """
-    Smoothed effective volumetric heat capacity.
-
-    :param u: The dimensional temperature value.
-    :param u_pt: The dimensional phase transition temperature.
-    :param c_solid: The volumetric heat capacity of the solid phase.
-    :param c_liquid: The volumetric heat capacity of the liquid phase.
-    :param l_solid: The volumetric latent heat of fusion of the solid phase.
-    :param delta: The smoothing parameter.
-    :return: The value of the smoothed effective volumetric heat capacity at the temperature u.
-    """
     if delta <= 0:
         return c_solid if u < u_pt else c_liquid
-
     return (
         c_solid
-        + (c_liquid - c_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
-        + l_solid * delta_gauss(u=u, u_0=u_pt, delta=delta)
+        + (c_liquid - c_solid) * step_fn(u, u_pt, delta)
+        + l_solid * delta_fn(u, u_pt, delta)
     )
 
 
@@ -138,18 +103,8 @@ def k_smoothed(
     k_solid: float,
     k_liquid: float,
     delta: float,
+    step_fn: callable,
 ) -> float:
-    """
-    Smoothed heat conductivity coefficient.
-
-    :param u: The dimensional temperature value.
-    :param u_pt: The dimensional  phase transition temperature.
-    :param k_solid: The heat conductivity of the solid phase.
-    :param k_liquid: The heat conductivity of the liquid phase.
-    :param delta: The smoothing parameter.
-    :return: The value of the smoothed heat conductivity coefficient at the temperature u.
-    """
-    if delta <= 0.0:
+    if delta <= 0:
         return k_solid if u < u_pt else k_liquid
-
-    return k_solid + (k_liquid - k_solid) * step_erf(u=u, u_0=u_pt, delta=delta)
+    return k_solid + (k_liquid - k_solid) * step_fn(u, u_pt, delta)

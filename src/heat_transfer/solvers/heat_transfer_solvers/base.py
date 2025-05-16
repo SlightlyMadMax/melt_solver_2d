@@ -17,7 +17,14 @@ from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
-from src.heat_transfer.coefficient_smoothing.coefficients import c_smoothed, k_smoothed
+from src.heat_transfer.coefficient_smoothing.coefficients import (
+    c_smoothed,
+    k_smoothed,
+    StepScheme,
+    DeltaScheme,
+    get_step_fn,
+    get_delta_fn,
+)
 from src.heat_transfer.coefficient_smoothing.mushy_zone import collect_mushy_cells
 from src.parameters.thermal import ThermalParameters
 
@@ -34,6 +41,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         tolerance: float = 1e-6,
         urf: float = 0.5,
         bc_order: int = 1,
+        step_scheme: StepScheme = StepScheme.ERF,
+        delta_scheme: DeltaScheme = DeltaScheme.GAUSS,
         *args,
         **kwargs,
     ):
@@ -46,6 +55,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self.tolerance = tolerance
         self.urf = urf
         self.bc_order = bc_order
+        self.step_scheme = step_scheme
+        self.delta_scheme = delta_scheme
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
         # Pre-allocate some arrays that will be used in the calculations
         self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))
@@ -61,6 +72,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
     ) -> None: ...
 
     def compute_k_eff(self, u: float, delta: float) -> float:
+        step_fn = get_step_fn(self.step_scheme)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         k_eff = (
             k_smoothed(
@@ -69,14 +81,14 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                 k_solid=self.parameters.thermal_conductivity_solid,
                 k_liquid=self.parameters.thermal_conductivity_liquid,
                 delta=delta,
+                step_fn=step_fn,
             )
             / self.parameters.thermal_conductivity_ref
         )
         return k_eff
 
-    @staticmethod
-    @njit
     def compute_effective_properties(
+        self,
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         u_dim: NDArray[np.float64],
@@ -93,6 +105,49 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         h_x: float,
         h_y: float,
     ) -> None:
+        step_fn = get_step_fn(self.step_scheme)
+        delta_fn = get_delta_fn(self.delta_scheme)
+        self._compute_effective_properties(
+            c_eff=c_eff,
+            k_eff=k_eff,
+            u_dim=u_dim,
+            u_pt=u_pt,
+            c_ref=c_ref,
+            c_solid=c_solid,
+            c_liquid=c_liquid,
+            l_solid=l_solid,
+            k_ref=k_ref,
+            k_solid=k_solid,
+            k_liquid=k_liquid,
+            delta=delta,
+            mushy_mask=mushy_mask,
+            h_x=h_x,
+            h_y=h_y,
+            step_fn=step_fn,
+            delta_fn=delta_fn,
+        )
+
+    @staticmethod
+    @njit
+    def _compute_effective_properties(
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        u_dim: NDArray[np.float64],
+        u_pt: float,
+        c_ref: float,
+        c_solid: float,
+        c_liquid: float,
+        l_solid: float,
+        k_ref: float,
+        k_solid: float,
+        k_liquid: float,
+        delta: NDArray[np.float64],
+        mushy_mask: NDArray[np.uint8],
+        h_x: float,
+        h_y: float,
+        step_fn: callable,
+        delta_fn: callable,
+    ) -> None:
         n_y, n_x = u_dim.shape
         inv_c_ref = 1.0 / c_ref
         inv_k_ref = 1.0 / k_ref
@@ -101,13 +156,27 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
             for i in range(n_x):
                 c_eff[j, i] = (
                     c_smoothed(
-                        u_dim[j, i], u_pt, c_solid, c_liquid, l_solid, delta[j, i]
+                        u=u_dim[j, i],
+                        u_pt=u_pt,
+                        c_solid=c_solid,
+                        c_liquid=c_liquid,
+                        l_solid=l_solid,
+                        delta=delta[j, i],
+                        delta_fn=delta_fn,
+                        step_fn=step_fn,
                     )
                     * inv_c_ref
                 )
 
                 k_eff[j, i] = (
-                    k_smoothed(u_dim[j, i], u_pt, k_solid, k_liquid, delta[j, i])
+                    k_smoothed(
+                        u=u_dim[j, i],
+                        u_pt=u_pt,
+                        k_solid=k_solid,
+                        k_liquid=k_liquid,
+                        delta=delta[j, i],
+                        step_fn=step_fn,
+                    )
                     * inv_k_ref
                 )
 
@@ -155,6 +224,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         c_liquid=c_liquid,
                         l_solid=l_solid,
                         delta=delta[j, i],
+                        delta_fn=delta_fn,
+                        step_fn=step_fn,
                     )
 
             # Average over 4 points
