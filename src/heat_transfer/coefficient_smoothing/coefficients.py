@@ -41,7 +41,7 @@ def step_lin(u, u0, delta):
 
 
 @njit
-def step_lin(u, u0, delta):
+def step_const(u, u0, delta):
     diff = u - u0
     if diff >= delta:
         return 1.0
