@@ -17,45 +17,44 @@ def get_mushy_zone_temperature_range(
     n_y, n_x = u.shape
     delta = np.full_like(u, min_delta, dtype=np.float64)
 
-    # max_delta = 0.0
-    # for i in range(n_x - 1):
-    #     for j in range(n_y - 1):
-    #         if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-    #             du = abs(u[j + 1, i] - u[j, i])
-    #             max_delta = du if du > max_delta else max_delta
-    #         if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-    #             du = abs(u[j, i + 1] - u[j, i])
-    #             max_delta = du if du > max_delta else max_delta
+    max_delta = 0.0
+    for i in range(n_x - 1):
+        for j in range(n_y - 1):
+            if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
+                du = abs(u[j + 1, i] - u[j, i])
+                max_delta = du if du > max_delta else max_delta
+            if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
+                du = abs(u[j, i + 1] - u[j, i])
+                max_delta = du if du > max_delta else max_delta
+
+    delta.fill(max_delta)
+    # for j in range(1, n_y - 1):
+    #     for i in range(1, n_x - 1):
+    #         u1 = u[j, i]
+    #         local_max_jump = 0.0
+    #         for dj, di in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+    #             u2 = u[j + dj, i + di]
+    #             if (u1 - u_pt) * (u2 - u_pt) <= 0.0:
+    #                 jump = abs(u2 - u1)
+    #                 if jump > local_max_jump:
+    #                     local_max_jump = jump
     #
-    # delta.fill(max_delta)
-
-    for j in range(1, n_y - 1):
-        for i in range(1, n_x - 1):
-            u1 = u[j, i]
-            local_max_jump = 0.0
-            for dj, di in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                u2 = u[j + dj, i + di]
-                if (u1 - u_pt) * (u2 - u_pt) <= 0.0:
-                    jump = abs(u2 - u1)
-                    if jump > local_max_jump:
-                        local_max_jump = jump
-
-            if local_max_jump > 0.0:
-                delta[j, i] = max(min_delta, local_max_jump)
-
-                gx, gy = compute_gradient_components(u, i, j, h_x, h_y)
-
-                sx = 1 if gx > 0 else (-1 if gx < 0 else 0)
-                sy = 1 if gy > 0 else (-1 if gy < 0 else 0)
-
-                for k in range(1, width + 1):
-                    for dj, di in [(sy * k, sx * k), (-sy * k, -sx * k)]:
-                        jj = j + dj
-                        ii = i + di
-                        if 0 <= jj < n_y and 0 <= ii < n_x:
-                            delta[jj, ii] = max(
-                                delta[jj, ii], max(min_delta, local_max_jump)
-                            )
+    #         if local_max_jump > 0.0:
+    #             delta[j, i] = max(min_delta, local_max_jump)
+    #
+    #             gx, gy = compute_gradient_components(u, i, j, h_x, h_y)
+    #
+    #             sx = 1 if gx > 0 else (-1 if gx < 0 else 0)
+    #             sy = 1 if gy > 0 else (-1 if gy < 0 else 0)
+    #
+    #             for k in range(1, width + 1):
+    #                 for dj, di in [(sy * k, sx * k), (-sy * k, -sx * k)]:
+    #                     jj = j + dj
+    #                     ii = i + di
+    #                     if 0 <= jj < n_y and 0 <= ii < n_x:
+    #                         delta[jj, ii] = max(
+    #                             delta[jj, ii], max(min_delta, local_max_jump)
+    #                         )
 
     return delta
 
