@@ -28,6 +28,7 @@ def get_mushy_zone_temperature_range(
                 max_delta = du if du > max_delta else max_delta
 
     delta.fill(max_delta)
+
     # for j in range(1, n_y - 1):
     #     for i in range(1, n_x - 1):
     #         u1 = u[j, i]
