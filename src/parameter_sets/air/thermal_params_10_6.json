@@ -1,9 +1,9 @@
 {
     "u_pt": 60.15,
     "u_ref": 273.15,
-    "delta_u": 0.7585260000000176,
+    "delta_u": 2.0,
     "v": 0.16,
-    "l": 1.0,
+    "l": 0.155948145,
     "specific_heat_liquid": 1005.0,
     "specific_heat_solid": 1005.0,
     "specific_latent_heat": 333000.0,

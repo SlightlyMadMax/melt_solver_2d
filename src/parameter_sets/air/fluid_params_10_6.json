@@ -1,14 +1,14 @@
 {
     "u_pt": 60.15,
     "u_ref": 273.15,
-    "delta_u": 0.7585260000000176,
+    "delta_u": 2.0,
     "v": 0.16,
-    "l": 1.0,
+    "l": 0.155948145,
     "epsilon": 0.05,
     "kinematic_viscosity_coeffs": [
         1.36e-05
     ],
     "volumetric_thermal_exp_coeffs": [
-        3.5e-05
+        3.5e-03
     ]
 }
