@@ -66,14 +66,14 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         inv_2dx = 1.0 / (2.0 * dx)
         inv_2dy = 1.0 / (2.0 * dy)
 
-        dw_dy[1:-1, 1:-1] = (w[2:, 1:-1] - w[:-2, 1:-1]) * inv_2dy
-        dw_dx[1:-1, 1:-1] = (w[1:-1, 2:] - w[1:-1, :-2]) * inv_2dx
-
-        dw_dy[0, :] = (-3.0 * w[0, :] + 4.0 * w[1, :] - w[2, :]) * inv_2dy
-        dw_dy[-1, :] = (3.0 * w[-1, :] - 4.0 * w[-2, :] + w[-3, :]) * inv_2dy
+        dw_dx[:, 1:-1] = (w[:, 2:] - w[:, :-2]) * inv_2dx
+        dw_dy[1:-1, :] = (w[2:, :] - w[:-2, :]) * inv_2dy
 
         dw_dx[:, 0] = (-3.0 * w[:, 0] + 4.0 * w[:, 1] - w[:, 2]) * inv_2dx
         dw_dx[:, -1] = (3.0 * w[:, -1] - 4.0 * w[:, -2] + w[:, -3]) * inv_2dx
+
+        dw_dy[0, :] = (-3.0 * w[0, :] + 4.0 * w[1, :] - w[2, :]) * inv_2dy
+        dw_dy[-1, :] = (3.0 * w[-1, :] - 4.0 * w[-2, :] + w[-3, :]) * inv_2dy
 
     @staticmethod
     def _compute_convective_operator(
