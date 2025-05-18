@@ -60,15 +60,11 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         dy: float,
     ) -> None:
         """
-        Compute first derivatives of vorticity using second-order accurate
-        3-point central differences in the interior and 3-point one-sided
-        (forward/backward) differences at the boundaries.
+        Compute first derivatives of vorticity using second-order accurate central differences in the interior and
+        3-point one-sided (forward/backward) differences at the boundaries.
         """
         inv_2dx = 1.0 / (2.0 * dx)
         inv_2dy = 1.0 / (2.0 * dy)
-
-        dw_dx[:, :] = 0.0
-        dw_dy[:, :] = 0.0
 
         dw_dy[1:-1, 1:-1] = (w[2:, 1:-1] - w[:-2, 1:-1]) * inv_2dy
         dw_dx[1:-1, 1:-1] = (w[1:-1, 2:] - w[1:-1, :-2]) * inv_2dx
