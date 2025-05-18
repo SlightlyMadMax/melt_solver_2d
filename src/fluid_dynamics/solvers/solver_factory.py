@@ -17,6 +17,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers.vab_fully_implicit import (
     VabFullyImplicitScheme,
 )
+from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.fluid import FluidParameters
 
 
@@ -160,9 +161,9 @@ class NonIterativeNavierStokersSolver:
         nonlinearity_predictor_class = VorticitySolverRegistry.get_solver_class(
             solver_name=VorticitySolverName.EXPLICIT
         )
-        # vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
-        #     solver_name=VorticitySolverName.VABISHCHEVICH
-        # )
+        vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
+            solver_name=VorticitySolverName.VABISHCHEVICH
+        )
         stream_function_solver_class = StreamFunctionSolverRegistry.get_solver_class(
             solver_name=StreamFunctionSolverName.CG
         )
@@ -173,16 +174,16 @@ class NonIterativeNavierStokersSolver:
             convective_operator=self.convective_operator,
             bc_order=1,
         )
-        self.vorticity_solver = VabFullyImplicitScheme(
-            geometry=geometry,
-            parameters=parameters,
-        )
-        # self.vorticity_solver = vorticity_solver_class(
+        # self.vorticity_solver = VabFullyImplicitScheme(
         #     geometry=geometry,
         #     parameters=parameters,
-        #     convective_operator=self.convective_operator,
-        #     bc_order=1,
         # )
+        self.vorticity_solver = vorticity_solver_class(
+            geometry=geometry,
+            parameters=parameters,
+            convective_operator=self.convective_operator,
+            bc_order=1,
+        )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
             bcs=sf_bcs,
@@ -230,6 +231,12 @@ class NonIterativeNavierStokersSolver:
             sf_old=old_sf,
             temp_vorticity=self._temp_vorticity,
         )
+        # calculate_vorticity_from_sf(
+        #     sf=self._stream_function,
+        #     result=self._vorticity,
+        #     dy=self.geometry.dy / self.geometry.length_scale,
+        #     dx=self.geometry.dx / self.geometry.length_scale,
+        # )
         return self._stream_function, self._vorticity
 
     def _predict_vorticity(
