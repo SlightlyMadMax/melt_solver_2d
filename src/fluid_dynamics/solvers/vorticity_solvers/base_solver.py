@@ -38,29 +38,6 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.bottom_bc: NDArray[np.float64] = np.empty(n_x)
         self.left_bc: NDArray[np.float64] = np.empty(n_y)
         self.c_ind: NDArray[np.float64] = np.empty((n_y, n_x))
-        self.rho = self.calculate_rho()
-
-    def calculate_rho(self):
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
-        dy, dx = (
-            self.geometry.dy / self.parameters.l,
-            self.geometry.dx / self.parameters.l,
-        )
-
-        rho = np.zeros((n_y, n_x))
-
-        rho[2 : n_y - 2, 1] = 2 * dx**-4
-        rho[2 : n_y - 2, n_x - 2] = 2 * dx**-4
-
-        rho[1, 2 : n_x - 2] = 2 * dy**-4
-        rho[n_y - 2, 2 : n_x - 2] = 2 * dy**-4
-
-        rho[1, 1] = 2 * (dx**-4 + dy**-4)
-        rho[1, n_x - 2] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, 1] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, n_x - 2] = 2 * (dx**-4 + dy**-4)
-
-        return rho
 
 
 class ImplicitVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
