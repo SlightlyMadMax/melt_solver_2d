@@ -26,7 +26,6 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         c_ind: NDArray[np.float64],
-        rho: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -70,7 +69,7 @@ class VabishchevichScheme(ImplicitVorticitySolver):
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
                     )
-                    - (c_ind[j, i] + inv_re * rho[j, i]) * sf[j, i]
+                    - c_ind[j, i] * sf[j, i]
                 )
 
     @staticmethod
@@ -133,10 +132,16 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         )
         self.c_ind *= length_scale**3 / self.parameters.v
 
-        self.top_bc[:] = 0.0
-        self.right_bc[:] = 0.0
-        self.bottom_bc[:] = 0.0
-        self.left_bc[:] = 0.0
+        self.calculate_boundary_conditions(
+            sf=sf,
+            top_bc=self.top_bc,
+            right_bc=self.right_bc,
+            bottom_bc=self.bottom_bc,
+            left_bc=self.left_bc,
+            order=self.bc_order,
+            dx=dx / length_scale,
+            dy=dy / length_scale,
+        )
 
         self._compute_sweep_x_coeff(
             w=w,
@@ -145,7 +150,6 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_ind=self.c_ind,
-            rho=self.rho,
             dx=dx / length_scale,
             dy=dy / length_scale,
             dt=dt * self.parameters.v / length_scale,
