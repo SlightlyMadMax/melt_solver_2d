@@ -131,8 +131,7 @@ def construct_matrix_for_cg(c: np.ndarray, dx: float, dy: float) -> csr_matrix:
     x_off_diag = np.full(size - 1, off_diag_x)
     y_off_diag = np.full(size - inner_nx, off_diag_y)
 
-    for i in range(1, inner_ny):
-        x_off_diag[i * inner_nx - 1] = 0
+    x_off_diag[np.arange(1, size) % inner_nx == 0] = 0
 
     diagonals = [main_diag, x_off_diag, x_off_diag, y_off_diag, y_off_diag]
     offsets = [0, -1, 1, -inner_nx, inner_nx]
