@@ -13,6 +13,7 @@ from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
+from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.fluid import FluidParameters
 
 
@@ -88,7 +89,6 @@ class BCCorrectionNVSolver:
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         old_vorticity = np.copy(w)
-        old_sf = np.copy(sf)
 
         self._solve_vorticity(
             old_vorticity=old_vorticity,
@@ -101,17 +101,13 @@ class BCCorrectionNVSolver:
             vorticity=self._temp_vorticity,
             time=time,
         )
-        self._update_vorticity(
-            sf_new=self._stream_function,
-            sf_old=old_sf,
-            temp_vorticity=self._temp_vorticity,
+
+        calculate_vorticity_from_sf(
+            sf=self._stream_function,
+            result=self._vorticity,
+            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=self.geometry.dx / self.geometry.length_scale,
         )
-        # calculate_vorticity_from_sf(
-        #     sf=self._stream_function,
-        #     result=self._vorticity,
-        #     dy=self.geometry.dy / self.geometry.length_scale,
-        #     dx=self.geometry.dx / self.geometry.length_scale,
-        # )
         return self._stream_function, self._vorticity
 
     def _solve_vorticity(
@@ -158,35 +154,6 @@ class BCCorrectionNVSolver:
         # psi_vec = self._stream_function[1:-1, 1:-1].ravel()
         # residual = (-A).dot(psi_vec) - (-b).ravel()
         # print("‖residual‖₂:", np.linalg.norm(residual, 2))
-
-    def _update_vorticity(
-        self,
-        sf_new,
-        sf_old,
-        temp_vorticity,
-    ):
-        c_ind = self.vorticity_solver.c_ind
-        rho = self.rho
-        omega = self._vorticity
-        inv_reynolds = 1.0 / self.parameters.reynolds_number
-        dx = self.geometry.dx / self.geometry.length_scale
-        dy = self.geometry.dy / self.geometry.length_scale
-        tau = self.geometry.dt * self.parameters.v / self.geometry.length_scale
-        inv_dx2 = 1.0 / dx**2
-        inv_dy2 = 1.0 / dy**2
-        dsf = sf_new - sf_old
-
-        interior = (slice(1, -1), slice(1, -1))
-
-        linv_cphi = (inv_reynolds * rho[interior] + c_ind[interior]) * dsf[interior]
-
-        omega[interior] = temp_vorticity[interior] + 0.5 * tau * linv_cphi
-
-        # Apply boundary conditions
-        omega[-1, :] = -2.0 * sf_new[-2, :] * inv_dy2  # Top boundary
-        omega[:, -1] = -2.0 * sf_new[:, -2] * inv_dx2  # Right boundary
-        omega[0, :] = -2.0 * sf_new[1, :] * inv_dy2  # Bottom boundary
-        omega[:, 0] = -2.0 * sf_new[:, 1] * inv_dx2  # Left boundary
 
     @staticmethod
     def _construct_rhs_for_cg(
