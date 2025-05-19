@@ -88,7 +88,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         dx, dy = self.geometry.dx, self.geometry.dy
-        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=w)
+        self.convective_operator(w=w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_temperature_range(
             u=u_dim, u_pt=self.parameters.u_pt, h_x=dx, h_y=dy

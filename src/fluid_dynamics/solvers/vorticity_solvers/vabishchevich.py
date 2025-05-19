@@ -115,7 +115,7 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
         n_x, n_y = self.geometry.n_x, self.geometry.n_y
         length_scale = self.geometry.length_scale
-        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
+        self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         delta = get_mushy_zone_temperature_range(
             u=u_dim,
