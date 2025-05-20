@@ -183,7 +183,7 @@ if __name__ == "__main__":
     #     bc_order=2,
     # )
 
-    navier_solver = NonIterativeNavierStokersSolver(
+    navier_solver = BCCorrectionNVSolver(
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
