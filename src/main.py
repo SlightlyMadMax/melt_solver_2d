@@ -253,11 +253,11 @@ if __name__ == "__main__":
             print(
                 f"Minimum temperature value: {np.min(u * thermal_params.delta_u + thermal_params.u_ref + ABS_ZERO):.2f} C"
             )
-            # j, i = np.unravel_index(sf.argmax(), sf.shape)
-            # y, x = j * geometry.dy, i * geometry.dx
-            # print(
-            #     f"Maximum stream function value: {np.max(sf) * fluid_params.v * geometry.length_scale / thermal_params.thermal_diffusivity_solid:.3f}, (x, y) = {x:.3f}, {1.0 - y:.3f}"
-            # )
+            j, i = np.unravel_index(sf.argmax(), sf.shape)
+            y, x = j * geometry.dy, i * geometry.dx
+            print(
+                f"Maximum stream function value: {np.max(sf) * fluid_params.v * geometry.length_scale / thermal_params.thermal_diffusivity_solid}, (x, y) = {x/geometry.length_scale:.3f}, {1.0 - y/geometry.length_scale:.3f}"
+            )
             # print(
             #     f"Minimum stream function value: {np.min(sf) * fluid_params.v * geometry.length_scale:.3f}"
             # )
