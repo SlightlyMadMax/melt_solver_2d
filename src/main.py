@@ -76,7 +76,7 @@ if __name__ == "__main__":
     )
 
     u[:, 0] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
-    # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
+    # u[:, -1] = (max_temp - thermal_params.u_ref) / thermal_params.delta_u
 
     dim_u = u * thermal_params.delta_u + thermal_params.u_ref
     init_delta = np.max(
