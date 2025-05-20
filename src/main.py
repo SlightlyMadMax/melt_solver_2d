@@ -108,14 +108,10 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
-            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
         ),
         right=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
-            flux_func=lambda t, n: np.zeros(n),
             value_func=lambda t, n: (min_temp - thermal_params.u_ref)
             / thermal_params.delta_u
             * np.ones(n),
@@ -124,14 +120,10 @@ if __name__ == "__main__":
             boundary_type=BoundaryConditionType.NEUMANN,
             n=geometry.n_x,
             flux_func=lambda t, n: np.zeros(n),
-            value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-            / thermal_params.delta_u
-            * np.ones(n),
         ),
         left=BoundaryCondition(
             boundary_type=BoundaryConditionType.DIRICHLET,
             n=geometry.n_y,
-            flux_func=lambda t, n: np.zeros(n),
             value_func=lambda t, n: (max_temp - thermal_params.u_ref)
             / thermal_params.delta_u
             * np.ones(n),
