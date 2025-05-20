@@ -142,17 +142,17 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         length_scale = self.geometry.length_scale
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
-        # delta = get_mushy_zone_temperature_range(
-        #     u=u_dim,
-        #     u_pt=self.parameters.u_pt,
-        #     h_x=dx,
-        #     h_y=dy,
-        # )
+        delta = get_mushy_zone_temperature_range(
+            u=u_dim,
+            u_pt=self.parameters.u_pt,
+            h_x=dx,
+            h_y=dy,
+        )
         calculate_indicator_function(
             u=u_dim,
             u_pt=self.parameters.u_pt,
             eps=self.parameters.epsilon,
-            delta=0.0,
+            delta=delta,
             result=self.c_ind,
         )
         self.c_ind *= length_scale**3 / self.parameters.v
