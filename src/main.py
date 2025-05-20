@@ -180,6 +180,7 @@ if __name__ == "__main__":
     #     max_iters=1,
     #     tolerance=1e-10,
     #     urf=1.0,
+    #     bc_order=2,
     # )
 
     navier_solver = NonIterativeNavierStokersSolver(
