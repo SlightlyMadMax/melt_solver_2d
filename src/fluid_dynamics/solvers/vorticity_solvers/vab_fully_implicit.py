@@ -72,19 +72,14 @@ class VabFullyImplicitScheme(BaseSolver):
         off_diag_x = 1 / dx**2
         off_diag_y = 1 / dy**2
 
-        diagonals = [
-            np.full(size, inv_re * main_diag),  # main
-            np.full(size - 1, inv_re * off_diag_x),  # left/right
-            np.full(size - 1, inv_re * off_diag_x),
-            np.full(size - inner_n_x, inv_re * off_diag_y),  # top/bottom
-            np.full(size - inner_n_x, inv_re * off_diag_y),
-        ]
-        offsets = [0, -1, 1, -inner_n_x, inner_n_x]
+        main_diag = np.full(size, inv_re * main_diag)
+        x_off_diag = np.full(size - 1, inv_re * off_diag_x)
+        y_off_diag = np.full(size - inner_n_x, inv_re * off_diag_y)
 
-        # Correct for block structure
-        for row in range(1, inner_n_y):
-            diagonals[2][row * inner_n_x - 1] = 0.0
-            diagonals[1][row * inner_n_x] = 0.0
+        x_off_diag[np.arange(1, size) % inner_n_x == 0] = 0
+
+        diagonals = [main_diag, x_off_diag, x_off_diag, y_off_diag, y_off_diag]
+        offsets = [0, -1, 1, -inner_n_x, inner_n_x]
 
         A = diags(diagonals, offsets, shape=(size, size), format="csr")
 
