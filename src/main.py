@@ -49,7 +49,6 @@ if __name__ == "__main__":
     max_temp = 311.15
     # reference_temperature = 0.5 * (min_temp + max_temp)
     # delta_u = (max_temp - min_temp) / 2
-    # reference_temperature = max_temp
 
     thermal_params = ThermalParameters.load_from_file(
         "./parameter_sets/gallium/thermal_params_6_10_5.json"
