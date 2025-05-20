@@ -243,7 +243,7 @@ if __name__ == "__main__":
             #     show_graph=False,
             # )
             print(
-                f"Modelling Time: {n * geometry.dt} s, "
+                f"Modelling Time: {n * geometry.dt:.2f} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
                 f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} min."
             )
