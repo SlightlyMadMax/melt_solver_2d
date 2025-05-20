@@ -80,10 +80,6 @@ if __name__ == "__main__":
     # u[0:3, :] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
 
     dim_u = u * thermal_params.delta_u + thermal_params.u_ref
-    # init_delta = get_mushy_zone_width(
-    #     u=dim_u,
-    #     u_pt=thermal_params.u_pt,
-    # )
     init_delta = np.max(
         get_mushy_zone_temperature_range(
             u=dim_u, u_pt=thermal_params.u_pt, h_x=geometry.dx, h_y=geometry.dy
