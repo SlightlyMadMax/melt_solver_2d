@@ -166,25 +166,13 @@ if __name__ == "__main__":
         bc_order=1,
     )
 
-    # navier_solver = IterativeNavierStokesSolver(
-    #     geometry=geometry,
-    #     parameters=fluid_params,
-    #     sf_bcs=sf_bcs,
-    #     vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-    #     convective_term_form=ConvectiveTermForm.UPWIND,
-    #     stream_function_solver_name=StreamFunctionSolverName.MATRIX_SWEEP,
-    #     max_iters=1,
-    #     tolerance=1e-10,
-    #     urf=1.0,
-    #     bc_order=2,
-    # )
-
     navier_solver = BCCorrectionNVSolver(
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
         sf_max_iters=geometry.n_y * geometry.n_x,
         sf_tolerance=1e-6,
+        convective_term_form=ConvectiveTermForm.UPWIND,
     )
     u_temp, sf_temp = np.copy(u), np.copy(sf)
 
