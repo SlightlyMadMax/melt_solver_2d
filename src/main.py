@@ -10,11 +10,7 @@ from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.plotting import plot_stream_function
-from src.fluid_dynamics.solvers import (
-    VorticitySolverName,
-    StreamFunctionSolverName,
-    IterativeNavierStokesSolver,
-)
+from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
