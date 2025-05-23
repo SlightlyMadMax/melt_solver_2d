@@ -223,7 +223,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         c_solid=c_solid,
                         c_liquid=c_liquid,
                         l_solid=l_solid,
-                        delta=delta[j, i],
+                        delta=delta[j0, i0],
                         delta_fn=delta_fn,
                         step_fn=step_fn,
                     )
