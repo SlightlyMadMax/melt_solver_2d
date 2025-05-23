@@ -12,6 +12,7 @@ from src.core.boundary_conditions import (
     BoundaryCondition,
 )
 from src.core.geometry import DomainGeometry
+from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.thermal import ThermalParameters
@@ -113,6 +114,8 @@ heat_transfer_solver = HeatTransferSolver(
     max_iters=1,
     tolerance=1e-6,
     urf=1.0,
+    step_scheme=StepScheme.ERF,
+    delta_scheme=DeltaScheme.GAUSS,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
