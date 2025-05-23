@@ -11,7 +11,7 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 
 
 paths = sorted(
-    glob.glob("../../data/gallium/scalar_delta/u_*.npz"),
+    glob.glob("../../data/gallium/scalar_delta/281x201/u_*.npz"),
     key=lambda f: int(re.search(r"u_(\d+)", f).group(1)),
 )
 img = plt.imread("../../data/gau.png")
@@ -22,7 +22,7 @@ geometry = DomainGeometry(
     end_time=60.0 * 60.0 * 24.0,
     n_x=151,
     n_y=111,
-    n_t=60 * 60 * 480,
+    n_t=60 * 60 * 24 * 20,
 )
 
 min_temp = 301.45
