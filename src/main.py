@@ -85,7 +85,7 @@ if __name__ == "__main__":
     )
 
     plot_temperature(
-        u=u * thermal_params.delta_u + thermal_params.u_ref,
+        u=dim_u,
         u_pt=thermal_params.u_pt,
         geometry=geometry,
         time=0.0,
