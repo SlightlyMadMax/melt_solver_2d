@@ -164,6 +164,8 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
         bc_order=1,
+        step_scheme=StepScheme.ERF,
+        delta_scheme=DeltaScheme.GAUSS,
     )
 
     navier_solver = BCCorrectionNVSolver(
