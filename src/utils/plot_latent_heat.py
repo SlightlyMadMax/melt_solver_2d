@@ -47,6 +47,7 @@ def plot_latent_heat_field(
         xlabel="x, м",
         ylabel="y, м",
     )
+    ax.set_aspect("equal")
 
     contour = plt.contourf(
         X,
