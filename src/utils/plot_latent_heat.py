@@ -26,6 +26,8 @@ def plot_latent_heat_field(
     delta: np.ndarray,
     l_solid: float,
     geometry: DomainGeometry,
+    graph_id: int,
+    directory: str = "../graphs/latent_heat/",
 ):
     latent_heat_field = latent_heat_density_field(
         u, u_pt=u_pt, delta=delta, l_solid=l_solid
@@ -64,4 +66,6 @@ def plot_latent_heat_field(
     ax.legend()
     plt.title("Mushy Zone Visualization (Latent Heat Release)")
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"{directory}l_{graph_id}.png")
+
+    plt.close()
