@@ -29,7 +29,7 @@ class StreamFunctionSolverRegistry:
         cls._registry[solver_name] = solver_class
 
     @classmethod
-    def get_solver_class(cls, solver_name: StreamFunctionSolverName) -> typing.Type[BaseSolver]:
+    def get_solver_class(cls, solver_name: StreamFunctionSolverName):
         try:
             return cls._registry[solver_name]
         except KeyError:
