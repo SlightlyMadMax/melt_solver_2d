@@ -1,6 +1,8 @@
 import typing
 from enum import Enum
 
+from src.core.solvers.base_solver import BaseSolver
+
 
 class StreamFunctionSolverName(Enum):
     SOR = "Successive Over-Relaxation"
@@ -27,7 +29,7 @@ class StreamFunctionSolverRegistry:
         cls._registry[solver_name] = solver_class
 
     @classmethod
-    def get_solver_class(cls, solver_name: StreamFunctionSolverName) -> typing.Type:
+    def get_solver_class(cls, solver_name: StreamFunctionSolverName) -> typing.Type[BaseSolver]:
         try:
             return cls._registry[solver_name]
         except KeyError:

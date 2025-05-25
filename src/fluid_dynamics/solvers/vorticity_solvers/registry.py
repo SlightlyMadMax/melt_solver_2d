@@ -1,6 +1,8 @@
 import typing
 from enum import Enum
 
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import BaseVorticitySolver
+
 
 class VorticitySolverName(Enum):
     EXPLICIT = "Explicit"
@@ -29,7 +31,7 @@ class VorticitySolverRegistry:
         cls._registry[solver_name] = solver_class
 
     @classmethod
-    def get_solver_class(cls, solver_name: VorticitySolverName) -> typing.Type:
+    def get_solver_class(cls, solver_name: VorticitySolverName) -> typing.Type[BaseVorticitySolver]:
         try:
             return cls._registry[solver_name]
         except KeyError:
