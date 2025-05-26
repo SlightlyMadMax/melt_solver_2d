@@ -52,7 +52,7 @@ def init_temperature_icicle(
     semicircle_center_y = center_y - half_height
     dx = X - center_x
     dy = Y - semicircle_center_y
-    semicircle_mask = dx**2 + dy**2 <= radius**2 & (dy >= 0)
+    semicircle_mask = ((dx**2 + dy**2) <= radius**2) & (dy >= 0)
 
     # Общая маска
     mask = rect_mask | semicircle_mask
