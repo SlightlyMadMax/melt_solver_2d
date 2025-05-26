@@ -37,22 +37,24 @@ def init_temperature_icicle(
 
     radius = rect_width / 2
     center_x = geometry.width / 2
-    center_y = rect_height / 2
     half_width = rect_width / 2
     half_height = rect_height / 2
 
-    # Rectangle part
+    # Новый центр прямоугольника — под потолком
+    center_y = geometry.height - rect_height / 2
+
+    # Прямоугольник
     rect_mask = (np.abs(X - center_x) <= half_width) & (
         np.abs(Y - center_y) <= half_height
     )
 
-    # Semicircle part (top cap)
-    semicircle_center_y = center_y + half_height
+    # Полукруг снизу (нижняя полусфера)
+    semicircle_center_y = center_y - half_height
     dx = X - center_x
     dy = Y - semicircle_center_y
-    semicircle_mask = dx**2 + dy**2 <= radius**2
+    semicircle_mask = dx**2 + dy**2 <= radius**2 & (dy >= 0)
 
-    # Combined mask
+    # Общая маска
     mask = rect_mask | semicircle_mask
 
     u[mask] = solid_temp

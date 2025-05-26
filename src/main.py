@@ -48,9 +48,9 @@ if __name__ == "__main__":
     print(geometry)
 
     min_temp = 273.14
-    max_temp = 281.15
-    reference_temperature = 0.5 * (min_temp + max_temp)
-    delta_u = (max_temp - min_temp) / 2
+    max_temp = 277.15
+    reference_temperature = max_temp
+    delta_u = max_temp - min_temp
 
     # thermal_params = ThermalParameters.load_from_file(
     #     "./parameter_sets/gallium/thermal_params_6_10_5.json"
@@ -233,7 +233,7 @@ if __name__ == "__main__":
         if n % 1000 == 0:
             t_min = t / 60
             if t_min % 4 == 0:
-                np.savez_compressed(f"../data/icicle/8c/u_{n}.npz", u=u)
+                np.savez_compressed(f"../data/icicle/4c/u_{n}.npz", u=u)
                 print("bruh")
             dim_u = u * thermal_params.delta_u + thermal_params.u_ref
             delta = get_mushy_zone_temperature_range(
@@ -242,15 +242,15 @@ if __name__ == "__main__":
                 h_x=geometry.dx,
                 h_y=geometry.dy,
             )
-            plot_latent_heat_field(
-                u=dim_u,
-                u_pt=thermal_params.u_pt,
-                delta=delta,
-                l_solid=thermal_params.specific_latent_heat,
-                geometry=geometry,
-                graph_id=n,
-                directory="../graphs/latent_heat/local_delta_take_2/",
-            )
+            # plot_latent_heat_field(
+            #     u=dim_u,
+            #     u_pt=thermal_params.u_pt,
+            #     delta=delta,
+            #     l_solid=thermal_params.specific_latent_heat,
+            #     geometry=geometry,
+            #     graph_id=n,
+            #     directory="../graphs/latent_heat/local_delta_take_2/",
+            # )
             plot_temperature(
                 u=dim_u,
                 u_pt=thermal_params.u_pt,
@@ -264,12 +264,12 @@ if __name__ == "__main__":
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
-            plot_stream_function(
-                stream_function=sf * fluid_params.v * geometry.length_scale,
-                geometry=geometry,
-                graph_id=n,
-                show_graph=False,
-            )
+            # plot_stream_function(
+            #     stream_function=sf * fluid_params.v * geometry.length_scale,
+            #     geometry=geometry,
+            #     graph_id=n,
+            #     show_graph=False,
+            # )
             print(
                 f"Modelling Time: {n * geometry.dt:.2f} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
