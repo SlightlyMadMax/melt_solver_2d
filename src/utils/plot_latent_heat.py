@@ -56,7 +56,9 @@ def plot_latent_heat_field(
         25,
         cmap="viridis",
     )
-    cbar = plt.colorbar(contour, label="Величина слагаемого, отвечающего за скрытую теплоту плавления")
+    cbar = plt.colorbar(
+        contour, label="Величина слагаемого, отвечающего за скрытую теплоту плавления"
+    )
 
     for i in range(X.shape[0]):
         plt.plot(X[i, :], Y[i, :], color="white", linewidth=0.3, alpha=0.6)
@@ -64,7 +66,7 @@ def plot_latent_heat_field(
         plt.plot(X[:, j], Y[:, j], color="white", linewidth=0.3, alpha=0.6)
 
     plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
-    ax.legend()
+    ax.legend(loc="upper right")
     plt.tight_layout()
     plt.savefig(f"{directory}l_{graph_id}.png")
 
