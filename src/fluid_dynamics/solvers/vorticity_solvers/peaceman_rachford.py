@@ -58,7 +58,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c[j, i] = dt_half * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[j, i] = w[j, i] + dt_half * (
-                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
+                    2.0 * delta_u * u[j, i] * gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w[j + 1, i]
@@ -109,7 +109,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c[i, j] = dt_half * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[i, j] = w[j, i] + dt_half * (
-                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
+                    2.0 * delta_u * u[j, i] * gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
                         conv_x[j, i, 0] * w[j, i + 1]

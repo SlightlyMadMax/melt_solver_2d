@@ -28,8 +28,8 @@ class DomainGeometry(BaseModel):
 
     @property
     def length_scale(self) -> float:
-        return self.height
-        # return max(self.width, self.height)
+        # return self.height
+        return max(self.width, self.height)
 
     @property
     def mesh_grid(self) -> tuple[np.ndarray[Any, np.dtype], ...]:

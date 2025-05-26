@@ -180,57 +180,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                     * inv_k_ref
                 )
 
-        js, is_ = collect_mushy_cells(mushy_mask)
-
-        oxs = (-0.25 * h_x, +0.25 * h_x)
-        oys = (-0.25 * h_y, +0.25 * h_y)
-
-        for n in range(js.shape[0]):
-            j = js[n]
-            i = is_[n]
-            c_sum = 0.0
-
-            x_center = i * h_x
-            y_center = j * h_y
-
-            for oy in oys:
-                for ox in oxs:
-                    x_phys = x_center + ox
-                    y_phys = y_center + oy
-
-                    i0 = i if ox >= 0.0 else i - 1
-                    j0 = j if oy >= 0.0 else j - 1
-
-                    tx = (x_phys - i0 * h_x) / h_x
-                    ty = (y_phys - j0 * h_y) / h_y
-
-                    T00 = u_dim[j0, i0]
-                    T10 = u_dim[j0, i0 + 1]
-                    T01 = u_dim[j0 + 1, i0]
-                    T11 = u_dim[j0 + 1, i0 + 1]
-
-                    Ti = (
-                        T00 * (1 - tx) * (1 - ty)
-                        + T10 * tx * (1 - ty)
-                        + T01 * (1 - tx) * ty
-                        + T11 * tx * ty
-                    )
-
-                    # accumulate apparent capacity
-                    c_sum += c_smoothed(
-                        u=Ti,
-                        u_pt=u_pt,
-                        c_solid=c_solid,
-                        c_liquid=c_liquid,
-                        l_solid=l_solid,
-                        delta=delta[j0, i0],
-                        delta_fn=delta_fn,
-                        step_fn=step_fn,
-                    )
-
-            # Average over 4 points
-            c_eff[j, i] = (c_sum * 0.25) * inv_c_ref
-
 
 class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
     def __init__(self, *args, **kwargs):
