@@ -92,7 +92,10 @@ def plot_temperature(
     plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
-        xlim=(0, geometry.width), ylim=(0, geometry.height), xlabel="x, м", ylabel="y, м"
+        xlim=(0, geometry.width),
+        ylim=(0, geometry.height),
+        xlabel="x, м",
+        ylabel="y, м",
     )
 
     if show_grid:
@@ -105,7 +108,7 @@ def plot_temperature(
         disp_u,
         25,
         cmap="viridis",
-        # extend="both",
+        extend="both",
     )
     cbar = plt.colorbar(contour)
     if not min_temp or not max_temp:
