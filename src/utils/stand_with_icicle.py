@@ -37,26 +37,26 @@ def init_temperature_icicle(
 
     radius = rect_width / 2
     center_x = geometry.width / 2
+    center_y = rect_height / 2
     half_width = rect_width / 2
     half_height = rect_height / 2
 
-    # Rectangle: attached to top
-    center_y = geometry.height - half_height
-
+    # Rectangle part
     rect_mask = (np.abs(X - center_x) <= half_width) & (
         np.abs(Y - center_y) <= half_height
     )
 
-    # Semicircle below the rectangle (rounded tip)
-    semicircle_center_y = center_y - half_height
+    # Semicircle part (top cap)
+    semicircle_center_y = center_y + half_height
     dx = X - center_x
     dy = Y - semicircle_center_y
-    semicircle_mask = ((dx**2 + dy**2) <= radius**2) & (dy <= 0)
+    semicircle_mask = dx**2 + dy**2 <= radius**2
 
-    # Combine both parts
+    # Combined mask
     mask = rect_mask | semicircle_mask
 
     u[mask] = solid_temp
+
     u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
 
     return u
