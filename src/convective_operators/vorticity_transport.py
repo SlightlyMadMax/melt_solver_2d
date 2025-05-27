@@ -129,8 +129,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         inv_2dx = 1.0 / (2.0 * dx)
         inv_2dy = 1.0 / (2.0 * dy)
 
-        v_x[:] = 0.0
-        v_y[:] = 0.0
+        v_x[:, :] = 0.0
+        v_y[:, :] = 0.0
 
         v_x[1:-1, 1:-1] = inv_2dy * (sf[2:, 1:-1] - sf[:-2, 1:-1])
         v_y[1:-1, 1:-1] = -inv_2dx * (sf[1:-1, 2:] - sf[1:-1, :-2])
