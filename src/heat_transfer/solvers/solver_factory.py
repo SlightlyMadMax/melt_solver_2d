@@ -57,6 +57,7 @@ class HeatTransferSolver:
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ):
-        return self.solver.solve(u=u, sf=sf, time=time)
+        return self.solver.solve(u=u, sf=sf, delta=delta, time=time)

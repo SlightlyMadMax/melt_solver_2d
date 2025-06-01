@@ -379,7 +379,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             self._apply_second_order_top(time, delta)
 
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+        self, u: NDArray[np.float64], sf: NDArray[np.float64], delta: float, time: float = 0.0
     ) -> None:
         dx, dy = self.geometry.dx, self.geometry.dy
         n_x, n_y = self.geometry.n_x, self.geometry.n_y
@@ -391,12 +391,12 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             u_pt=self.parameters.u_pt,
         )
         u_dim = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
-        delta = get_mushy_zone_temperature_range(
-            u=u_dim, u_pt=self.parameters.u_pt, h_x=dx, h_y=dy
-        )
-        mushy_mask = get_dilated_mushy_mask(
-            u_dim=u_dim, u_pt=self.parameters.u_pt, delta=delta, extend_by=1
-        )
+        # delta = get_mushy_zone_temperature_range(
+        #     u=u_dim, u_pt=self.parameters.u_pt, h_x=dx, h_y=dy
+        # )
+        # mushy_mask = get_dilated_mushy_mask(
+        #     u_dim=u_dim, u_pt=self.parameters.u_pt, delta=delta, extend_by=1
+        # )
 
         self.compute_effective_properties(
             c_eff=self._c_eff,
@@ -411,7 +411,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             k_solid=self.parameters.thermal_conductivity_solid,
             k_liquid=self.parameters.thermal_conductivity_liquid,
             delta=delta,
-            mushy_mask=mushy_mask,
+            # mushy_mask=mushy_mask,
             h_x=dx,
             h_y=dy,
         )

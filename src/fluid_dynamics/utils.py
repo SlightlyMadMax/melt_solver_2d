@@ -10,8 +10,8 @@ def calculate_indicator_function(
     u_pt: float,
     eps: float,
     result: NDArray[np.float64],
-    delta: NDArray[np.float64],
-    # delta: float,
+    # delta: NDArray[np.float64],
+    delta: float,
 ) -> None:
     """
     Indicator function for the fictitious domain method.
@@ -29,7 +29,7 @@ def calculate_indicator_function(
     interior = (slice(1, -1), slice(1, -1))
 
     diff_u = u[interior] - u_pt
-    delta_inner = delta[interior]
+    # delta_inner = delta[interior]
 
     # --- Variant 1: sharp step ----------------------
     # mask = (diff_u < 0.0)
@@ -39,7 +39,7 @@ def calculate_indicator_function(
 
     # --- Variant 2: error‐function form -------------------
     result[interior] = (
-        0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta_inner)))
+        0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
     )
 
     # --- Variant 3: hyperbolic‐tangent form ---------------

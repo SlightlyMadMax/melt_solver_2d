@@ -58,7 +58,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c[j, i] = dt_half * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[j, i] = w[j, i] + dt_half * (
-                    2.0 * delta_u * u[j, i] * gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w[j + 1, i]
@@ -109,7 +109,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
                 c[i, j] = dt_half * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
                 rhs[i, j] = w[j, i] + dt_half * (
-                    2.0 * delta_u * u[j, i] * gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
+                    gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
                         conv_x[j, i, 0] * w[j, i + 1]
@@ -124,6 +124,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
@@ -131,12 +132,12 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         length_scale = self.geometry.length_scale
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
-        delta = get_mushy_zone_temperature_range(
-            u=u_dim,
-            u_pt=self.parameters.u_pt,
-            h_x=dx,
-            h_y=dy,
-        )
+        # delta = get_mushy_zone_temperature_range(
+        #     u=u_dim,
+        #     u_pt=self.parameters.u_pt,
+        #     h_x=dx,
+        #     h_y=dy,
+        # )
         calculate_indicator_function(
             u=u_dim,
             u_pt=self.parameters.u_pt,
