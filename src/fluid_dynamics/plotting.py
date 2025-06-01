@@ -60,7 +60,7 @@ def plot_stream_function(
 
     plt.figure(figsize=(8, 6))
     cp = plt.contour(X, Y, stream_function, levels=15, cmap='viridis')
-    # plt.clabel(cp, inline=True, fmt=r"$\psi$ = %.2E", fontsize=10)
+    plt.clabel(cp, inline=True, fmt=r"$\psi$ = %.2E", fontsize=10)
 
     plt.xlabel("x, м")
     plt.ylabel("y, м")
