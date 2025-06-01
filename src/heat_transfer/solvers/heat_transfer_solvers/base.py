@@ -68,7 +68,11 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
 
     @abstractmethod
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+        self,
+        u: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        delta: float,
+        time: float = 0.0,
     ) -> None: ...
 
     def compute_k_eff(self, u: float, delta: float) -> float:
@@ -100,8 +104,9 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_ref: float,
         k_solid: float,
         k_liquid: float,
-        delta: NDArray[np.float64],
-        mushy_mask: NDArray[np.uint8],
+        delta: float,
+        # delta: NDArray[np.float64],
+        # mushy_mask: NDArray[np.uint8],
         h_x: float,
         h_y: float,
     ) -> None:
@@ -120,7 +125,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
             k_solid=k_solid,
             k_liquid=k_liquid,
             delta=delta,
-            mushy_mask=mushy_mask,
+            # mushy_mask=mushy_mask,
             h_x=h_x,
             h_y=h_y,
             step_fn=step_fn,
@@ -141,8 +146,9 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_ref: float,
         k_solid: float,
         k_liquid: float,
-        delta: NDArray[np.float64],
-        mushy_mask: NDArray[np.uint8],
+        delta: float,
+        # delta: NDArray[np.float64],
+        # mushy_mask: NDArray[np.uint8],
         h_x: float,
         h_y: float,
         step_fn: callable,
@@ -161,7 +167,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         c_solid=c_solid,
                         c_liquid=c_liquid,
                         l_solid=l_solid,
-                        delta=delta[j, i],
+                        delta=delta,
                         delta_fn=delta_fn,
                         step_fn=step_fn,
                     )
@@ -174,7 +180,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
                         u_pt=u_pt,
                         k_solid=k_solid,
                         k_liquid=k_liquid,
-                        delta=delta[j, i],
+                        delta=delta,
                         step_fn=step_fn,
                     )
                     * inv_k_ref
@@ -189,7 +195,11 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
 
     @abstractmethod
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+        self,
+        u: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        delta: float,
+        time: float = 0.0,
     ) -> None: ...
 
     def _apply_standard_bc(
@@ -235,5 +245,9 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
 class ExplicitHeatTransferSolver(BaseHeatTransferSolver):
     @abstractmethod
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+        self,
+        u: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        delta: float,
+        time: float = 0.0,
     ) -> None: ...
