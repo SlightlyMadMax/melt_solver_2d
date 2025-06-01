@@ -30,7 +30,6 @@ from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.fluid import FluidParameters
 from src.parameters.thermal import ThermalParameters
-from src.utils.plot_latent_heat import plot_latent_heat_field
 from src.utils.stand_with_icicle import init_temperature_icicle
 from src.utils.time_utils import get_remaining_time
 
