@@ -12,16 +12,8 @@ from src.utils.array_masks import dilate_mask
 
 
 @njit
-def get_mushy_zone_temperature_range(
-    u: np.ndarray,
-    u_pt: float,
-    h_x: float,
-    h_y: float,
-    min_delta: float = 1e-3,
-    n_width: int = 4,
-) -> np.ndarray:
+def get_mushy_zone_temperature_range(u: np.ndarray, u_pt: float) -> float:
     n_y, n_x = u.shape
-    delta = np.full_like(u, min_delta, dtype=np.float64)
 
     max_delta = 0.0
     for i in range(n_x - 1):
@@ -33,8 +25,7 @@ def get_mushy_zone_temperature_range(
                 du = abs(u[j, i + 1] - u[j, i])
                 max_delta = du if du > max_delta else max_delta
 
-    delta.fill(max_delta)
-    return delta
+    return max_delta
 
 
 def find_interface_cells(u, u_pt):
