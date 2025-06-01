@@ -1,13 +1,18 @@
 import math
 
 import numpy as np
+from matplotlib import pyplot as plt
 from numba import njit
 from scipy.ndimage import (
     uniform_filter,
     median_filter,
     gaussian_filter,
 )
+from scipy.optimize import root_scalar
+from scipy.special import erf
 
+from src.core.geometry import DomainGeometry
+from src.parameters.thermal import ThermalParameters
 from src.utils.array_masks import dilate_mask
 
 
@@ -100,141 +105,157 @@ def find_interface_cells(u, u_pt):
 #     return delta
 
 
-@njit
-def melt_fraction_gauss(u, u0, delta):
-    """Returns melt fraction ∈ [0, 1] using the Gaussian CDF."""
-    return 0.5 * (1 + math.erf((u - u0) / (math.sqrt(2) * delta)))
+def delta_kernel(u, u_pt, delta):
+    return np.exp(-0.5 * ((u - u_pt) / delta) ** 2) / (math.sqrt(2 * math.pi) * delta)
 
 
 def compute_qs(
-    u_n_dim,
-    u_np1_non,
-    u_pt,
-    conv_x,
-    conv_y,
-    delta_u,
-    u_ref,
-    latent_heat,
-    delta,
-    dt,
-    h_x,
-    h_y,
-    delta_fn,
+    u_n_dim, u_np1_dim, conv_x, conv_y, latent_vol, u_pt, delta, dt, h_x, h_y
 ):
+    sqrt_2 = math.sqrt(2.0)
+
+    # melt fractions
+    phi_n = 0.5 * (1 + erf((u_n_dim - u_pt) / (sqrt_2 * delta)))
+    phi_np1 = 0.5 * (1 + erf((u_np1_dim - u_pt) / (sqrt_2 * delta)))
+
+    # theoretical latent‐heat release
+    v_liq_n = phi_n.sum() * (h_x * h_y)
+    v_liq_np1 = phi_np1.sum() * (h_x * h_y)
+    q_theory = latent_vol * (v_liq_np1 - v_liq_n)
+
+    k = delta_kernel(u_n_dim, u_pt, delta)
+    latent_field = latent_vol * k
+
+    u_right = np.roll(u_np1_dim, -1, axis=1)
+    u_left = np.roll(u_np1_dim, 1, axis=1)
+    a = (
+        conv_x[:, :, 0] * u_right
+        + conv_x[:, :, 1] * u_np1_dim
+        + conv_x[:, :, 2] * u_left
+    )
+
+    u_up = np.roll(u_np1_dim, -1, axis=0)
+    u_down = np.roll(u_np1_dim, 1, axis=0)
+    b = conv_y[:, :, 0] * u_up + conv_y[:, :, 1] * u_np1_dim + conv_y[:, :, 2] * u_down
+
+    conv_term = a + b
+
+    dudt = (u_np1_dim - u_n_dim) / dt
+
+    q_dot = latent_field * (dudt + conv_term)
+    q_dot[0, :] = q_dot[-1, :] = q_dot[:, 0] = q_dot[:, -1] = 0.0
+
+    q_num = q_dot.sum() * (h_x * h_y)
+
+    return q_num, q_theory
+
+
+def find_bracket(residual, d_min, d_max, max_steps=10):
     """
-    Returns (q_latent, q_theory) for a candidate uniform `delta`.
-    - u_n_dim:    dimensional field at time n
-    - u_n_non:    nondim field at time n
-    - u_np1_non:  nondim field at time n+1 (from solver)
-    - u_pt:       phase‐change temp (dimensional)
-    - latent_heat: volumetric latent heat (J/m³)
-    - delta:      mushy‐zone width (dimensional)
-    - dt, h_x, h_y: time‐step and grid spacings
-    - delta_fn:   kernel fn: (u_dim, u_pt, delta) -> weight
+    Marches from d_min → d_max in max_steps increments,
+    looking for the first sign change of residual.
+    Returns (a,b) such that residual(a)*residual(b) ≤ 0.
     """
-    # convert solver output to dimensional
-    u_np1_dim = u_np1_non * delta_u + u_ref
+    fa = residual(d_min)
 
-    ny, nx = u_n_dim.shape
+    for k in range(1, max_steps + 1):
+        dk = d_min + (d_max - d_min) * (k / max_steps)
+        fb = residual(dk)
+        if fa * fb <= 0:
+            # Found sign‐change bracket [previous d, current d]
+            return d_min + (d_max - d_min) * ((k - 1) / max_steps), dk
+        fa, d_min = fb, dk
 
-    latent_field = np.zeros_like(u_n_dim)
-    for j in range(ny):
-        for i in range(nx):
-            latent_field[j, i] = latent_heat * delta_fn(u_n_dim[j, i], u_pt, delta)
-
-    q_dot = np.zeros_like(u_n_dim)
-    for j in range(1, ny - 1):
-        for i in range(1, nx - 1):
-            a = (
-                conv_x[j, i, 0] * u_n_dim[j, i + 1]
-                + conv_x[j, i, 1] * u_n_dim[j, i]
-                + conv_x[j, i, 2] * u_n_dim[j, i - 1]
-            )
-            b = (
-                conv_y[j, i, 0] * u_n_dim[j + 1, i]
-                + conv_y[j, i, 1] * u_n_dim[j, i]
-                + conv_y[j, i, 2] * u_n_dim[j - 1, i]
-            )
-            convective_term = a + b
-
-            # Latent heat release including convection
-            q_dot[j, i] = latent_field[j, i] * (
-                (u_np1_dim[j, i] - u_n_dim[j, i]) / dt + convective_term
-            )
-
-    # Sum latent heat over domain
-    q_latent = q_dot.sum() * h_x * h_y
-
-    solid_n = u_n_dim <= u_pt
-    solid_np1 = u_np1_dim <= u_pt
-    v_n = solid_n.sum() * h_x * h_y
-    v_np1 = solid_np1.sum() * h_x * h_y
-    q_theory = latent_heat * (v_n - v_np1)
-
-    return q_latent, q_theory
+    raise ValueError(
+        f"No sign change found in [{d_min:.3g}, {d_max:.3g}] "
+        f"after {max_steps} steps; residual_min={fa:.3e}"
+    )
 
 
-def find_best_delta(
-    u_n_dim,
+def find_optimal_delta(
     u_n_non,
     sf,
     time,
-    delta_u,
-    u_ref,
-    solver,  # signature: (u=u_n_non, sf=sf, time=time, delta=delta) -> u_np1_non
-    u_pt,
-    latent_heat,
-    dt,
-    h_x,
-    h_y,
-    delta_fn,
+    solver,
+    params: ThermalParameters,
+    geometry: DomainGeometry,
     delta_min,
     delta_max,
-    tol=1e-1,
-    max_iter=100,
+    tol=1e-3,
+    bracket_steps=10,
 ):
-    def f(delta: float) -> float:
-        u_c_non = solver.solve(u=u_n_non, sf=sf, time=time, delta=delta)
-        qc, qtc = compute_qs(
-            u_n_dim=u_n_dim,
-            u_np1_non=u_c_non,
-            u_pt=u_pt,
-            conv_x=solver.solver._conv_x * 0.0635 / 0.027,
-            conv_y=solver.solver._conv_y * 0.0635 / 0.027,
-            delta_u=delta_u,
-            u_ref=u_ref,
-            latent_heat=latent_heat,
-            delta=delta,
-            dt=dt,
-            h_x=h_x,
-            h_y=h_y,
-            delta_fn=delta_fn,
+    conv_scale = params.l / params.v
+    delta_u = params.delta_u
+    u_ref = params.u_ref
+    u_pt = params.u_pt
+    dt = geometry.dt
+    h_x = geometry.dx
+    h_y = geometry.dy
+    latent_vol = params.volumetric_latent_heat
+    u_n_dim = u_n_non * delta_u + u_ref
+    conv_x = solver.solver._conv_x * conv_scale
+    conv_y = solver.solver._conv_y * conv_scale
+
+    def residual(delta: float) -> float:
+        u_np1_non = solver.solve(u=u_n_non, sf=sf, time=time, delta=delta)
+        u_np1_dim = u_np1_non * delta_u + u_ref
+        q_num, q_t = compute_qs(
+            u_n_dim, u_np1_dim, conv_x, conv_y, latent_vol, u_pt, delta, dt, h_x, h_y
         )
-        return qc - qtc
+        return q_num - q_t
 
-    a, b = delta_min, delta_max
-    fa, fb = f(a), f(b)
+    a, b = find_bracket(residual, delta_min, delta_max, max_steps=bracket_steps)
 
-    if fa * fb > 0:
-        print(f"Warning: f({a}) = {fa}, f({b}) = {fb} — no sign change.")
-        return (a + b) / 2
+    result = root_scalar(residual, method="brentq", bracket=[a, b], xtol=tol, rtol=tol)
 
-    for i in range(max_iter):
-        c = (a + b) / 2
-        fc = f(c)
-        # print(f"Iteration {i}: delta = {c:.6f}, f = {fc:.4e}")
+    if not result.converged:
+        return None
 
-        if abs(fc) <= tol:
-            # print(f"Converged at delta = {c:.6f}")
-            return c
+    # res = []
+    # deltas = np.linspace(delta_min, delta_max, 20)
+    # for delta in deltas:
+    #     res.append(residual(delta))
+    #
+    # plt.plot(deltas, res, linestyle="--", marker="o")
+    # plt.grid()
+    # plt.show()
 
-        if fa * fc < 0:
-            b, fb = c, fc
-        else:
-            a, fa = c, fc
+    return result.root
 
-    print(f"Max iterations reached. Returning midpoint: {(a + b) / 2}")
-    return (a + b) / 2
+
+def get_delta(
+    u_n_non,
+    sf,
+    time,
+    solver,
+    params: ThermalParameters,
+    geometry: DomainGeometry,
+    delta_min,
+    delta_max,
+    tol=1e-3,
+) -> float:
+    try:
+        delta = find_optimal_delta(
+            u_n_non=u_n_non,
+            sf=sf,
+            time=time,
+            solver=solver,
+            params=params,
+            geometry=geometry,
+            delta_min=delta_min,
+            delta_max=delta_max,
+            tol=tol,
+        )
+        if delta is not None:
+            # print(f"yooo: {delta}")
+            return delta
+    except ValueError as e:
+        pass
+    absolute_temp = u_n_non * params.delta_u + params.u_ref
+    return get_mushy_zone_temperature_range(
+        u=absolute_temp,
+        u_pt=params.u_pt,
+    )
 
 
 @njit
