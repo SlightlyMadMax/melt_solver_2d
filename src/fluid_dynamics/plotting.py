@@ -16,6 +16,7 @@ def plot_velocity_field(
     show_graph: bool = True,
     directory: str = "../graphs/velocity/",
     equal_aspect: Optional[bool] = True,
+    stride: int = 2,
 ):
     n_y, n_x = v_x.shape
     dx, dy = geometry.dx, geometry.dy
@@ -23,8 +24,22 @@ def plot_velocity_field(
     y = np.linspace(0, (n_y - 1) * dy, n_y)
     X, Y = np.meshgrid(x, y)
 
+    X_sub = X[::stride, ::stride]
+    Y_sub = Y[::stride, ::stride]
+    v_x_sub = v_x[::stride, ::stride]
+    v_y_sub = v_y[::stride, ::stride]
+
     plt.figure(figsize=(8, 6))
-    plt.quiver(X, Y, v_x, v_y, angles="xy", scale_units="xy", scale=1, color="blue")
+    plt.quiver(
+        X_sub,
+        Y_sub,
+        v_x_sub,
+        v_y_sub,
+        angles="xy",
+        scale_units="xy",
+        scale=1,
+        color="blue",
+    )
 
     plt.xlabel("x, м")
     plt.ylabel("y, м")
@@ -59,7 +74,7 @@ def plot_stream_function(
     X, Y = np.meshgrid(x, y)
 
     plt.figure(figsize=(8, 6))
-    cp = plt.contour(X, Y, stream_function, levels=15, cmap='viridis')
+    cp = plt.contour(X, Y, stream_function, levels=15, cmap="viridis")
     plt.clabel(cp, inline=True, fmt=r"$\psi$ = %.2E", fontsize=10)
 
     plt.xlabel("x, м")
