@@ -99,6 +99,22 @@ def calculate_velocity_from_sf(
     v_y[1:-1, 1:-1] = -inv_2dx * (sf[1:-1, 2:] - sf[1:-1, :-2])
 
 
+@njit
+def check_divergence(vx, vy, dx, dy):
+    ny, nx = vx.shape
+    div = np.zeros_like(vx)
+    for j in range(1, ny - 1):
+        for i in range(1, nx - 1):
+            div[j, i] = (vx[j, i + 1] - vx[j, i - 1]) / (2 * dx) + (
+                vy[j + 1, i] - vy[j - 1, i]
+            ) / (2 * dy)
+
+    max_div = np.max(np.abs(div))
+    l1_div = np.sum(np.abs(div)) * dx * dy
+    net_div = np.sum(div) * dx * dy
+    return max_div, l1_div, net_div
+
+
 class VorticityBCMixin:
     @staticmethod
     def calculate_boundary_conditions(
