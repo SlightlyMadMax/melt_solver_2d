@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.sparse import diags
-from scipy.sparse.linalg import LinearOperator, spilu
+from scipy.sparse.linalg import LinearOperator, spilu, cg
 
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -59,7 +59,12 @@ class ConjugateGradientSolver(BaseSolver):
         return LinearOperator(A.shape, matvec=matvec)
 
     def solve(
-        self, A: diags, b_flat: np.ndarray, initial_guess: np.ndarray, time: float
+        self,
+        A: diags,
+        b_flat: np.ndarray,
+        initial_guess: np.ndarray,
+        time: float,
+        use_ilu: bool = False,
     ) -> np.ndarray:
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
