@@ -379,7 +379,11 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             self._apply_second_order_top(time, delta)
 
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], delta: float, time: float = 0.0
+        self,
+        u: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        delta: float,
+        time: float = 0.0,
     ) -> None:
         dx, dy = self.geometry.dx, self.geometry.dy
         n_x, n_y = self.geometry.n_x, self.geometry.n_y
