@@ -130,7 +130,14 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
         dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
         n_x, n_y = self.geometry.n_x, self.geometry.n_y
         length_scale = self.geometry.length_scale
+        v_scale = self.parameters.v
+        inv_length_scale = 1.0 / length_scale
+        dx_scaled = dx * inv_length_scale
+        dy_scaled = dy * inv_length_scale
+        dt_scaled = dt * v_scale * inv_length_scale
+
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
+
         u_dim = u * self.parameters.delta_u + self.parameters.u_ref
         # delta = get_mushy_zone_temperature_range(
         #     u=u_dim,
@@ -145,7 +152,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             delta=delta,
             result=self.c_ind,
         )
-        self.c_ind *= length_scale**3 / self.parameters.v
+        self.c_ind *= length_scale**3 / v_scale
 
         self.calculate_boundary_conditions(
             sf=sf,
@@ -154,8 +161,8 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             bottom_bc=self.bottom_bc,
             left_bc=self.left_bc,
             order=self.bc_order,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
+            dx=dx_scaled,
+            dy=dy_scaled,
         )
 
         self._compute_sweep_x_coeff(
@@ -165,9 +172,9 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_ind=self.c_ind,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
-            dt=dt * self.parameters.v / length_scale,
+            dx=dx_scaled,
+            dy=dy_scaled,
+            dt=dt_scaled,
             u_pt_ref=self.parameters.u_pt_ref,
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
@@ -198,9 +205,9 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_ind=self.c_ind,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
-            dt=dt * self.parameters.v / length_scale,
+            dx=dx_scaled,
+            dy=dy_scaled,
+            dt=dt_scaled,
             u_pt_ref=self.parameters.u_pt_ref,
             delta_u=self.parameters.delta_u,
             reynolds_number=self.parameters.reynolds_number,
