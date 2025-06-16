@@ -204,13 +204,6 @@ def find_optimal_delta(
         )
         return q_num - q_t
 
-    a, b = find_bracket(residual, delta_min, delta_max, max_steps=bracket_steps)
-
-    result = root_scalar(residual, method="brentq", bracket=[a, b], xtol=tol, rtol=tol)
-
-    if not result.converged:
-        return None
-
     # res = []
     # deltas = np.linspace(delta_min, delta_max, 20)
     # for delta in deltas:
@@ -219,6 +212,15 @@ def find_optimal_delta(
     # plt.plot(deltas, res, linestyle="--", marker="o")
     # plt.grid()
     # plt.show()
+
+    # a, b = find_bracket(residual, delta_min, delta_max, max_steps=bracket_steps)
+
+    result = root_scalar(
+        residual, method="brentq", bracket=[delta_min, delta_max], xtol=tol, rtol=tol
+    )
+
+    if not result.converged:
+        return None
 
     return result.root
 
@@ -234,6 +236,11 @@ def get_delta(
     delta_max,
     tol=1e-3,
 ) -> float:
+    absolute_temp = u_n_non * params.delta_u + params.u_ref
+    max_delta = get_mushy_zone_temperature_range(
+        u=absolute_temp,
+        u_pt=params.u_pt,
+    )
     try:
         delta = find_optimal_delta(
             u_n_non=u_n_non,
@@ -247,15 +254,11 @@ def get_delta(
             tol=tol,
         )
         if delta is not None:
-            # print(f"yooo: {delta}")
-            return delta
+            if abs(max_delta - delta) / max_delta < 0.5:
+                return delta
     except ValueError as e:
         pass
-    absolute_temp = u_n_non * params.delta_u + params.u_ref
-    return get_mushy_zone_temperature_range(
-        u=absolute_temp,
-        u_pt=params.u_pt,
-    )
+    return max_delta
 
 
 @njit
