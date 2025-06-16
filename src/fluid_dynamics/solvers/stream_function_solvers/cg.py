@@ -42,12 +42,12 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _ilu_preconditioner(self, A):
+    def _get_ilu_preconditioner(self, A):
         A_csc = A.tocsc()
         ilu = spilu(A_csc, drop_tol=1e-4, fill_factor=10)
         return LinearOperator(A.shape, ilu.solve)
 
-    def _jacobi_preconditioner(self, A) -> LinearOperator:
+    def _get_jacobi_preconditioner(self, A) -> LinearOperator:
         diag = A.diagonal()
         if np.any(diag == 0):
             raise ZeroDivisionError("Jacobi preconditioner: zero on diagonal of A")
@@ -77,20 +77,26 @@ class ConjugateGradientSolver(BaseSolver):
         # Initial guess interior flattened
         x0 = initial_guess[1:-1, 1:-1].flatten()
 
-        m = self._jacobi_preconditioner(A)
+        # Choose preconditioner
+        if use_ilu:
+            preconditioner = self._get_ilu_preconditioner(A)
+        else:
+            preconditioner = self._get_jacobi_preconditioner(A)
 
         # Solve A x = b
-        solution_inner_flat, info = bicgstab(
+        solution_inner_flat, info = cg(
             A=A,
             b=b_flat,
             x0=x0,
-            M=m,
+            M=preconditioner,
             maxiter=self.max_iters,
             rtol=self.stopping_criteria,
         )
 
-        if info != 0:
-            raise RuntimeError(f"CG did not converge. Info: {info}")
+        if info > 0:
+            raise RuntimeError(f"CG did not converge after {info} iterations")
+        elif info < 0:
+            raise RuntimeError(f"CG error: {info}")
 
         self._result[1:-1, 1:-1] = solution_inner_flat.reshape((inner_n_y, inner_n_x))
         self._result[:, 0] = left
