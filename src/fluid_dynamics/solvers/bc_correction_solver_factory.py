@@ -26,6 +26,7 @@ class BCCorrectionNVSolver:
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.DIVERGENT_CENTRAL,
+        vorticity_bc_order: int = 1,
     ):
         self.geometry = geometry
         self.parameters = parameters
@@ -45,7 +46,7 @@ class BCCorrectionNVSolver:
             geometry=geometry,
             parameters=parameters,
             convective_operator=self.convective_operator,
-            bc_order=1,
+            bc_order=vorticity_bc_order,
         )
         self.stream_function_solver = stream_function_solver_class(
             geometry=geometry,
