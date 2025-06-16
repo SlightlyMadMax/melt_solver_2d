@@ -271,7 +271,9 @@ if __name__ == "__main__":
                 geometry.dx,
                 geometry.dy,
             )
-            print(f"Courant number: {max(np.max(np.abs(v_x)*dt/dx), np.max(np.abs(v_y)*dt/dy))}")
+            print(
+                f"Courant number: {max(np.max(np.abs(v_x)*dt/dx), np.max(np.abs(v_y)*dt/dy))}"
+            )
             # plot_temperature(
             #     u=u_dim,
             #     u_pt=u_pt,
