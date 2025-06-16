@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.sparse import diags
-from scipy.sparse.linalg import LinearOperator, bicgstab, spilu
+from scipy.sparse.linalg import LinearOperator, spilu
 
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -32,7 +32,7 @@ class ConjugateGradientSolver(BaseSolver):
 
         :param geometry: The computational domain's geometry.
         :param bcs: An object containing boundary conditions.
-        :param max_iters: Maximum number of iterations for convergence. Default is 1000.
+        :param max_iters: Maximum number of iterations for convergence. Default is 10000.
         :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
         """
         super().__init__(geometry=geometry, bcs=bcs)
