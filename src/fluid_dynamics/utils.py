@@ -57,28 +57,24 @@ def calculate_indicator_function(
     # result[interior] = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
 
 
-@njit
 def calculate_vorticity_from_sf(
     sf: NDArray[np.float64],
     result: NDArray[np.float64],
     dx: float,
     dy: float,
 ):
-    n_y, n_x = sf.shape
     inv_dx2 = 1.0 / dx**2
     inv_dy2 = 1.0 / dy**2
 
-    result[-1, :] = -2.0 * inv_dy2 * sf[-2, :]
-    result[:, -1] = -2.0 * inv_dx2 * sf[:, -2]
     result[0, :] = -2.0 * inv_dy2 * sf[1, :]
+    result[-1, :] = -2.0 * inv_dy2 * sf[-2, :]
     result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
+    result[:, -1] = -2.0 * inv_dx2 * sf[:, -2]
 
-    for j in range(1, n_y - 1):
-        for i in range(1, n_x - 1):
-            result[j, i] = (
-                -(sf[j + 1, i] - 2 * sf[j, i] + sf[j - 1, i]) * inv_dy2
-                - (sf[j, i + 1] - 2 * sf[j, i] + sf[j, i - 1]) * inv_dx2
-            )
+    result[1:-1, 1:-1] = -(
+        (sf[2:, 1:-1] - 2 * sf[1:-1, 1:-1] + sf[:-2, 1:-1]) * inv_dy2
+        + (sf[1:-1, 2:] - 2 * sf[1:-1, 1:-1] + sf[1:-1, :-2]) * inv_dx2
+    )
 
 
 @njit
