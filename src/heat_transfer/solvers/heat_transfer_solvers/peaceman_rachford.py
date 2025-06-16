@@ -308,6 +308,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
         inv_peclet_number = 1.0 / peclet_number
+        dt_half = 0.5 * dt
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -316,7 +317,6 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
                 k_ijp1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
-                dt_half = 0.5 * dt
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
                 a[i, j] = dt_half * (
