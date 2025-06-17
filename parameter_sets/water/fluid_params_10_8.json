@@ -11,9 +11,5 @@
         2.65889022e-09,
         -2.54761652e-12
     ],
-    "volumetric_thermal_exp_coeffs": [
-        -0.0114630054,
-        6.86739177e-05,
-        -9.84848485e-08
-    ]
+    "volumetric_thermal_exp_coeffs": [7.68e-6]
 }
