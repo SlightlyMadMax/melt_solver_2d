@@ -27,8 +27,7 @@ class DomainGeometry(BaseModel):
         return self.end_time / self.n_t
 
     @property
-    def length_scale(self) -> float:
-        # return self.height
+    def max_dimension(self) -> float:
         return max(self.width, self.height)
 
     @property
