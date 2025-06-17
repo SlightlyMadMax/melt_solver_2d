@@ -24,13 +24,11 @@ from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
-    get_delta,
 )
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.fluid import FluidParameters
 from src.parameters.thermal import ThermalParameters
-from src.utils.stand_with_icicle import init_temperature_icicle
 from src.utils.time_utils import get_remaining_time
 
 
@@ -53,27 +51,9 @@ if __name__ == "__main__":
     min_temp = 301.45
     max_temp = 311.15
 
-    # reference_temperature = max_temp
-    # delta_u = max_temp - min_temp
-
     thermal_params = ThermalParameters.load_from_file(
         "./parameter_sets/gallium/thermal_params_6_10_5.json"
     )
-
-    # thermal_params = ThermalParameters(
-    #     u_pt=273.15,
-    #     u_ref=reference_temperature,
-    #     delta_u=delta_u,
-    #     v=0.01,
-    #     l=l,
-    #     specific_heat_liquid=4120.7,
-    #     specific_heat_solid=2056.8,
-    #     specific_latent_heat=333000.0,
-    #     density_liquid=999.84,
-    #     density_solid=918.9,
-    #     thermal_conductivity_liquid=0.59,
-    #     thermal_conductivity_solid=2.21,
-    # )
 
     print(thermal_params)
 
@@ -84,22 +64,6 @@ if __name__ == "__main__":
     fluid_params = FluidParameters.load_from_file(
         "./parameter_sets/gallium/fluid_params_6_10_5.json"
     )
-
-    # fluid_params = FluidParameters(
-    #     u_pt=273.15,
-    #     u_ref=reference_temperature,
-    #     delta_u=delta_u,
-    #     v=0.01,
-    #     l=l,
-    #     epsilon=0.000001,
-    #     kinematic_viscosity_coeffs=[
-    #         0.000108963453,
-    #         -9.28722151e-07,
-    #         2.65889022e-09,
-    #         -2.54761652e-12,
-    #     ],
-    #     volumetric_thermal_exp_coeffs=[-0.0114630054, 6.86739177e-05, -9.84848485e-08],
-    # )
 
     print(fluid_params)
 
@@ -231,30 +195,8 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        # delta = get_delta(
-        #     u_n_non=u,
-        #     sf=sf,
-        #     time=t,
-        #     solver=heat_transfer_solver,
-        #     params=thermal_params,
-        #     geometry=geometry,
-        #     delta_min=0.1,
-        #     delta_max=5.0,
-        #     tol=1e-3,
-        # )
         delta = get_mushy_zone_temperature_range(u * delta_u + u_ref, u_pt=u_pt)
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        # delta = get_delta(
-        #     u_n_non=u,
-        #     sf=sf,
-        #     time=t,
-        #     solver=heat_transfer_solver,
-        #     params=thermal_params,
-        #     geometry=geometry,
-        #     delta_min=0.1,
-        #     delta_max=5.0,
-        #     tol=1e-3,
-        # )
         delta = get_mushy_zone_temperature_range(u * delta_u + u_ref, u_pt=u_pt)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=delta, time=t)
 
