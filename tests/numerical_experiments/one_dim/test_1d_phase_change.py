@@ -16,10 +16,10 @@ from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, St
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.thermal import ThermalParameters
-from src.tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
+from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
 )
-from src.tests.numerical_experiments.one_dim.compare_boundary import (
+from tests.numerical_experiments.one_dim.compare_boundary import (
     compare_num_with_analytic,
 )
 
