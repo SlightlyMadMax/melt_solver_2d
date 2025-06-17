@@ -220,7 +220,7 @@ if __name__ == "__main__":
         geometry=geometry,
         parameters=fluid_params,
         sf_bcs=sf_bcs,
-        sf_max_iters=n_y * n_x,
+        sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.UPWIND,
     )
