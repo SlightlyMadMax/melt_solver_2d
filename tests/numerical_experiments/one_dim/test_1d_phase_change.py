@@ -13,9 +13,13 @@ from src.core.boundary_conditions import (
 )
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
+from src.heat_transfer.coefficient_smoothing.mushy_zone import (
+    get_mushy_zone_temperature_range,
+)
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
+from src.parameters.material_properties import MaterialProperties
 from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     get_analytic_solution,
 )
@@ -48,42 +52,49 @@ geometry = DomainGeometry(
     height=8.0,
     end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
     n_x=21,
-    n_y=201,
+    n_y=301,
     n_t=24 * 100 * 10,
 )
 
 print(geometry)
 
-max_temp = 278.15
-min_temp = 268.15
-reference_temperature = 0.5 * (min_temp + max_temp)
-
-thermal_params = ThermalParameters(
-    domain_geometry=geometry,
+material_props = MaterialProperties(
     u_pt=273.15,
-    u_ref=reference_temperature,
-    delta_u=0.5 * (max_temp - min_temp),
-    v=0.01,
-    l=geometry.length_scale,
     specific_heat_liquid=4120.7,
     specific_heat_solid=2056.8,
-    specific_latent_heat=333000.0,
+    specific_latent_heat=3.33e5,
     density_liquid=999.84,
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
-    delta=delta,
+    kinematic_viscosity_coeffs=[
+        0.000108963453,
+        -9.28722151e-07,
+        2.65889022e-09,
+        -2.54761652e-12,
+    ],
+    volumetric_thermal_exp_coeffs=[7.68e-6],
 )
 
-print(thermal_params)
+max_temp = 278.15
+min_temp = 268.15
+
+cfg = ExperimentConfig(
+    geometry=geometry,
+    material_props=material_props,
+    u_ref=0.5 * (min_temp + max_temp),
+    delta_u=0.5 * (max_temp - min_temp),
+    v=0.01,
+    l=geometry.max_dimension,
+    delta=delta,
+    epsilon=1e-6,
+)
 
 bcs = BoundaryConditions(
     top=BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
+        value_func=lambda t, n: (max_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
     ),
     right=BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
@@ -93,9 +104,7 @@ bcs = BoundaryConditions(
     bottom=BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
+        value_func=lambda t, n: (min_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
     ),
     left=BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
@@ -105,9 +114,8 @@ bcs = BoundaryConditions(
 )
 
 heat_transfer_solver = HeatTransferSolver(
+    cfg=cfg,
     solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-    geometry=geometry,
-    parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
@@ -120,7 +128,7 @@ heat_transfer_solver = HeatTransferSolver(
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
 u[0, :] = min_temp
-u = (u - thermal_params.u_ref) / thermal_params.delta_u
+u = (u - cfg.u_ref) / cfg.delta_u
 
 boundary = [0.0]
 time_arr = [0.0]
@@ -129,13 +137,16 @@ i = int(geometry.n_x / 2)
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
-    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t)
+    delta = get_mushy_zone_temperature_range(
+        u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
+    )
+    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % 240 == 0:
         time_arr.append(t)
         print(f"ДЕНЬ: {int(n / 240)}")
         for j in range(geometry.n_y - 2):
             u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
-            u_ref = thermal_params.u_pt_ref
+            u_ref = cfg.u_pt_ref
             y0 = j * geometry.dy
             y1 = (j + 1) * geometry.dy
             y2 = (j + 2) * geometry.dy
@@ -148,25 +159,18 @@ print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
 u_analytical = (
     get_analytic_solution(
+        cfg=cfg,
         t=geometry.n_t * geometry.dt,
         min_temp=min_temp,
         max_temp=max_temp,
-        geometry=geometry,
-        params=thermal_params,
     )
     - ABS_ZERO
-    - thermal_params.u_ref
-) / thermal_params.delta_u
+    - cfg.u_ref
+) / cfg.delta_u
 
-temp_top = (
-    u_analytical[-1, int(geometry.n_x / 2)] * thermal_params.delta_u
-    + ABS_ZERO
-    + thermal_params.u_ref
-)
+temp_top = u_analytical[-1, int(geometry.n_x / 2)] * cfg.delta_u + ABS_ZERO + cfg.u_ref
 temp_near_top = (
-    u_analytical[-2, int(geometry.n_x / 2)] * thermal_params.delta_u
-    + ABS_ZERO
-    + thermal_params.u_ref
+    u_analytical[-2, int(geometry.n_x / 2)] * cfg.delta_u + ABS_ZERO + cfg.u_ref
 )
 print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
 L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(
@@ -175,11 +179,11 @@ L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(
 print(f"L2 error: {L2_error}")
 
 compare_num_with_analytic(
+    cfg=cfg,
     num=boundary,
     time=time_arr,
     min_temp=min_temp,
     max_temp=max_temp,
-    params=thermal_params,
     show_graphs=True,
     dir_name=dir_path,
 )

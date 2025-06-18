@@ -2,6 +2,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
     ImplicitVorticitySolver,
 )
@@ -137,25 +138,29 @@ class VabishchevichScheme(ImplicitVorticitySolver):
         u: NDArray[np.float64],
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
-        n_x, n_y = self.geometry.n_x, self.geometry.n_y
-        length_scale = self.geometry.length_scale
+        geometry: DomainGeometry = self.cfg.geometry
+        dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
+        n_x, n_y = geometry.n_x, geometry.n_y
+        dx_scaled = dx / self.cfg.l
+        dy_scaled = dy / self.cfg.l
+        dt_scaled = dt * self.cfg.v / self.cfg.l
+
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
-        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        u_dim = u * self.cfg.delta_u + self.cfg.u_ref
         delta = get_mushy_zone_temperature_range(
             u=u_dim,
-            u_pt=self.parameters.u_pt,
+            u_pt=self.cfg.material_props.u_pt,
             h_x=dx,
             h_y=dy,
         )
         calculate_indicator_function(
             u=u_dim,
-            u_pt=self.parameters.u_pt,
-            eps=self.parameters.epsilon,
+            u_pt=self.cfg.material_props.u_pt,
+            eps=self.cfg.epsilon,
             delta=delta,
             result=self.c_ind,
         )
-        self.c_ind *= length_scale**3 / self.parameters.v
+        self.c_ind *= self.cfg.l**3 / self.cfg.v
 
         self.calculate_boundary_conditions(
             sf=sf,
@@ -164,8 +169,8 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             bottom_bc=self.bottom_bc,
             left_bc=self.left_bc,
             order=self.bc_order,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
+            dx=dx_scaled,
+            dy=dy_scaled,
         )
 
         self._compute_sweep_x_coeff(
@@ -175,13 +180,13 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_ind=self.c_ind,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
-            dt=dt * self.parameters.v / length_scale,
-            u_pt_ref=self.parameters.u_pt_ref,
-            delta_u=self.parameters.delta_u,
-            reynolds_number=self.parameters.reynolds_number,
-            grashof_number=self.parameters.grashof_number,
+            dx=dx_scaled,
+            dy=dy_scaled,
+            dt=dt_scaled,
+            u_pt_ref=self.cfg.u_pt_ref,
+            delta_u=self.cfg.delta_u,
+            reynolds_number=self.cfg.reynolds_number,
+            grashof_number=self.cfg.grashof_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -207,13 +212,13 @@ class VabishchevichScheme(ImplicitVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_ind=self.c_ind,
-            dx=dx / length_scale,
-            dy=dy / length_scale,
-            dt=dt * self.parameters.v / length_scale,
-            u_pt_ref=self.parameters.u_pt_ref,
-            delta_u=self.parameters.delta_u,
-            reynolds_number=self.parameters.reynolds_number,
-            grashof_number=self.parameters.grashof_number,
+            dx=dx_scaled,
+            dy=dy_scaled,
+            dt=dt_scaled,
+            u_pt_ref=self.cfg.u_pt_ref,
+            delta_u=self.cfg.delta_u,
+            reynolds_number=self.cfg.reynolds_number,
+            grashof_number=self.cfg.grashof_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,

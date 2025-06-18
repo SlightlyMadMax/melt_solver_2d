@@ -8,6 +8,7 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
 )
+from src.parameters.config import ExperimentConfig
 
 
 @register_sf_solver(StreamFunctionSolverName.SOR)
@@ -22,7 +23,7 @@ class SORPoissonSolver(BaseSolver):
 
     def __init__(
         self,
-        geometry: DomainGeometry,
+        cfg: ExperimentConfig,
         bcs: BoundaryConditions,
         max_iters: int = 50,
         stopping_criteria: float = 1e-6,
@@ -30,12 +31,13 @@ class SORPoissonSolver(BaseSolver):
         """
         Initialize the SORPoissonSolver with domain geometry and boundary conditions.
 
-        :param geometry: The computational domain's geometry.
+        :param cfg: The experiment configuration (domain geometry, material properties, etc.).
         :param bcs: An object containing boundary conditions.
         :param max_iters: Maximum number of iterations for convergence. Default is 50.
         :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
         """
-        super().__init__(geometry=geometry, bcs=bcs)
+        super().__init__(cfg=cfg, bcs=bcs)
+        self.geometry: DomainGeometry = self.cfg.geometry
         self._optimal_omega = self.calculate_omega()
         self.max_iters = max_iters
         self.stopping_criteria = stopping_criteria
@@ -122,8 +124,8 @@ class SORPoissonSolver(BaseSolver):
             rhs=rhs,
             result=self._result,
             omega=self._optimal_omega,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
+            dx=self.geometry.dx / self.cfg.l,
+            dy=self.geometry.dy / self.cfg.l,
             max_iters=self.max_iters,
             stopping_criteria=self.stopping_criteria,
             right_value=(

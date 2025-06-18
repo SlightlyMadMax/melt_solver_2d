@@ -1,5 +1,4 @@
 from .douglas_rachford import DouglasRachfordSolver
 from .loc_one_dim import LocOneDimSolver
 from .peaceman_rachford import PeacemanRachfordSolver
-from .explicit import ExplicitHeatSolver
 from .registry import HeatTransferSolverName, HeatTransferSolverRegistry

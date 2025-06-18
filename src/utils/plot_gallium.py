@@ -11,7 +11,7 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 
 
 paths = sorted(
-    glob.glob("../../data/gallium/symm/u_*.npz"),
+    glob.glob("../../data/gallium/better_courant/u_*.npz"),
     key=lambda f: int(re.search(r"u_(\d+)", f).group(1)),
 )
 img = plt.imread("../../data/gau.png")
@@ -20,8 +20,8 @@ geometry = DomainGeometry(
     width=0.0889,
     height=0.0635,
     end_time=60.0 * 60.0 * 24.0,
-    n_x=151,
-    n_y=111,
+    n_x=281,
+    n_y=201,
     n_t=60 * 60 * 24 * 20,
 )
 
@@ -29,10 +29,10 @@ min_temp = 301.45
 max_temp = 311.15
 
 thermal_params = ThermalParameters.load_from_file(
-    "../parameter_sets/gallium/thermal_params_6_10_5.json"
+    "../../parameter_sets/gallium/thermal_params_6_10_5.json"
 )
 fluid_params = FluidParameters.load_from_file(
-    "../parameter_sets/gallium/fluid_params_6_10_5.json"
+    "../../parameter_sets/gallium/fluid_params_6_10_5.json"
 )
 
 fig, ax = plt.subplots()

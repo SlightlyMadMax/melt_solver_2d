@@ -5,7 +5,7 @@ from enum import Enum
 from numba import njit
 from numpy.typing import NDArray
 
-from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
 
 
 class ConvectiveTermForm(Enum):
@@ -16,8 +16,8 @@ class ConvectiveTermForm(Enum):
 
 
 class BaseConvectiveOperator(ABC):
-    def __init__(self, geometry: DomainGeometry):
-        self.geometry = geometry
+    def __init__(self, cfg: ExperimentConfig):
+        self.cfg = cfg
 
     @abstractmethod
     def __call__(

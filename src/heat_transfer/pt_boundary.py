@@ -5,6 +5,7 @@ import math
 from numpy.typing import NDArray
 
 from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
 
 
 def init_crevasse_boundary(
@@ -31,22 +32,20 @@ def init_crevasse_boundary(
 
 
 def get_phase_trans_boundary(
-    geom: DomainGeometry,
+    cfg: ExperimentConfig,
     u: NDArray[np.float64],
-    u_pt: float,
 ) -> Tuple[list, list]:
     """
     Find the coordinates of the phase-transition boundary.
 
-    :param geom: Object containing geometry information.
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
     :param u: A 2D array of temperatures at the current time layer.
-    :param u_pt: The phase transition temperature.
     :return: 1d arrays for x and y coordinates of the phase-transition boundary interface.
     """
     x, y = [], []
-    n_y, n_x = geom.n_y, geom.n_x
-    dy, dx = geom.dy, geom.dx
-    u_diff = u - u_pt
+    n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x
+    dy, dx = cfg.geometry.dy, cfg.geometry.dx
+    u_diff = u - cfg.material_props.u_pt
 
     for j in range(1, n_y - 1):
         for i in range(1, n_x - 1):

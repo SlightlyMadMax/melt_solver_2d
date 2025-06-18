@@ -9,17 +9,16 @@ from src.convective_operators import (
     VorticityTransportOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
-from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
-from src.parameters.fluid import FluidParameters
+
+from src.parameters.config import ExperimentConfig
 
 
 class IterativeNavierStokesSolver:
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
+        cfg: ExperimentConfig,
         sf_bcs: BoundaryConditions,
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.SOR,
@@ -31,14 +30,13 @@ class IterativeNavierStokesSolver:
         urf: float = 0.5,
         bc_order: int = 2,
     ):
-        self.geometry = geometry
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
-        self.convective_operator = VorticityTransportOperator(
-            form=convective_term_form, geometry=geometry
+        convective_operator = VorticityTransportOperator(
+            form=convective_term_form, cfg=cfg
         )
-        n_y, n_x = geometry.n_y, geometry.n_x
+        n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x
 
         if bc_order not in (1, 2):
             raise NotImplementedError(
@@ -53,13 +51,12 @@ class IterativeNavierStokesSolver:
         )
 
         self.vorticity_solver = vorticity_solver_class(
-            geometry=geometry,
-            parameters=parameters,
-            convective_operator=self.convective_operator,
+            cfg=cfg,
+            convective_operator=convective_operator,
             bc_order=bc_order,
         )
         self.stream_function_solver = stream_function_solver_class(
-            geometry=geometry,
+            cfg=cfg,
             bcs=sf_bcs,
             max_iters=sf_max_iters,
             stopping_criteria=sf_stopping_criteria,

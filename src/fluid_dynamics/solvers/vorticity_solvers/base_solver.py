@@ -4,30 +4,27 @@ import numpy as np
 from numpy.typing import NDArray
 
 from src.convective_operators import BaseConvectiveOperator
-from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
 from src.fluid_dynamics.utils import VorticityBCMixin
-from src.parameters.fluid import FluidParameters
+from src.parameters.config import ExperimentConfig
 
 
 class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
+        cfg: ExperimentConfig,
         convective_operator: BaseConvectiveOperator,
         bc_order: int,
         *args,
         **kwargs,
     ):
-        super().__init__(geometry=geometry)
+        super().__init__(cfg=cfg)
 
-        self.parameters = parameters
         self.convective_operator = convective_operator
         self.bc_order = bc_order
 
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
         self._new_w: NDArray[np.float64] = np.empty((n_y, n_x))

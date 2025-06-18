@@ -10,7 +10,6 @@ def calculate_indicator_function(
     u_pt: float,
     eps: float,
     result: NDArray[np.float64],
-    # delta: NDArray[np.float64],
     delta: float,
 ) -> None:
     """

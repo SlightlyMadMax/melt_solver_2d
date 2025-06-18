@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 
 from abc import abstractmethod
@@ -13,7 +11,6 @@ from src.core.boundary_conditions import (
     BoundaryCondition,
     BoundaryConditionType,
 )
-from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
@@ -25,15 +22,13 @@ from src.heat_transfer.coefficient_smoothing.coefficients import (
     get_step_fn,
     get_delta_fn,
 )
-from src.heat_transfer.coefficient_smoothing.mushy_zone import collect_mushy_cells
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
 
 
 class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: ThermalParameters,
+        cfg: ExperimentConfig,
         convective_operator: BaseConvectiveOperator,
         bcs: Optional[BoundaryConditions] = None,
         fixed_delta: bool = False,
@@ -46,9 +41,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         *args,
         **kwargs,
     ):
-        super().__init__(geometry=geometry, bcs=bcs)
+        super().__init__(cfg=cfg, bcs=bcs)
 
-        self.parameters = parameters
         self.convective_operator = convective_operator
         self.fixed_delta = fixed_delta
         self.max_iters = max_iters
@@ -57,7 +51,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self.bc_order = bc_order
         self.step_scheme = step_scheme
         self.delta_scheme = delta_scheme
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
+
         # Pre-allocate some arrays that will be used in the calculations
         self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))
         self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
@@ -77,17 +72,17 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
 
     def compute_k_eff(self, u: float, delta: float) -> float:
         step_fn = get_step_fn(self.step_scheme)
-        u_dim = u * self.parameters.delta_u + self.parameters.u_ref
+        u_dim = u * self.cfg.delta_u + self.cfg.u_ref
         k_eff = (
             k_smoothed(
                 u=u_dim,
-                u_pt=self.parameters.u_pt,
-                k_solid=self.parameters.thermal_conductivity_solid,
-                k_liquid=self.parameters.thermal_conductivity_liquid,
+                u_pt=self.cfg.material_props.u_pt,
+                k_solid=self.cfg.material_props.thermal_conductivity_solid,
+                k_liquid=self.cfg.material_props.thermal_conductivity_liquid,
                 delta=delta,
                 step_fn=step_fn,
             )
-            / self.parameters.thermal_conductivity_ref
+            / self.cfg.thermal_conductivity_ref
         )
         return k_eff
 
@@ -105,8 +100,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid: float,
         k_liquid: float,
         delta: float,
-        # delta: NDArray[np.float64],
-        # mushy_mask: NDArray[np.uint8],
         h_x: float,
         h_y: float,
     ) -> None:
@@ -125,9 +118,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
             k_solid=k_solid,
             k_liquid=k_liquid,
             delta=delta,
-            # mushy_mask=mushy_mask,
-            h_x=h_x,
-            h_y=h_y,
             step_fn=step_fn,
             delta_fn=delta_fn,
         )
@@ -147,10 +137,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid: float,
         k_liquid: float,
         delta: float,
-        # delta: NDArray[np.float64],
-        # mushy_mask: NDArray[np.uint8],
-        h_x: float,
-        h_y: float,
         step_fn: callable,
         delta_fn: callable,
     ) -> None:
@@ -228,7 +214,7 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
             if self.bc_order == 1:
                 # first-order ghost
                 flux = bc.get_flux(t=time) / (
-                    k_eff_slice * self.parameters.thermal_conductivity_ref
+                    k_eff_slice * self.cfg.thermal_conductivity_ref
                 )
                 self.apply_neumann_first_order(
                     a=a, b=b, c=c, rhs=rhs, flux=flux, side=side

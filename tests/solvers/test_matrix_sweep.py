@@ -12,17 +12,12 @@ from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers.matrix_sweep import (
     MatrixSweepPoissonSolver,
 )
+from tests.solvers.fixtures import get_cfg
 
 
 def test_matrix_sweep_poisson_solver():
-    geometry = DomainGeometry(
-        width=2.0,
-        height=0.5,
-        end_time=100,
-        n_x=100,
-        n_y=100,
-        n_t=100,
-    )
+    cfg = get_cfg()
+    geometry: DomainGeometry = cfg.geometry
 
     x = np.linspace(0, geometry.width, geometry.n_x, dtype=np.float64)
     y = np.linspace(0, geometry.height, geometry.n_y, dtype=np.float64)
@@ -32,10 +27,10 @@ def test_matrix_sweep_poisson_solver():
     analytical_solution = -0.5 * (X**2 + Y**2)
 
     # Right-hand side (-2 everywhere in the domain)
-    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64) * geometry.length_scale**2
+    rhs = -2 * np.ones((geometry.n_y, geometry.n_x), dtype=np.float64) * cfg.l**2
 
     solver = MatrixSweepPoissonSolver(
-        geometry=geometry,
+        cfg=cfg,
         bcs=BoundaryConditions(
             top=BoundaryCondition(
                 boundary_type=BoundaryConditionType.DIRICHLET,

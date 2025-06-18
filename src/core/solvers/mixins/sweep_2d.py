@@ -8,11 +8,11 @@ from numpy.typing import NDArray
 from src.utils.thomas import solve_tridiagonal
 
 if TYPE_CHECKING:
-    from src.core.geometry import DomainGeometry
+    from src.parameters.config import ExperimentConfig
 
 
-class HasGeometry(Protocol):
-    geometry: "DomainGeometry"
+class HasConfig(Protocol):
+    cfg: "ExperimentConfig"
 
 
 class Sweep2DMixin:
@@ -20,7 +20,7 @@ class Sweep2DMixin:
     Mixin that provides pre-allocated coefficient arrays and abstract sweep methods
     for 2D splitting schemes (e.g. Peaceman–Rachford, Douglas–Rachford).
 
-    Assumes the consuming class defines a `.geometry` attribute.
+    Assumes the consuming class defines a `.cfg` attribute.
     """
 
     _a_x: NDArray[np.float64]
@@ -32,8 +32,8 @@ class Sweep2DMixin:
     _rhs_x: NDArray[np.float64]
     _rhs_y: NDArray[np.float64]
 
-    def _initialize_sweep_arrays(self: HasGeometry) -> None:
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+    def _initialize_sweep_arrays(self: HasConfig) -> None:
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         self._a_x = np.empty((n_y, n_x))
         self._b_x = np.empty((n_y, n_x))
         self._c_x = np.empty((n_y, n_x))

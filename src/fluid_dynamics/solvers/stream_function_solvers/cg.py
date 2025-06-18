@@ -9,6 +9,7 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
 )
+from src.parameters.config import ExperimentConfig
 
 
 @register_sf_solver(StreamFunctionSolverName.CG)
@@ -22,7 +23,7 @@ class ConjugateGradientSolver(BaseSolver):
 
     def __init__(
         self,
-        geometry: DomainGeometry,
+        cfg: ExperimentConfig,
         bcs: BoundaryConditions,
         max_iters: int = 10000,
         stopping_criteria: float = 1e-6,
@@ -30,12 +31,13 @@ class ConjugateGradientSolver(BaseSolver):
         """
         Initialize the ConjugateGradientSolver with domain geometry and boundary conditions.
 
-        :param geometry: The computational domain's geometry.
+        :param cfg: The configuration of the experiment (domain geometry, material properties, etc.).
         :param bcs: An object containing boundary conditions.
         :param max_iters: Maximum number of iterations for convergence. Default is 10000.
         :param stopping_criteria: Convergence criteria for the solver. Default is 1e-6.
         """
-        super().__init__(geometry=geometry, bcs=bcs)
+        super().__init__(cfg=cfg, bcs=bcs)
+        self.geometry: DomainGeometry = cfg.geometry
         self.max_iters = max_iters
         self.stopping_criteria = stopping_criteria
 

@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from pydantic import ValidationError, BaseModel
 
 from src.convective_operators.base_convective_operator import BaseConvectiveOperator
-from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
 
 
 class SFTransportArgs(BaseModel):
@@ -18,9 +18,9 @@ class SFTransportArgs(BaseModel):
 
 
 class EffectiveSFTransportOperator(BaseConvectiveOperator):
-    def __init__(self, geometry: DomainGeometry):
-        super().__init__(geometry=geometry)
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+    def __init__(self, cfg: ExperimentConfig):
+        super().__init__(cfg=cfg)
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         self._dw_dx: NDArray[np.float64] = np.empty((n_y, n_x))
         self._dw_dy: NDArray[np.float64] = np.empty((n_y, n_x))
 
@@ -33,8 +33,8 @@ class EffectiveSFTransportOperator(BaseConvectiveOperator):
         w = parsed.w
         u = parsed.u
         u_pt = parsed.u_pt
-        dx = self.geometry.dx / self.geometry.length_scale
-        dy = self.geometry.dy / self.geometry.length_scale
+        dx = self.cfg.geometry.dx / self.cfg.l
+        dy = self.cfg.geometry.dy / self.cfg.l
 
         self._compute_vorticity_first_derivatives(
             w=w, dw_dx=self._dw_dx, dw_dy=self._dw_dy, dx=dx, dy=dy

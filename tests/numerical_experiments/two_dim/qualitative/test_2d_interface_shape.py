@@ -12,12 +12,14 @@ from src.core.boundary_conditions import (
     BoundaryConditions,
 )
 from src.core.geometry import DomainGeometry
+from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
 from src.heat_transfer.init_values import init_temperature_with_interface
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.utils import TemperatureUnit
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
+from src.parameters.material_properties import MaterialProperties
 from src.utils.time_utils import get_remaining_time
 
 max_temp = 278.15
@@ -35,42 +37,53 @@ geometry = DomainGeometry(
 
 print(geometry)
 
-thermal_params = ThermalParameters(
-    domain_geometry=geometry,
+material_props = MaterialProperties(
     u_pt=273.15,
-    u_ref=reference_temperature,
-    delta_u=max_temp - min_temp,
-    l=geometry.length_scale,
-    v=0.01,
     specific_heat_liquid=4120.7,
     specific_heat_solid=2056.8,
-    specific_latent_heat=333000.0,
+    specific_latent_heat=3.33e5,
     density_liquid=999.84,
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
+    kinematic_viscosity_coeffs=[
+        0.000108963453,
+        -9.28722151e-07,
+        2.65889022e-09,
+        -2.54761652e-12,
+    ],
+    volumetric_thermal_exp_coeffs=[7.68e-6],
 )
 
-print(thermal_params)
+cfg = ExperimentConfig(
+    geometry=geometry,
+    material_props=material_props,
+    u_ref=0.5 * (min_temp + max_temp),
+    delta_u=0.5 * (max_temp - min_temp),
+    v=0.01,
+    l=geometry.max_dimension,
+    delta=None,
+    epsilon=1e-6,
+)
 
 b_lim = (
     (
-        thermal_params.thermal_conductivity_liquid
-        * thermal_params.specific_latent_heat
-        / thermal_params.density_solid
+        material_props.thermal_conductivity_liquid
+        * material_props.specific_latent_heat
+        / material_props.density_solid
     )
     * (max_temp + ABS_ZERO)
     / (
         (
-            thermal_params.thermal_conductivity_liquid
-            * thermal_params.specific_latent_heat
-            / thermal_params.density_solid
+            material_props.thermal_conductivity_liquid
+            * material_props.specific_latent_heat
+            / material_props.density_solid
         )
         * (max_temp + ABS_ZERO)
         + (
-            thermal_params.thermal_conductivity_solid
-            * thermal_params.specific_latent_heat
-            / thermal_params.density_solid
+            material_props.thermal_conductivity_solid
+            * material_props.specific_latent_heat
+            / material_props.density_solid
         )
         * abs(min_temp + ABS_ZERO)
     )
@@ -87,8 +100,7 @@ f = [
 f = np.array(f)
 
 u = init_temperature_with_interface(
-    geom=geometry,
-    thermal_parameters=thermal_params,
+    cfg=cfg,
     liquid_temp=max_temp,
     solid_temp=min_temp,
     f=f,
@@ -96,9 +108,8 @@ u = init_temperature_with_interface(
 )
 
 plot_temperature(
-    u=u * thermal_params.delta_u + thermal_params.u_ref,
-    u_pt=thermal_params.u_pt,
-    geometry=geometry,
+    u=u * cfg.delta_u + cfg.u_ref,
+    cfg=cfg,
     time=0.0,
     graph_id=0,
     plot_boundary=True,
@@ -114,9 +125,7 @@ bcs = BoundaryConditions(
     top=BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: (max_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
+        value_func=lambda t, n: (max_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
     ),
     right=BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
@@ -126,9 +135,7 @@ bcs = BoundaryConditions(
     bottom=BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
         n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - thermal_params.u_ref)
-        / thermal_params.delta_u
-        * np.ones(n),
+        value_func=lambda t, n: (min_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
     ),
     left=BoundaryCondition(
         boundary_type=BoundaryConditionType.NEUMANN,
@@ -138,9 +145,8 @@ bcs = BoundaryConditions(
 )
 
 heat_transfer_solver = HeatTransferSolver(
+    cfg=cfg,
     solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-    geometry=geometry,
-    parameters=thermal_params,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=False,
@@ -153,7 +159,10 @@ start_time = time.perf_counter()
 
 for i in range(1, geometry.n_t + 1):
     t = i * geometry.dt
-    u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t)
+    delta = get_mushy_zone_temperature_range(
+        u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
+    )
+    u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=delta)
     if i % 24 == 0:
         print(
             f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(i / 24)} дней, "
@@ -161,9 +170,8 @@ for i in range(1, geometry.n_t + 1):
             f"ОСТАЛОСЬ: {get_remaining_time(n=i, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
         )
         plot_temperature(
-            u=u * thermal_params.delta_u + thermal_params.u_ref,
-            u_pt=thermal_params.u_pt,
-            geometry=geometry,
+            u=u * cfg.delta_u + cfg.u_ref,
+            cfg=cfg,
             time=t,
             graph_id=i,
             plot_boundary=True,
@@ -176,7 +184,7 @@ for i in range(1, geometry.n_t + 1):
             directory="./results/",
         )
 
-u_dim = u * thermal_params.delta_u - thermal_params.u_pt_ref
+u_dim = u * cfg.delta_u - cfg.u_pt_ref
 center_i_index = int(geometry.n_x / 2)
 for j in range(geometry.n_y - 2):
     u0, u1, u2 = (
@@ -187,7 +195,7 @@ for j in range(geometry.n_y - 2):
     y0 = j * geometry.dy
     y1 = (j + 1) * geometry.dy
     y2 = (j + 2) * geometry.dy
-    pt = get_pt_quadratic(u0, u1, u2, thermal_params.u_pt_ref, y0, y1, y2)
+    pt = get_pt_quadratic(u0, u1, u2, cfg.u_pt_ref, y0, y1, y2)
     if pt is not None:
         print(f"Calculated final location of the boundary: {pt}")
         print(

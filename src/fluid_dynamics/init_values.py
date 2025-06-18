@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from src.core.geometry import DomainGeometry
@@ -29,3 +31,7 @@ def initialize_vorticity(geom: DomainGeometry) -> np.ndarray:
              the initial vorticity values.
     """
     return np.zeros((geom.n_y, geom.n_x))
+
+
+def initialize_velocity(geom: DomainGeometry) -> Tuple[np.ndarray, np.ndarray]:
+    return np.zeros((geom.n_y, geom.n_x)), np.zeros((geom.n_y, geom.n_x))

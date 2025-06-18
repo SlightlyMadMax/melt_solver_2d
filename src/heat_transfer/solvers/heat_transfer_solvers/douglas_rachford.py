@@ -2,10 +2,9 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.core.boundary_conditions import BoundaryConditionType
+from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
-    get_dilated_mushy_mask,
 )
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ImplicitHeatTransferSolver,
@@ -14,6 +13,7 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
+from src.parameters.material_properties import MaterialProperties
 
 
 @register_solver(HeatTransferSolverName.DOUGLAS_RACHFORD)
@@ -183,41 +183,48 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         )
 
     def solve_linear(
-        self, u: NDArray[np.float64], sf: NDArray[np.float64], time: float = 0.0
+        self,
+        u: NDArray[np.float64],
+        sf: NDArray[np.float64],
+        delta: float,
+        time: float = 0.0,
     ) -> None:
-        dx, dy = self.geometry.dx, self.geometry.dy
-        n_x, n_y = self.geometry.n_x, self.geometry.n_y
+        geometry: DomainGeometry = self.cfg.geometry
+        props: MaterialProperties = self.cfg.material_props
+        n_x, n_y = geometry.n_x, geometry.n_y
+        dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
+        dx_scaled = dx / self.cfg.l
+        dy_scaled = dy / self.cfg.l
+        dt_scaled = dt * self.cfg.v / self.cfg.l
+
         self.convective_operator(
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             sf=sf,
-            u=u * self.parameters.delta_u + self.parameters.u_ref,
-            u_pt=self.parameters.u_pt,
+            u=u * self.cfg.delta_u + self.cfg.u_ref,
+            u_pt=self.cfg.material_props.u_pt,
         )
-        u_dim = self._iter_u * self.parameters.delta_u + self.parameters.u_ref
+        u_dim = self._iter_u * self.cfg.delta_u + self.cfg.u_ref
         delta = get_mushy_zone_temperature_range(
             u=u_dim,
-            u_pt=self.parameters.u_pt,
+            u_pt=self.cfg.material_props.u_pt,
             h_x=dx,
             h_y=dy,
         )
-        mushy_mask = get_dilated_mushy_mask(
-            u_dim=u_dim, u_pt=self.parameters.u_pt, delta=delta, extend_by=1
-        )
+
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             u_dim=u_dim,
-            u_pt=self.parameters.u_pt,
-            c_ref=self.parameters.volumetric_heat_capacity_ref,
-            c_solid=self.parameters.volumetric_heat_capacity_solid,
-            c_liquid=self.parameters.volumetric_heat_capacity_liquid,
-            l_solid=self.parameters.volumetric_latent_heat,
-            k_ref=self.parameters.thermal_conductivity_ref,
-            k_solid=self.parameters.thermal_conductivity_solid,
-            k_liquid=self.parameters.thermal_conductivity_liquid,
+            u_pt=self.cfg.material_props.u_pt,
+            c_ref=self.cfg.volumetric_heat_capacity_ref,
+            c_solid=props.volumetric_heat_capacity_solid,
+            c_liquid=props.volumetric_heat_capacity_liquid,
+            l_solid=props.volumetric_latent_heat,
+            k_ref=self.cfg.thermal_conductivity_ref,
+            k_solid=props.thermal_conductivity_solid,
+            k_liquid=props.thermal_conductivity_liquid,
             delta=delta,
-            mushy_mask=mushy_mask,
             h_y=dy,
             h_x=dx,
         )
@@ -228,10 +235,10 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             conv_y=self._conv_y,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
-            dx=self.geometry.dx / self.geometry.length_scale,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            peclet_number=self.parameters.peclet_number,
+            dx=dx_scaled,
+            dy=dy_scaled,
+            dt=dt_scaled,
+            peclet_number=self.cfg.peclet_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -257,9 +264,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             conv_y=self._conv_y,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
-            dy=dy / self.geometry.length_scale,
-            dt=self.geometry.dt * self.parameters.v / self.geometry.length_scale,
-            peclet_number=self.parameters.peclet_number,
+            dy=dy_scaled,
+            dt=dt_scaled,
+            peclet_number=self.cfg.peclet_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,

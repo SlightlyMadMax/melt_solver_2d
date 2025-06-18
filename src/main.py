@@ -14,6 +14,7 @@ from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrection
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
+    initialize_velocity,
 )
 from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.heat_transfer.coefficient_smoothing.coefficients import (
@@ -27,66 +28,40 @@ from src.heat_transfer.coefficient_smoothing.mushy_zone import (
 )
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.parameters.fluid import FluidParameters
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
+from src.parameters.material_properties import MaterialProperties
 from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
-    geometry = DomainGeometry(
-        width=0.0889,
-        height=0.0635,
-        end_time=60.0 * 60.0 * 24.0,
-        n_x=151,
-        n_y=111,
-        n_t=60 * 60 * 24 * 20,
-    )
-
+    cfg = ExperimentConfig.load_from_file("../parameter_sets/gallium/config.json")
+    geometry: DomainGeometry = cfg.geometry
     print(geometry)
 
     dx, dy = geometry.dx, geometry.dy
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    l = geometry.length_scale
     min_temp = 301.45
     max_temp = 311.15
 
-    thermal_params = ThermalParameters.load_from_file(
-        "./parameter_sets/gallium/thermal_params_6_10_5.json"
-    )
+    material_props: MaterialProperties = cfg.material_props
 
-    print(thermal_params)
+    print(material_props)
 
-    delta_u = thermal_params.delta_u
-    u_ref = thermal_params.u_ref
-    u_pt = thermal_params.u_pt
+    delta_u = cfg.delta_u
+    u_ref = cfg.u_ref
+    u_pt = material_props.u_pt
+    l = cfg.l
+    v = cfg.v
 
-    fluid_params = FluidParameters.load_from_file(
-        "./parameter_sets/gallium/fluid_params_6_10_5.json"
-    )
-
-    print(fluid_params)
-
-    v = fluid_params.v
-    pr = (
-        fluid_params.kinematic_viscosity_at_u_ref
-        / thermal_params.thermal_diffusivity_solid
-    )
-    print(f"Pr = {pr:.4f}\n")
-    print(f"Ra = {fluid_params.grashof_number * pr:.2f}\n")
+    print(f"Pr = {cfg.prandtl_number:.4f}\n")
+    print(f"Ra = {cfg.rayleigh_number:.2f}\n")
 
     u = init_temperature(
-        geometry=geometry,
-        thermal_parameters=thermal_params,
+        cfg=cfg,
         shape=DomainShape.UNIFORM_SOLID,
         solid_temp=min_temp,
     )
-    # u = init_temperature_icicle(
-    #     geometry=geometry,
-    #     thermal_parameters=thermal_params,
-    #     liquid_temp=max_temp,
-    #     solid_temp=min_temp,
-    # )
 
     u[:, 0] = (max_temp - u_ref) / delta_u
     # u[:, -1] = (max_temp - u_ref) / delta_u
@@ -94,14 +69,11 @@ if __name__ == "__main__":
     dim_u = u * delta_u + u_ref
     init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
 
-    print(
-        f"Mushy zone width for the initial temperature distribution: {init_delta:.2f}"
-    )
+    print(f"Initial mushy zone temperature range: {init_delta:.2f}")
 
     plot_temperature(
         u=dim_u,
-        u_pt=u_pt,
-        geometry=geometry,
+        cfg=cfg,
         time=0.0,
         graph_id=0,
         plot_boundary=True,
@@ -164,10 +136,10 @@ if __name__ == "__main__":
 
     sf = initialize_stream_function(geom=geometry)
     w = initialize_vorticity(geom=geometry)
+    v_x, v_y = initialize_velocity(geom=geometry)
 
     heat_transfer_solver = HeatTransferSolver(
-        geometry=geometry,
-        parameters=thermal_params,
+        cfg=cfg,
         bcs=u_bcs,
         fixed_delta=False,
         max_iters=1,
@@ -181,16 +153,12 @@ if __name__ == "__main__":
     )
 
     navier_solver = BCCorrectionNVSolver(
-        geometry=geometry,
-        parameters=fluid_params,
+        cfg=cfg,
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.UPWIND,
     )
-
-    v_x = np.zeros_like(sf)
-    v_y = np.zeros_like(sf)
 
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
@@ -200,11 +168,11 @@ if __name__ == "__main__":
         delta = get_mushy_zone_temperature_range(u * delta_u + u_ref, u_pt=u_pt)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=delta, time=t)
 
-        if n % 200 == 0:
+        if n % cfg.save_interval == 0:
             t_min = t / 60
             if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
                 print("bruh")
-                np.savez_compressed(f"../data/gallium/better_courant/u_{n}.npz", u=u)
+                np.savez_compressed(f"../data/gallium/test/u_{n}.npz", u=u)
             u_dim = u * delta_u + u_ref
             calculate_velocity_from_sf(
                 sf * v * l,
@@ -216,19 +184,18 @@ if __name__ == "__main__":
             print(
                 f"Courant number: {max(np.max(np.abs(v_x)*dt/dx), np.max(np.abs(v_y)*dt/dy))}"
             )
-            # plot_temperature(
-            #     u=u_dim,
-            #     u_pt=u_pt,
-            #     geometry=geometry,
-            #     time=t,
-            #     graph_id=n,
-            #     plot_boundary=True,
-            #     show_graph=False,
-            #     min_temp=min_temp + ABS_ZERO,
-            #     max_temp=max_temp + ABS_ZERO,
-            #     actual_temp_units=TemperatureUnit.KELVIN,
-            #     display_temp_units=TemperatureUnit.CELSIUS,
-            # )
+            plot_temperature(
+                u=u_dim,
+                cfg=cfg,
+                time=t,
+                graph_id=n,
+                plot_boundary=True,
+                show_graph=False,
+                min_temp=min_temp + ABS_ZERO,
+                max_temp=max_temp + ABS_ZERO,
+                actual_temp_units=TemperatureUnit.KELVIN,
+                display_temp_units=TemperatureUnit.CELSIUS,
+            )
             plot_stream_function(
                 stream_function=sf * v * l,
                 geometry=geometry,

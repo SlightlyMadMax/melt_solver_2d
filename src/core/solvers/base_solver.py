@@ -5,16 +5,16 @@ from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 
 from src.core.boundary_conditions import BoundaryConditions
-from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
 
 
 class BaseSolver(ABC):
     def __init__(
         self,
-        geometry: DomainGeometry,
+        cfg: ExperimentConfig,
         bcs: Optional[BoundaryConditions] = None,
     ):
-        self.geometry = geometry
+        self.cfg = cfg
         self.bcs = bcs
 
     @abstractmethod

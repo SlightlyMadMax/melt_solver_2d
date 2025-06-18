@@ -7,26 +7,23 @@ from scipy import sparse
 
 from src.convective_operators import EffectiveSFTransportOperator
 from src.core.boundary_conditions import BoundaryConditions
-from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
-from src.parameters.fluid import FluidParameters
+from src.parameters.config import ExperimentConfig
 
 
 class FlowCorrectionNVSolver:
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
+        cfg: ExperimentConfig,
         sf_bcs: BoundaryConditions,
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
     ):
-        self.geometry = geometry
-        self.parameters = parameters
-        self.convective_operator = EffectiveSFTransportOperator(geometry=geometry)
-        n_y, n_x = geometry.n_y, geometry.n_x
+        self.cfg = cfg
+        self.convective_operator = EffectiveSFTransportOperator(cfg=self.cfg)
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         nonlinearity_predictor_class = VorticitySolverRegistry.get_solver_class(
             solver_name=VorticitySolverName.EXPLICIT
@@ -39,19 +36,17 @@ class FlowCorrectionNVSolver:
         )
 
         self.nonlinearity_predictor = nonlinearity_predictor_class(
-            geometry=geometry,
-            parameters=parameters,
+            cfg=cfg,
             convective_operator=self.convective_operator,
             bc_order=1,
         )
         self.vorticity_solver = vorticity_solver_class(
-            geometry=geometry,
-            parameters=parameters,
+            cfg=cfg,
             convective_operator=self.convective_operator,
             bc_order=1,
         )
         self.stream_function_solver = stream_function_solver_class(
-            geometry=geometry,
+            cfg=cfg,
             bcs=sf_bcs,
             max_iters=sf_max_iters,
             stopping_criteria=sf_tolerance,
@@ -65,24 +60,24 @@ class FlowCorrectionNVSolver:
         self.rho = self.calculate_rho()
 
     def calculate_rho(self):
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
-        dy, dx = (
-            self.geometry.dy / self.parameters.l,
-            self.geometry.dx / self.parameters.l,
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
+        dy_scaled, dx_scaled = (
+            self.cfg.geometry.dy / self.cfg.l,
+            self.cfg.geometry.dx / self.cfg.l,
         )
 
         rho = np.zeros((n_y, n_x))
 
-        rho[2 : n_y - 2, 1] = 2 * dx**-4
-        rho[2 : n_y - 2, n_x - 2] = 2 * dx**-4
+        rho[2 : n_y - 2, 1] = 2 * dx_scaled**-4
+        rho[2 : n_y - 2, n_x - 2] = 2 * dx_scaled**-4
 
-        rho[1, 2 : n_x - 2] = 2 * dy**-4
-        rho[n_y - 2, 2 : n_x - 2] = 2 * dy**-4
+        rho[1, 2 : n_x - 2] = 2 * dy_scaled**-4
+        rho[n_y - 2, 2 : n_x - 2] = 2 * dy_scaled**-4
 
-        rho[1, 1] = 2 * (dx**-4 + dy**-4)
-        rho[1, n_x - 2] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, 1] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, n_x - 2] = 2 * (dx**-4 + dy**-4)
+        rho[1, 1] = 2 * (dx_scaled**-4 + dy_scaled**-4)
+        rho[1, n_x - 2] = 2 * (dx_scaled**-4 + dy_scaled**-4)
+        rho[n_y - 2, 1] = 2 * (dx_scaled**-4 + dy_scaled**-4)
+        rho[n_y - 2, n_x - 2] = 2 * (dx_scaled**-4 + dy_scaled**-4)
 
         return rho
 
@@ -117,8 +112,8 @@ class FlowCorrectionNVSolver:
         calculate_vorticity_from_sf(
             sf=self._stream_function,
             result=self._vorticity,
-            dy=self.geometry.dy / self.geometry.length_scale,
-            dx=self.geometry.dx / self.geometry.length_scale,
+            dy=self.cfg.geometry.dy / self.cfg.l,
+            dx=self.cfg.geometry.dx / self.cfg.l,
         )
         return self._stream_function, self._vorticity
 
@@ -164,19 +159,13 @@ class FlowCorrectionNVSolver:
             w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
         )
         b = self._construct_rhs_for_cg(
-            geometry=self.geometry,
-            parameters=self.parameters,
             vorticity=vorticity,
             sf_old=sf_old,
-            rho=self.rho,
             c_ind=c_ind,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
         A = self._construct_matrix_for_cg(
-            geometry=self.geometry,
-            parameters=self.parameters,
-            rho=self.rho,
             c_ind=c_ind,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
@@ -191,22 +180,19 @@ class FlowCorrectionNVSolver:
         # residual = (-A).dot(psi_vec) - (-b).ravel()
         # print("‖residual‖₂:", np.linalg.norm(residual, 2))
 
-    @staticmethod
     def _construct_rhs_for_cg(
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
+        self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        rho: np.ndarray,
         c_ind: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
     ) -> np.ndarray:
-        tau = geometry.dt * parameters.v / geometry.length_scale
+        dt_scaled = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
-        r = rho[1:-1, 1:-1]
+        r = self.rho[1:-1, 1:-1]
         c = c_ind[1:-1, 1:-1]
 
         conv = (
@@ -216,29 +202,26 @@ class FlowCorrectionNVSolver:
             + conv_y[1:-1, 1:-1, 2] * sf_old[:-2, 1:-1]
         )
 
-        b_int = -w - 0.5 * tau * ((c + r / parameters.reynolds_number) * psi + conv)
+        b_int = -w - 0.5 * dt_scaled * ((c + r / self.cfg.reynolds_number) * psi + conv)
 
         return b_int.ravel()
 
-    @staticmethod
     def _construct_matrix_for_cg(
-        geometry: DomainGeometry,
-        parameters: FluidParameters,
-        rho: np.ndarray,
+        self,
         c_ind: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
     ):
-        n_y, n_x = geometry.n_y, geometry.n_x
-        dx = geometry.dx / geometry.length_scale
-        dy = geometry.dy / geometry.length_scale
-        tau = geometry.dt * parameters.v / geometry.length_scale
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
+        dx = self.cfg.dx / self.cfg.l
+        dy = self.cfg.dy / self.cfg.l
+        tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
         dx2, dy2 = dx**2, dy**2
 
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = 0.5 * tau * (c_ind + rho / parameters.reynolds_number)
+        c = 0.5 * tau * (c_ind + self.rho / self.cfg.reynolds_number)
         c_inner_flat = c[1:-1, 1:-1].flatten()
 
         # Extract convective coefficients for inner grid

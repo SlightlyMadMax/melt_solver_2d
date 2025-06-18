@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from typing import Tuple, Optional
 
 from src.core.geometry import DomainGeometry
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
 
 
 class DomainShape(Enum):
@@ -19,8 +19,7 @@ class DomainShape(Enum):
 
 
 def init_temperature_with_interface(
-    geom: DomainGeometry,
-    thermal_parameters: ThermalParameters,
+    cfg: ExperimentConfig,
     f: NDArray[np.float64],
     liquid_region_height: float,
     liquid_temp: float,
@@ -29,37 +28,38 @@ def init_temperature_with_interface(
     """
     Initializes the temperature field based on the given interface f.
 
-    :param geom: An object containing geometry information.
-    :param thermal_parameters: Object containing thermal parameters (phase-transition temperature etc.).
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
     :param f: 1D array representing the interface position for the phase transition.
     :param liquid_region_height: Height of the liquid region.
     :param liquid_temp: Temperature of the liquid phase.
     :param solid_temp: Temperature of the solid phase.
     :return: A 2D array of nondimensionilized temperatures initialized based on the interface.
     """
-    n_y, n_x = geom.n_y, geom.n_x
+    n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x
+    dy = cfg.geometry.dy
+    height = cfg.geometry.height
     u = np.empty((n_y, n_x))
 
     for i in range(n_x):
         for j in range(n_y):
-            if j * geom.dy < f[i]:
-                u[j, i] = solid_temp + j * geom.dy * (
-                    thermal_parameters.u_pt - solid_temp
-                ) / (geom.height - liquid_region_height)
-            elif j * geom.dy > f[i]:
+            if j * dy < f[i]:
+                u[j, i] = solid_temp + j * dy * (cfg.material_props.u_pt - solid_temp) / (
+                    height - liquid_region_height
+                )
+            elif j * dy > f[i]:
                 u[j, i] = liquid_temp
             else:
-                u[j, i] = thermal_parameters.u_pt
+                u[j, i] = cfg.material_props.u_pt
 
-    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
 
     return u
 
 
 def init_temperature(
-    geometry: DomainGeometry,
+    cfg: ExperimentConfig,
     shape: DomainShape,
-    thermal_parameters: ThermalParameters,
     liquid_temp: Optional[float] = None,
     solid_temp: Optional[float] = None,
     radius: float = 0.25,
@@ -72,8 +72,7 @@ def init_temperature(
     """
     Initializes the temperature field based on a specified domain shape.
 
-    :param geometry: An object containing geometry information.
-    :param thermal_parameters: Object containing thermal parameters (phase-transition temperature etc.).
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
     :param shape: The shape of the temperature distribution.
     :param liquid_temp: The temperature assigned to water regions.
     :param solid_temp: The temperature assigned to ice regions.
@@ -85,6 +84,7 @@ def init_temperature(
     :param rect_height: The height of the rectangle filled with solid phase (default: 0.12).
     :return: A 2D array of nondimensionilized initialized based on the specified shape of the domain.
     """
+    geometry: DomainGeometry = cfg.geometry
     n_y, n_x = geometry.n_y, geometry.n_x
     dy, dx = geometry.dy, geometry.dx
     height, width = geometry.height, geometry.width
@@ -161,14 +161,14 @@ def init_temperature(
     else:
         raise Exception("Unknown shape")
 
-    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
 
     return u
 
 
 def init_temperature_lake(
-    geom: DomainGeometry,
-    thermal_parameters: ThermalParameters,
+    cfg: ExperimentConfig,
     lake_data: Tuple[NDArray[np.float64], NDArray[np.float64]],
     water_temp: float,
     ice_temp: float,
@@ -176,13 +176,13 @@ def init_temperature_lake(
     """
     Initialize temperature for a lake profile using preloaded thickness data.
 
-    :param geom: An object containing geometry information.
-    :param thermal_parameters: An object containing thermal parameters (phase transition temperature etc.).
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
     :param lake_data: Preloaded water and ice thickness grids.
     :param water_temp: The water temperature.
     :param ice_temp: The ice temperature.
     :return: A 2D nondimensionilized temperature field array.
     """
+    geom: DomainGeometry = cfg.geometry
     water_th_grid, ice_th_grid = lake_data
 
     grid_x = water_th_grid[0]
@@ -216,10 +216,9 @@ def init_temperature_lake(
             if water_th_at_x > 0.0 and ice_th_at_x <= y <= ice_th_at_x + water_th_at_x:
                 u[j, i] = water_temp
             else:
-                u[j, i] = ice_temp + (j / geom.n_y) * (
-                    thermal_parameters.u_pt - ice_temp
-                )
+                u[j, i] = ice_temp + (j / geom.n_y) * (cfg.material_props.u_pt - ice_temp)
 
-    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
 
     return u

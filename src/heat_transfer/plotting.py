@@ -6,10 +6,10 @@ from typing import Optional
 from PIL import Image
 from numpy.typing import NDArray
 
-import src.core.constants as cfg
-from src.core.geometry import DomainGeometry
+from src.core.constants import ABS_ZERO
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.utils import TemperatureUnit
+from src.parameters.config import ExperimentConfig
 
 
 def _convert_temp_in_display_units(
@@ -28,16 +28,13 @@ def _convert_temp_in_display_units(
     if actual_temp_units == display_temp_units:
         return u
     return (
-        u + cfg.ABS_ZERO
-        if display_temp_units == TemperatureUnit.CELSIUS
-        else u - cfg.ABS_ZERO
+        u + ABS_ZERO if display_temp_units == TemperatureUnit.CELSIUS else u - ABS_ZERO
     )
 
 
 def plot_temperature(
     u: NDArray[np.float64],
-    u_pt: float,
-    geometry: DomainGeometry,
+    cfg: ExperimentConfig,
     time: float,
     graph_id: int,
     actual_temp_units: TemperatureUnit = TemperatureUnit.KELVIN,
@@ -61,8 +58,7 @@ def plot_temperature(
     aspect ratio adjustment.
 
     :param u: A 2D numpy array of temperature values across the computational domain.
-    :param u_pt: The phase transition temperature.
-    :param geometry: DomainGeometry object defining the mesh grid and dimensions.
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
     :param time: The simulation time at which the temperature is being plotted.
     :param graph_id: Unique identifier for the graph, used in the saved file name.
     :param actual_temp_units: The unit of the temperature values in `u` (default is Kelvin).
@@ -82,7 +78,7 @@ def plot_temperature(
              displays it if `show_graph` is True.
     """
 
-    X, Y = geometry.mesh_grid
+    X, Y = cfg.geometry.mesh_grid
 
     if not show_graph:
         import matplotlib
@@ -92,8 +88,8 @@ def plot_temperature(
     plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
-        xlim=(0, geometry.width),
-        ylim=(0, geometry.height),
+        xlim=(0, cfg.geometry.width),
+        ylim=(0, cfg.geometry.height),
         xlabel="x, м",
         ylabel="y, м",
     )
@@ -118,11 +114,7 @@ def plot_temperature(
     cbar.set_label("Температура, °С", rotation=270, labelpad=15)
 
     if plot_boundary:
-        X_b, Y_b = get_phase_trans_boundary(
-            u=u,
-            geom=geometry,
-            u_pt=u_pt,
-        )
+        X_b, Y_b = get_phase_trans_boundary(u=u, cfg=cfg)
         plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
         ax.legend()
 

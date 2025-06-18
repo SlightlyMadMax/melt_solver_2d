@@ -6,17 +6,15 @@ from src.convective_operators import (
     VorticityTransportOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
-from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.solvers.heat_transfer_solvers import *
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
 
 
 class HeatTransferSolver:
     def __init__(
         self,
-        geometry: DomainGeometry,
-        parameters: ThermalParameters,
+        cfg: ExperimentConfig,
         bcs: BoundaryConditions,
         solver_name: HeatTransferSolverName = HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
@@ -36,12 +34,11 @@ class HeatTransferSolver:
         solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
         self.convective_operator = VorticityTransportOperator(
-            form=convective_term_form, geometry=geometry
+            form=convective_term_form, cfg=cfg
         )
 
         self.solver = solver_class(
-            geometry=geometry,
-            parameters=parameters,
+            cfg=cfg,
             convective_operator=self.convective_operator,
             bcs=bcs,
             fixed_delta=fixed_delta,

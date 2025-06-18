@@ -8,7 +8,7 @@ from src.convective_operators.base_convective_operator import (
     BaseConvectiveOperator,
     ConvectiveTermForm,
 )
-from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
 
 
 class VorticityTransportArgs(BaseModel):
@@ -21,10 +21,10 @@ class VorticityTransportArgs(BaseModel):
 
 
 class VorticityTransportOperator(BaseConvectiveOperator):
-    def __init__(self, form: ConvectiveTermForm, geometry: DomainGeometry):
-        super().__init__(geometry=geometry)
+    def __init__(self, form: ConvectiveTermForm, cfg: ExperimentConfig):
+        super().__init__(cfg=cfg)
         self.form = form
-        n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         self._v_x: NDArray[np.float64] = np.empty((n_y, n_x))
         self._v_y: NDArray[np.float64] = np.empty((n_y, n_x))
 
@@ -37,8 +37,8 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         sf = parsed.sf
         u = parsed.u
         u_pt = parsed.u_pt
-        dx = self.geometry.dx / self.geometry.length_scale
-        dy = self.geometry.dy / self.geometry.length_scale
+        dx = self.cfg.geometry.dx / self.cfg.l
+        dy = self.cfg.geometry.dy / self.cfg.l
 
         self.compute_velocity_from_sf(
             sf=sf,

@@ -4,14 +4,15 @@ import numpy as np
 from scipy.optimize import fsolve
 
 from src.core.constants import ABS_ZERO
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
+from src.parameters.material_properties import MaterialProperties
 from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import trans_eq
 
 
 def compare_num_with_analytic(
+    cfg: ExperimentConfig,
     min_temp: float,
     max_temp: float,
-    params: ThermalParameters,
     num: list[float],
     time: list[float],
     dir_name: str,
@@ -21,17 +22,18 @@ def compare_num_with_analytic(
 
     :param min_temp: Initial temperature of the solid phase region.
     :param max_temp: Initial temperature of the liquid phase region.
-    :param params: Object containing parameters of the problem like thermal conductivity etc.
+    :param cfg: Object containing parameters of the problem like thermal conductivity etc.
     :param num: Array containing positions of the boundary throughout the modelling time.
+    :param time: Model time.
     :param dir_name: Name of the directory where the graphs will be saved.
     :param show_graphs: If set to True, the graphs will be opened in a new window.
     :return: None
     """
-
+    material_props: MaterialProperties = cfg.material_props
     gamma = fsolve(
         lambda x: trans_eq(
             gamma=x,
-            params=params,
+            material_props=material_props,
             min_temp=min_temp + ABS_ZERO,
             max_temp=max_temp + ABS_ZERO,
         ),
@@ -57,8 +59,8 @@ def compare_num_with_analytic(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(params.delta)
-            if params.delta is not None
+            "дельта = " + str(cfg.delta)
+            if cfg.delta is not None
             else "адаптивная дельта"
         ),
     )
@@ -78,8 +80,8 @@ def compare_num_with_analytic(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(params.delta)
-            if params.delta is not None
+            "дельта = " + str(cfg.delta)
+            if cfg.delta is not None
             else "адаптивная дельта"
         ),
     )

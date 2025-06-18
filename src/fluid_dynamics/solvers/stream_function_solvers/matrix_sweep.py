@@ -9,6 +9,7 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
     register_sf_solver,
     StreamFunctionSolverName,
 )
+from src.parameters.config import ExperimentConfig
 
 
 @register_sf_solver(StreamFunctionSolverName.MATRIX_SWEEP)
@@ -22,7 +23,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
 
     def __init__(
         self,
-        geometry: DomainGeometry,
+        cfg: ExperimentConfig,
         bcs: BoundaryConditions,
         *args,
         **kwargs,
@@ -33,7 +34,8 @@ class MatrixSweepPoissonSolver(BaseSolver):
         :param geometry: The computational domain's geometry.
         :param bcs: An object containing boundary conditions.
         """
-        super().__init__(geometry=geometry, bcs=bcs)
+        super().__init__(cfg=cfg, bcs=bcs)
+        self.geometry: DomainGeometry = self.cfg.geometry
 
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
@@ -75,7 +77,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
         beta_m_list = [beta_m]
 
         for m in range(1, n_x - 1):
-            f_m = f[1:-1, m] * (self.geometry.dx / self.geometry.length_scale) ** 2
+            f_m = f[1:-1, m] * (self.geometry.dx / self.cfg.l) ** 2
             f_m[0] -= mu * top_value[m]
             f_m[-1] -= mu * bottom_value[m]
 
