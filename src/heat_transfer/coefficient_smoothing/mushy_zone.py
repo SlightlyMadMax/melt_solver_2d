@@ -6,6 +6,7 @@ from scipy.optimize import root_scalar
 from scipy.special import erf
 
 from src.parameters.config import ExperimentConfig
+from src.utils.array_masks import dilate_mask
 
 
 @njit
@@ -142,3 +143,23 @@ def get_delta(
     except ValueError as e:
         pass
     return max_delta
+
+
+@njit
+def mark_mushy(u_dim, u_pt, delta, mushy_mask):
+    n_y, n_x = u_dim.shape
+    for j in range(n_y):
+        for i in range(n_x):
+            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta[j, i]
+
+
+@njit
+def get_dilated_mushy_mask(
+    u_dim: np.ndarray, u_pt: float, delta: np.ndarray, extend_by: int = 1
+) -> np.ndarray:
+    mushy_mask = np.empty_like(u_dim, dtype=np.uint8)
+    mushy_dilated = np.copy(mushy_mask)
+    mark_mushy(u_dim, u_pt, delta, mushy_mask)
+    dilate_mask(mushy_mask, mushy_dilated, extend_by)
+
+    return mushy_dilated

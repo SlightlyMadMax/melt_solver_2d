@@ -5,10 +5,8 @@ import glob
 import re
 
 from src.core.geometry import DomainGeometry
-from src.parameters.fluid import FluidParameters
-from src.parameters.thermal import ThermalParameters
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
-
+from src.parameters.config import ExperimentConfig
 
 paths = sorted(
     glob.glob("../../data/gallium/better_courant/u_*.npz"),
@@ -16,24 +14,14 @@ paths = sorted(
 )
 img = plt.imread("../../data/gau.png")
 
-geometry = DomainGeometry(
-    width=0.0889,
-    height=0.0635,
-    end_time=60.0 * 60.0 * 24.0,
-    n_x=281,
-    n_y=201,
-    n_t=60 * 60 * 24 * 20,
+cfg: ExperimentConfig = ExperimentConfig.load_from_file(
+    "../../parameter_sets/gallium/config.json"
 )
+geometry: DomainGeometry = cfg.geometry
 
 min_temp = 301.45
 max_temp = 311.15
 
-thermal_params = ThermalParameters.load_from_file(
-    "../../parameter_sets/gallium/thermal_params_6_10_5.json"
-)
-fluid_params = FluidParameters.load_from_file(
-    "../../parameter_sets/gallium/fluid_params_6_10_5.json"
-)
 
 fig, ax = plt.subplots()
 ax.imshow(img, extent=[0, geometry.width, 0, geometry.height])
@@ -41,11 +29,7 @@ for file_path in paths:
     n = int(re.search(r"u_(\d+)\.npz", file_path).group(1))
     data = np.load(file_path)
     u = data["u"]
-    X_b, Y_b = get_phase_trans_boundary(
-        u=u * thermal_params.delta_u + thermal_params.u_ref,
-        geom=geometry,
-        u_pt=thermal_params.u_ref,
-    )
+    X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
     ax.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
 
 

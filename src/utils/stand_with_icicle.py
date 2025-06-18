@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 
 from src.core.geometry import DomainGeometry
-from src.parameters.thermal import ThermalParameters
+from src.parameters.config import ExperimentConfig
 
 
 # def bottom_dirichlet_condition(t: float, n: int) -> np.ndarray:
@@ -24,13 +24,13 @@ from src.parameters.thermal import ThermalParameters
 
 
 def init_temperature_icicle(
-    geometry: DomainGeometry,
-    thermal_parameters: ThermalParameters,
+    cfg: ExperimentConfig,
     liquid_temp: Optional[float] = None,
     solid_temp: Optional[float] = None,
     rect_width: float = 0.04,
     rect_height: float = 0.12,
 ) -> np.ndarray:
+    geometry: DomainGeometry = cfg.geometry
     u = np.full((geometry.n_y, geometry.n_x), liquid_temp)
 
     X, Y = geometry.mesh_grid
@@ -57,6 +57,6 @@ def init_temperature_icicle(
 
     u[mask] = solid_temp
 
-    u = (u - thermal_parameters.u_ref) / thermal_parameters.delta_u
+    u = (u - cfg.u_ref) / cfg.delta_u
 
     return u

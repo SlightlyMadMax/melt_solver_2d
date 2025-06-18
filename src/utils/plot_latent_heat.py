@@ -1,10 +1,10 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import delta_gauss
 from src.heat_transfer.coefficient_smoothing.mushy_zone import get_dilated_mushy_mask
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
+from src.parameters.config import ExperimentConfig
 
 
 def latent_heat_density_field(
@@ -22,28 +22,23 @@ def latent_heat_density_field(
 
 def plot_latent_heat_field(
     u: np.ndarray,
-    u_pt: float,
+    cfg: ExperimentConfig,
     delta: np.ndarray,
     l_solid: float,
-    geometry: DomainGeometry,
     graph_id: int,
     directory: str = "../graphs/latent_heat/",
 ):
     latent_heat_field = latent_heat_density_field(
-        u, u_pt=u_pt, delta=delta, l_solid=l_solid
+        u, u_pt=cfg.material_props.u_pt, delta=delta, l_solid=l_solid
     )
-    X_b, Y_b = get_phase_trans_boundary(
-        u=u,
-        geom=geometry,
-        u_pt=u_pt,
-    )
-    X, Y = geometry.mesh_grid
+    X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u)
+    X, Y = cfg.geometry.mesh_grid
 
     plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
-        xlim=(0, geometry.width),
-        ylim=(0, geometry.height),
+        xlim=(0, cfg.geometry.width),
+        ylim=(0, cfg.geometry.height),
         xlabel="x, м",
         ylabel="y, м",
     )
