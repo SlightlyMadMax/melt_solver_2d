@@ -35,8 +35,9 @@ from src.utils.time_utils import get_remaining_time
 
 if __name__ == "__main__":
     cfg = ExperimentConfig.load_from_file("../parameter_sets/gallium/config.json")
+    print(cfg)
+
     geometry: DomainGeometry = cfg.geometry
-    print(geometry)
 
     dx, dy = geometry.dx, geometry.dy
     dt = geometry.dt
@@ -46,16 +47,11 @@ if __name__ == "__main__":
 
     material_props: MaterialProperties = cfg.material_props
 
-    print(material_props)
-
     delta_u = cfg.delta_u
     u_ref = cfg.u_ref
     u_pt = material_props.u_pt
     l = cfg.l
     v = cfg.v
-
-    print(f"Pr = {cfg.prandtl_number:.4f}\n")
-    print(f"Ra = {cfg.rayleigh_number:.2f}\n")
 
     u = init_temperature(
         cfg=cfg,

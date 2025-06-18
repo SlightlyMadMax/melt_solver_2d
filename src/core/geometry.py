@@ -40,10 +40,10 @@ class DomainGeometry(BaseModel):
     def __str__(self):
         return (
             f"Domain geometry:\n"
-            f"  Width: {self.width} m.\n"
-            f"  Height: {self.height} m.\n"
-            f"  Terminate Time: {int(self.end_time / 60)} min.\n"
-            f"  X-step = {Decimal(self.dx):.2E} m.\n"
-            f"  Y-step = {Decimal(self.dy):.2E} m.\n"
-            f"  Time Step = {round(self.dt, 4)} s.\n"
+            f"  Width: {self.width} m\n"
+            f"  Height: {self.height} m\n"
+            f"  Terminate Time: {int(self.end_time / 60)} min\n"
+            f"  X-step = {Decimal(self.dx):.2E} m\n"
+            f"  Y-step = {Decimal(self.dy):.2E} m\n"
+            f"  Time Step = {round(self.dt, 4)} s\n"
         )

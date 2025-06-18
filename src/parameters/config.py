@@ -168,3 +168,30 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return self.grashof_number * self.prandtl_number
 
     model_config = {"populate_by_name": True, "extra": "ignore"}
+
+    def __str__(self):
+        exp_char = (
+            f"Characteristic values:\n"
+            f"  Reference Temperature: {self.u_ref} K\n"
+            f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
+            f"  Characteristic Flow Velocity {self.v} m/s\n"
+            f"  Characteristic Length {self.l} m\n"
+        )
+        dim_nums = (
+            f"Dimensionless numbers:\n"
+            f"  Re = {self.reynolds_number:.2E}\n"
+            f"  Gr = {self.grashof_number:.2E}\n"
+            f"  Ra = {self.rayleigh_number:.2E}\n"
+            f"  Ste = {self.stefan_number:.2E}\n"
+            f"  Pe = {self.peclet_number:.2E}\n"
+            f"  Pr = {self.prandtl_number:.2E}\n"
+        )
+        return (
+            str(self.geometry)
+            + "\n"
+            + str(self.material_props)
+            + "\n"
+            + exp_char
+            + "\n"
+            + dim_nums
+        )
