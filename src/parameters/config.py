@@ -179,12 +179,12 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
         dim_nums = (
             f"Dimensionless numbers:\n"
-            f"  Re = {self.reynolds_number:.2E}\n"
-            f"  Gr = {self.grashof_number:.2E}\n"
-            f"  Ra = {self.rayleigh_number:.2E}\n"
-            f"  Ste = {self.stefan_number:.2E}\n"
-            f"  Pe = {self.peclet_number:.2E}\n"
-            f"  Pr = {self.prandtl_number:.2E}\n"
+            f"  Re = {self.reynolds_number:.3E}\n"
+            f"  Gr = {self.grashof_number:.3E}\n"
+            f"  Ra = {self.rayleigh_number:.3E}\n"
+            f"  Ste = {self.stefan_number:.3E}\n"
+            f"  Pe = {self.peclet_number:.3E}\n"
+            f"  Pr = {self.prandtl_number:.3E}\n"
         )
         return (
             str(self.geometry)
