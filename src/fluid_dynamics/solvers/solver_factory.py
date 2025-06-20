@@ -21,7 +21,7 @@ class IterativeNavierStokesSolver:
         cfg: ExperimentConfig,
         sf_bcs: BoundaryConditions,
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.SOR,
+        stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.MATRIX_SWEEP,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
         sf_max_iters: int = 1000,
         sf_stopping_criteria: float = 1e-6,
