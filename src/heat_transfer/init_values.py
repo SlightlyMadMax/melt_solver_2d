@@ -111,8 +111,8 @@ def init_temperature(
         ), f"Both liquid_temp and solid_temp must be specified when shape = {shape}."
 
     if shape == DomainShape.LINEAR:
-        # Linear temperature gradient from bottom (solid phase) to top (liquid phase)
-        u[:, :] = np.linspace(solid_temp, liquid_temp, n_y).reshape(1, -1)
+        # Linear temperature gradient from left (liquid phase) to right (solid phase)
+        u[:, :] = np.linspace(liquid_temp, solid_temp, n_x).reshape(1, -1)
 
     elif shape == DomainShape.CIRCLE:
         # Single circle centered at domain center with radius threshold
