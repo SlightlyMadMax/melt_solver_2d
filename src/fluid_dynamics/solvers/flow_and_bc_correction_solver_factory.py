@@ -86,6 +86,7 @@ class FlowCorrectionNVSolver:
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         old_vorticity = np.copy(w)
@@ -94,6 +95,7 @@ class FlowCorrectionNVSolver:
             old_vorticity=old_vorticity,
             stream_function=sf,
             temperature=u,
+            delta=delta,
             time=time,
         )
         self._solve_vorticity(
@@ -101,6 +103,7 @@ class FlowCorrectionNVSolver:
             conv_vorticity=self._temp_vorticity,
             stream_function=sf,
             temperature=u,
+            delta=delta,
             time=time,
         )
         self._solve_stream_function(
@@ -122,12 +125,14 @@ class FlowCorrectionNVSolver:
         old_vorticity: np.ndarray,
         stream_function: np.ndarray,
         temperature: np.ndarray,
+        delta: float,
         time: float,
     ) -> None:
         self._temp_vorticity[:, :] = self.nonlinearity_predictor.solve(
             w=old_vorticity,
             sf=stream_function,
             u=temperature,
+            delta=delta,
             time=time,
         )
 
@@ -137,6 +142,7 @@ class FlowCorrectionNVSolver:
         conv_vorticity: np.ndarray,
         stream_function: np.ndarray,
         temperature: np.ndarray,
+        delta: float,
         time: float,
     ) -> None:
         self._temp_vorticity[:, :] = self.vorticity_solver.solve(
@@ -144,6 +150,7 @@ class FlowCorrectionNVSolver:
             conv_w=conv_vorticity,
             sf=stream_function,
             u=temperature,
+            delta=delta,
             time=time,
         )
 
