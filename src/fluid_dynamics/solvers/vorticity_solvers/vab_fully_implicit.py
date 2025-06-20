@@ -7,9 +7,6 @@ from src.convective_operators import EffectiveSFTransportOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.heat_transfer.coefficient_smoothing.mushy_zone import (
-    get_mushy_zone_temperature_range,
-)
 from src.parameters.config import ExperimentConfig
 
 
@@ -90,6 +87,7 @@ class VabFullyImplicitScheme(BaseSolver):
         conv_w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         geometry: DomainGeometry = self.cfg.geometry
@@ -103,12 +101,6 @@ class VabFullyImplicitScheme(BaseSolver):
 
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        delta = get_mushy_zone_temperature_range(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            h_x=geometry.dx,
-            h_y=geometry.dy,
-        )
         calculate_indicator_function(
             u=u_dim,
             u_pt=self.cfg.material_props.u_pt,

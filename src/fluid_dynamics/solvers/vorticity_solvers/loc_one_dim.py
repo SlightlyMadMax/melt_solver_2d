@@ -11,7 +11,6 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     register_solver,
 )
 from src.fluid_dynamics.utils import calculate_indicator_function
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_mushy_zone_temperature_range
 
 
 @register_solver(VorticitySolverName.LOC_ONE_DIM)
@@ -104,6 +103,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         geometry: DomainGeometry = self.cfg.geometry
@@ -115,12 +115,6 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        delta = get_mushy_zone_temperature_range(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            h_x=dx,
-            h_y=dy,
-        )
         calculate_indicator_function(
             u=u_dim,
             u_pt=self.cfg.material_props.u_pt,
