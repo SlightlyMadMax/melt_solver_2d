@@ -4,6 +4,7 @@ from enum import Enum
 from numpy.typing import NDArray
 from typing import Tuple, Optional
 
+from src.core.boundary_conditions import BoundaryConditions, BoundaryConditionType
 from src.core.geometry import DomainGeometry
 from src.parameters.config import ExperimentConfig
 
@@ -43,9 +44,9 @@ def init_temperature_with_interface(
     for i in range(n_x):
         for j in range(n_y):
             if j * dy < f[i]:
-                u[j, i] = solid_temp + j * dy * (cfg.material_props.u_pt - solid_temp) / (
-                    height - liquid_region_height
-                )
+                u[j, i] = solid_temp + j * dy * (
+                    cfg.material_props.u_pt - solid_temp
+                ) / (height - liquid_region_height)
             elif j * dy > f[i]:
                 u[j, i] = liquid_temp
             else:
@@ -59,6 +60,7 @@ def init_temperature_with_interface(
 
 def init_temperature(
     cfg: ExperimentConfig,
+    bcs: BoundaryConditions,
     shape: DomainShape,
     liquid_temp: Optional[float] = None,
     solid_temp: Optional[float] = None,
@@ -73,6 +75,7 @@ def init_temperature(
     Initializes the temperature field based on a specified domain shape.
 
     :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
+    :param bcs: Boundary conditions.
     :param shape: The shape of the temperature distribution.
     :param liquid_temp: The temperature assigned to water regions.
     :param solid_temp: The temperature assigned to ice regions.
@@ -164,6 +167,16 @@ def init_temperature(
     # nondimensionalize
     u = (u - cfg.u_ref) / cfg.delta_u
 
+    # apply bcs
+    if bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[:, 0] = bcs.left.get_value(t=0.0)
+    if bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[-1, :] = bcs.top.get_value(t=0.0)
+    if bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[:, -1] = bcs.right.get_value(t=0.0)
+    if bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[0, :] = bcs.bottom.get_value(t=0.0)
+
     return u
 
 
@@ -216,7 +229,9 @@ def init_temperature_lake(
             if water_th_at_x > 0.0 and ice_th_at_x <= y <= ice_th_at_x + water_th_at_x:
                 u[j, i] = water_temp
             else:
-                u[j, i] = ice_temp + (j / geom.n_y) * (cfg.material_props.u_pt - ice_temp)
+                u[j, i] = ice_temp + (j / geom.n_y) * (
+                    cfg.material_props.u_pt - ice_temp
+                )
 
     # nondimensionalize
     u = (u - cfg.u_ref) / cfg.delta_u

@@ -2,10 +2,13 @@ from typing import Tuple
 
 import numpy as np
 
+from src.core.boundary_conditions import BoundaryConditions, BoundaryConditionType
 from src.core.geometry import DomainGeometry
 
 
-def initialize_stream_function(geom: DomainGeometry) -> np.ndarray:
+def initialize_stream_function(
+    geom: DomainGeometry, bcs: BoundaryConditions
+) -> np.ndarray:
     """
     Initialize the stream function for the computational domain.
 
@@ -13,10 +16,23 @@ def initialize_stream_function(geom: DomainGeometry) -> np.ndarray:
     initial condition for solving fluid flow problems.
 
     :param geom: DomainGeometry object specifying the dimensions of the computational domain.
+    :param bcs: Boundary conditions.
     :return: A 2D numpy array of shape (n_y, n_x) filled with zeros, representing
              the initial stream function values.
     """
-    return np.zeros((geom.n_y, geom.n_x))
+    sf = np.zeros((geom.n_y, geom.n_x))
+
+    # apply bcs
+    if bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
+        sf[:, 0] = bcs.left.get_value(t=0.0)
+    if bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
+        sf[-1, :] = bcs.top.get_value(t=0.0)
+    if bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
+        sf[:, -1] = bcs.right.get_value(t=0.0)
+    if bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
+        sf[0, :] = bcs.bottom.get_value(t=0.0)
+
+    return sf
 
 
 def initialize_vorticity(geom: DomainGeometry) -> np.ndarray:

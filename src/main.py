@@ -53,14 +53,37 @@ if __name__ == "__main__":
     l = cfg.l
     v = cfg.v
 
+    # Temperature boundary conditions
+    u_bcs = BoundaryConditions(
+        top=BoundaryCondition(
+            boundary_type=BoundaryConditionType.NEUMANN,
+            n=n_x,
+            flux_func=lambda t, n: np.zeros(n),
+        ),
+        right=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=n_y,
+            value_func=lambda t, n: (min_temp - u_ref) / delta_u * np.ones(n),
+        ),
+        bottom=BoundaryCondition(
+            boundary_type=BoundaryConditionType.NEUMANN,
+            n=n_x,
+            flux_func=lambda t, n: np.zeros(n),
+        ),
+        left=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=n_y,
+            value_func=lambda t, n: (max_temp - u_ref) / delta_u * np.ones(n),
+        ),
+    )
+
+    # Initial temperature distribution
     u = init_temperature(
         cfg=cfg,
+        bcs=u_bcs,
         shape=DomainShape.UNIFORM_SOLID,
         solid_temp=min_temp,
     )
-
-    u[:, 0] = (max_temp - u_ref) / delta_u
-    # u[:, -1] = (max_temp - u_ref) / delta_u
 
     dim_u = u * delta_u + u_ref
     init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
@@ -78,32 +101,6 @@ if __name__ == "__main__":
         max_temp=max_temp + ABS_ZERO,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
-    )
-
-    # Temperature boundary conditions
-    u_bcs = BoundaryConditions(
-        top=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
-            n=n_x,
-            flux_func=lambda t, n: np.zeros(n),
-        ),
-        right=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: (min_temp - u_ref) / delta_u * np.ones(n),
-            flux_func=lambda t, n: np.zeros(n),
-        ),
-        bottom=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
-            n=n_x,
-            flux_func=lambda t, n: np.zeros(n),
-        ),
-        left=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: (max_temp - u_ref) / delta_u * np.ones(n),
-            flux_func=lambda t, n: np.zeros(n),
-        ),
     )
 
     # Stream function boundary conditions
@@ -130,7 +127,8 @@ if __name__ == "__main__":
         ),
     )
 
-    sf = initialize_stream_function(geom=geometry)
+    # Initial stream function, vorticity and velocity fields
+    sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
     w = initialize_vorticity(geom=geometry)
     v_x, v_y = initialize_velocity(geom=geometry)
 
