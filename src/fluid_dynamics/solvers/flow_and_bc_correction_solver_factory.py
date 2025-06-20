@@ -220,8 +220,8 @@ class FlowCorrectionNVSolver:
         conv_y: np.ndarray,
     ):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
-        dx = self.cfg.dx / self.cfg.l
-        dy = self.cfg.dy / self.cfg.l
+        dx = self.cfg.geometry.dx / self.cfg.l
+        dy = self.cfg.geometry.dy / self.cfg.l
         tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
         dx2, dy2 = dx**2, dy**2
 
