@@ -71,6 +71,7 @@ class IterativeNavierStokesSolver:
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
+        delta: float,
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         urf = self.urf
@@ -83,6 +84,7 @@ class IterativeNavierStokesSolver:
                 old_vorticity=w,
                 stream_function=self._iter_stream_function,
                 temperature=u,
+                delta=delta,
                 time=time,
             )
             self._solve_stream_function(
@@ -115,12 +117,14 @@ class IterativeNavierStokesSolver:
         old_vorticity: np.ndarray,
         stream_function: np.ndarray,
         temperature: np.ndarray,
+        delta: float,
         time: float,
     ) -> None:
         self._vorticity[:, :] = self.vorticity_solver.solve(
             w=old_vorticity,
             sf=stream_function,
             u=temperature,
+            delta=delta,
             time=time,
         )
 
