@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.interpolate import interp1d
 
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import (
@@ -47,7 +46,7 @@ else:
     delta = float(delta)
     fixed_delta = True
 
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("corner_test_config.json")
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("test_config_1.json")
 
 print(cfg)
 
@@ -101,13 +100,14 @@ u = (u - cfg.u_ref) / cfg.delta_u
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
-    # delta = get_mushy_zone_temperature_range(
-    #     u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
-    # )
-    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=0.2)
+    if not fixed_delta:
+        delta = get_mushy_zone_temperature_range(
+            u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
+        )
+    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % cfg.save_interval == 0:
         print(
-            f"Modelling Time: {t:.2f} s, "
+            f"Modelling Time: {int(t / 3600)} hours, "
             f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
             f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} min."
         )
