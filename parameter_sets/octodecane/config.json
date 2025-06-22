@@ -1,7 +1,7 @@
 {
   "geometry": {
-    "width": 0.04008,
-    "height": 0.04008,
+    "width": 0.015,
+    "height": 0.015,
     "end_time": 11300,
     "n_x": 101,
     "n_y": 101,
@@ -16,14 +16,14 @@
     "density_solid": 800,
     "thermal_conductivity_liquid": 0.2,
     "thermal_conductivity_solid": 0.2,
-    "kinematic_viscosity_coeffs": [1.125e-05],
-    "volumetric_thermal_exp_coeffs": [1.333e-04]
+    "kinematic_viscosity_coeffs": [1e-5],
+    "volumetric_thermal_exp_coeffs": [2e-03]
   },
   "u_ref": 301.33,
   "delta_u": 8.74,
   "v": 0.1,
-  "l": 0.04008,
+  "l": 0.015,
   "delta": null,
-  "epsilon": 0.00001,
+  "epsilon": 0.000009,
   "save_interval": 12000
 }
