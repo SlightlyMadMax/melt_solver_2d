@@ -93,7 +93,7 @@ heat_transfer_solver = HeatTransferSolver(
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
 u[0, :] = min_temp
-u[:, -1] = min_temp
+u[:, 0] = min_temp
 u = (u - cfg.u_ref) / cfg.delta_u
 
 
