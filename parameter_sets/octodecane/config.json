@@ -2,10 +2,10 @@
   "geometry": {
     "width": 0.015,
     "height": 0.015,
-    "end_time": 11300,
+    "end_time": 1600,
     "n_x": 101,
     "n_y": 101,
-    "n_t": 226000
+    "n_t": 32000
   },
   "material_props": {
     "u_pt": 301.33,
@@ -25,5 +25,5 @@
   "l": 0.015,
   "delta": null,
   "epsilon": 0.000009,
-  "save_interval": 12000
+  "save_interval": 6000
 }
