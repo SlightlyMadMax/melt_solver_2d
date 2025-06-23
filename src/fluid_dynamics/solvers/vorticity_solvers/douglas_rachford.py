@@ -127,7 +127,6 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
             delta=delta,
             result=self.c_ind,
         )
-        self.c_ind *= self.cfg.l**3 / self.cfg.v
 
         self.calculate_boundary_conditions(
             sf=sf,

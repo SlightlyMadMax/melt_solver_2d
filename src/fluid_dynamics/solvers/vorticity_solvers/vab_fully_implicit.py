@@ -108,7 +108,6 @@ class VabFullyImplicitScheme(BaseSolver):
             delta=delta,
             result=self.c_ind,
         )
-        self.c_ind *= self.cfg.l**3 / self.cfg.v
 
         gr = np.where(
             u * self.cfg.delta_u - self.cfg.u_pt_ref < 0.0,
