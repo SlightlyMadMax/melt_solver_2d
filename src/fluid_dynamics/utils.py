@@ -5,6 +5,37 @@ from scipy.special import erf
 from numpy.typing import NDArray
 
 
+class VorticityBCMixin:
+    @staticmethod
+    def calculate_boundary_conditions(
+        sf: NDArray[np.float64],
+        top_bc: NDArray[np.float64],
+        right_bc: NDArray[np.float64],
+        bottom_bc: NDArray[np.float64],
+        left_bc: NDArray[np.float64],
+        order: int,
+        dx: float,
+        dy: float,
+    ) -> None:
+        dx2_2_inv = 2.0 / dx**2
+        dy2_2_inv = 2.0 / dy**2
+        inv_2dx2 = 1.0 / (2.0 * dx**2)
+        inv_2dy2 = 1.0 / (2.0 * dy**2)
+
+        if order == 1:
+            top_bc[:] = -dy2_2_inv * sf[-2, :]
+            right_bc[:] = -dx2_2_inv * sf[:, -2]
+            bottom_bc[:] = -dy2_2_inv * sf[1, :]
+            left_bc[:] = -dx2_2_inv * sf[:, 1]
+        elif order == 2:
+            top_bc[:] = inv_2dy2 * (sf[-3, :] - 8.0 * sf[-2, :])
+            right_bc[:] = inv_2dx2 * (sf[:, -3] - 8.0 * sf[:, -2])
+            bottom_bc[:] = inv_2dy2 * (sf[2, :] - 8.0 * sf[1, :])
+            left_bc[:] = inv_2dx2 * (sf[:, 2] - 8.0 * sf[:, 1])
+        else:
+            raise NotImplementedError
+
+
 def calculate_indicator_function(
     u: NDArray[np.float64],
     u_pt: float,
@@ -108,34 +139,3 @@ def check_divergence(vx, vy, dx, dy):
     l1_div = np.sum(np.abs(div)) * dx * dy
     net_div = np.sum(div) * dx * dy
     return max_div, l1_div, net_div
-
-
-class VorticityBCMixin:
-    @staticmethod
-    def calculate_boundary_conditions(
-        sf: NDArray[np.float64],
-        top_bc: NDArray[np.float64],
-        right_bc: NDArray[np.float64],
-        bottom_bc: NDArray[np.float64],
-        left_bc: NDArray[np.float64],
-        order: int,
-        dx: float,
-        dy: float,
-    ) -> None:
-        dx2_2_inv = 2.0 / dx**2
-        dy2_2_inv = 2.0 / dy**2
-        inv_2dx2 = 1.0 / (2.0 * dx**2)
-        inv_2dy2 = 1.0 / (2.0 * dy**2)
-
-        if order == 1:
-            top_bc[:] = -dy2_2_inv * sf[-2, :]
-            right_bc[:] = -dx2_2_inv * sf[:, -2]
-            bottom_bc[:] = -dy2_2_inv * sf[1, :]
-            left_bc[:] = -dx2_2_inv * sf[:, 1]
-        elif order == 2:
-            top_bc[:] = inv_2dy2 * (sf[-3, :] - 8.0 * sf[-2, :])
-            right_bc[:] = inv_2dx2 * (sf[:, -3] - 8.0 * sf[:, -2])
-            bottom_bc[:] = inv_2dy2 * (sf[2, :] - 8.0 * sf[1, :])
-            left_bc[:] = inv_2dx2 * (sf[:, 2] - 8.0 * sf[:, 1])
-        else:
-            raise NotImplementedError
