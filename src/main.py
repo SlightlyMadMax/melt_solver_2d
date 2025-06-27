@@ -226,5 +226,5 @@ if __name__ == "__main__":
             # )
             print()
 
-    print("Creating animation...")
-    create_gif_from_images(output_filename="exp5", duration=200)
+    # print("Creating animation...")
+    # create_gif_from_images(output_filename="exp5", duration=200)
