@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import numpy as np
 from numba import njit
 
@@ -62,7 +64,7 @@ def calculate_indicator_function(
     # delta_inner = delta[interior]
 
     # --- Variant 1: sharp step ----------------------
-    # mask = (diff_u < 0.0)
+    # mask = diff_u < 0.0
     # result_interior = np.zeros_like(diff_u)
     # result_interior[mask] = inv_eps2
     # result[interior] = result_interior
@@ -138,3 +140,41 @@ def check_divergence(vx, vy, dx, dy):
     l1_div = np.sum(np.abs(div)) * dx * dy
     net_div = np.sum(div) * dx * dy
     return max_div, l1_div, net_div
+
+
+def max_sf_in_solid_phase(
+    sf: NDArray[np.float64], u: NDArray[np.float64], u_pt: float
+) -> Tuple[Optional[float], Tuple[Optional[int], Optional[int]]]:
+    mask = u <= u_pt
+    if not np.any(mask):
+        return None, (None, None)
+
+    flat_idxs = np.nonzero(mask.ravel())[0]
+    values = np.abs(sf).ravel()[flat_idxs]
+    sub_arg = int(np.argmax(values))
+    flat_idx = int(flat_idxs[sub_arg])
+    pos = np.unravel_index(flat_idx, sf.shape)
+
+    max_val = float(values[sub_arg])
+    return max_val, (int(pos[0]), int(pos[1]))
+
+
+def max_speed_in_solid_phase(
+    v_x: NDArray[np.float64],
+    v_y: NDArray[np.float64],
+    u: NDArray[np.float64],
+    u_pt: float,
+) -> Tuple[Optional[float], Tuple[Optional[int], Optional[int]]]:
+    mask = u <= u_pt
+    if not np.any(mask):
+        return None, (None, None)
+
+    speed = np.sqrt(v_x**2 + v_y**2)
+    flat_idxs = np.nonzero(mask.ravel())[0]
+    values = speed.ravel()[flat_idxs]
+    sub_arg = int(np.argmax(values))
+    flat_idx = int(flat_idxs[sub_arg])
+    pos = np.unravel_index(flat_idx, speed.shape)
+
+    max_val = float(values[sub_arg])
+    return max_val, (int(pos[0]), int(pos[1]))
