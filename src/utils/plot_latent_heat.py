@@ -8,7 +8,7 @@ from src.parameters.config import ExperimentConfig
 
 
 def latent_heat_density_field(
-    u: np.ndarray, u_pt: float, delta: np.ndarray, l_solid: float
+    u: np.ndarray, u_pt: float, delta: float, l_solid: float
 ) -> np.ndarray:
     n_y, n_x = u.shape
     val = np.zeros_like(u)
@@ -16,14 +16,14 @@ def latent_heat_density_field(
     for j in range(n_y):
         for i in range(n_x):
             if mushy_mask[j, i]:
-                val[j, i] = delta_gauss(u[j, i], u_pt, delta[j, i])
+                val[j, i] = delta_gauss(u[j, i], u_pt, delta)
     return l_solid * val
 
 
 def plot_latent_heat_field(
     u: np.ndarray,
     cfg: ExperimentConfig,
-    delta: np.ndarray,
+    delta: float,
     l_solid: float,
     graph_id: int,
     directory: str = "../graphs/latent_heat/",

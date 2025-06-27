@@ -150,12 +150,12 @@ def mark_mushy(u_dim, u_pt, delta, mushy_mask):
     n_y, n_x = u_dim.shape
     for j in range(n_y):
         for i in range(n_x):
-            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta[j, i]
+            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta
 
 
 @njit
 def get_dilated_mushy_mask(
-    u_dim: np.ndarray, u_pt: float, delta: np.ndarray, extend_by: int = 1
+    u_dim: np.ndarray, u_pt: float, delta: float, extend_by: int = 1
 ) -> np.ndarray:
     mushy_mask = np.empty_like(u_dim, dtype=np.uint8)
     mushy_dilated = np.copy(mushy_mask)
