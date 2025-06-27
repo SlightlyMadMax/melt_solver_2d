@@ -16,7 +16,11 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
     initialize_velocity,
 )
-from src.fluid_dynamics.utils import calculate_velocity_from_sf
+from src.fluid_dynamics.utils import (
+    calculate_velocity_from_sf,
+    max_sf_in_solid_phase,
+    max_speed_in_solid_phase,
+)
 from src.heat_transfer.coefficient_smoothing.coefficients import (
     StepScheme,
     DeltaScheme,
@@ -30,11 +34,12 @@ from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
+from src.utils.plot_latent_heat import plot_latent_heat_field
 from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
-    cfg = ExperimentConfig.load_from_file("../parameter_sets/gallium/config.json")
+    cfg = ExperimentConfig.load_from_file("../parameter_sets/octodecane/config.json")
     print(cfg)
 
     geometry: DomainGeometry = cfg.geometry
@@ -42,8 +47,8 @@ if __name__ == "__main__":
     dx, dy = geometry.dx, geometry.dy
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.45
-    max_temp = 311.15
+    min_temp = 296.96
+    max_temp = 305.7
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -83,6 +88,7 @@ if __name__ == "__main__":
         bcs=u_bcs,
         shape=DomainShape.UNIFORM_SOLID,
         solid_temp=min_temp,
+        liquid_temp=max_temp,
     )
 
     dim_u = u * delta_u + u_ref
@@ -163,21 +169,17 @@ if __name__ == "__main__":
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=delta, time=t)
 
         if n % cfg.save_interval == 0:
-            t_min = t / 60
-            if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
-                print("bruh")
-                np.savez_compressed(f"../data/gallium/test/u_{n}.npz", u=u)
+            # t_min = t / 60
+            # if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
+            #     print("bruh")
+            #     np.savez_compressed(f"../data/gallium/test/coarse/u_{n}.npz", u=u)
             u_dim = u * delta_u + u_ref
-            calculate_velocity_from_sf(
-                sf * v * l,
-                v_x,
-                v_y,
-                geometry.dx,
-                geometry.dy,
-            )
-            print(
-                f"Courant number: {max(np.max(np.abs(v_x)*dt/dx), np.max(np.abs(v_y)*dt/dy))}"
-            )
+            sf_dim = sf * v * l
+            # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
+            # max_speed, speed_ind = max_speed_in_solid_phase(v_x, v_y, u_dim, u_pt)
+            # max_sf, sf_ind = max_sf_in_solid_phase(sf_dim, u_dim, u_pt)
+
+            # plot_latent_heat_field(u_dim, cfg, delta, material_props.volumetric_latent_heat, n)
             plot_temperature(
                 u=u_dim,
                 cfg=cfg,
@@ -191,7 +193,7 @@ if __name__ == "__main__":
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
             plot_stream_function(
-                stream_function=sf * v * l,
+                stream_function=sf_dim,
                 geometry=geometry,
                 graph_id=n,
                 show_graph=False,
@@ -203,19 +205,24 @@ if __name__ == "__main__":
             )
             print(f"Maximum temperature value: {np.max(u_dim + ABS_ZERO):.2f} C")
             print(f"Minimum temperature value: {np.min(u_dim + ABS_ZERO):.2f} C")
-            # j, i = np.unravel_index(sf.argmax(), sf.shape)
+            # j, i = np.unravel_index(sf_dim.argmax(), sf_dim.shape)
             # y, x = j * dy, i * dx
             # print(
-            #     f"Maximum stream function value: {np.max(sf) * v * l}, (x, y) = {x/l:.3f}, {1.0 - y/l:.3f}"
+            #     f"Maximum abs. stream function value: {np.max(np.abs(sf_dim)):.2e}, (x, y) = {x:.3f}, {1.0 - y:.3f}"
             # )
-            # print(
-            #     f"Minimum stream function value: {np.min(sf) * v * l:.3f}"
-            # )
+            # print(f"Minimum abs. stream function value: {np.min(np.abs(sf_dim)):.2e}")
             # print(
             #     f"Maximum vorticity value: {np.max(w) * v / l:.3f}"
             # )
             # print(
             #     f"Minimum vorticity value: {np.min(w) * v / l:.3f}"
+            # )
+            # print(f"Maximum speed: {np.max(np.sqrt(v_x**2 + v_y**2)):.2e}")
+            # print(
+            #     f"Maximum speed in the solid phase: {max_speed:.2e} at ({speed_ind[0] * dy:.3f}, {speed_ind[1] * dx:.3f})."
+            # )
+            # print(
+            #     f"Maximum abs. stream function value in the solid phase: {max_sf:.2e} at ({sf_ind[0] * dy:.3f}, {sf_ind[1] * dx:.3f})."
             # )
             print()
 
