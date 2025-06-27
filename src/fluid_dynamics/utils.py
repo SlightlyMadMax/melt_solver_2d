@@ -107,7 +107,6 @@ def calculate_vorticity_from_sf(
     )
 
 
-@njit
 def calculate_velocity_from_sf(
     sf: NDArray[np.float64],
     v_x: NDArray[np.float64],
