@@ -66,8 +66,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                     conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
                 )
 
-                rhs[j, i] = u[j, i] + dt * inv_c_eff * (
+                rhs[j, i] = u[j, i] + dt * (
                     inv_dy2
+                    * inv_c_eff
                     * inv_peclet_number
                     * (
                         k_ijp1 * (u[j + 1, i] - u[j, i])
@@ -146,8 +147,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Right-hand side of the equation
-                rhs[i, j] = u_prev[j, i] - dt * inv_c_eff * (
+                rhs[i, j] = u_prev[j, i] - dt * (
                     inv_dy2
+                    * inv_c_eff
                     * inv_peclet_number
                     * (
                         k_ijp1 * (u_old[j + 1, i] - u_old[j, i])

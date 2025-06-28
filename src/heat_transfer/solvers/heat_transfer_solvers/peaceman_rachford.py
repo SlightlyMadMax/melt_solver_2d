@@ -66,8 +66,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Right-hand side of the equation
-                rhs[j, i] = u[j, i] + dt_half * inv_c_eff * (
+                rhs[j, i] = u[j, i] + dt_half * (
                     inv_dy2
+                    * inv_c_eff
                     * inv_peclet_number
                     * (
                         k_ijp1 * (u[j + 1, i] - u[j, i])
@@ -333,8 +334,9 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
                 )
 
                 # Right-hand side of the equation
-                rhs[i, j] = u[j, i] + dt_half * inv_c_eff * (
+                rhs[i, j] = u[j, i] + dt_half * (
                     inv_dx2
+                    * inv_c_eff
                     * inv_peclet_number
                     * (
                         k_i1pj * (u[j, i + 1] - u[j, i])
