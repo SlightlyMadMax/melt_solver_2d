@@ -413,8 +413,6 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             k_solid=props.thermal_conductivity_solid,
             k_liquid=props.thermal_conductivity_liquid,
             delta=delta,
-            h_x=dx,
-            h_y=dy,
         )
 
         self._compute_sweep_x_coeff(

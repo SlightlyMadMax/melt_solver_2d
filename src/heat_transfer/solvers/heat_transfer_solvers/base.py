@@ -100,8 +100,6 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid: float,
         k_liquid: float,
         delta: float,
-        h_x: float,
-        h_y: float,
     ) -> None:
         step_fn = get_step_fn(self.step_scheme)
         delta_fn = get_delta_fn(self.delta_scheme)
