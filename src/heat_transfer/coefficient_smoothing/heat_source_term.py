@@ -1,41 +1,70 @@
 from typing import Tuple
-
 import numpy as np
+from numba import njit, types
+from numba.typed.typedlist import List
 
 
+@njit
 def find_interface_points(
     u: np.ndarray, u_pt: float, dx: float, dy: float
-) -> np.ndarray:
-    """Find interface points where T = T_fusion using interpolation"""
+) -> List[types.UniTuple(types.float64, 2)]:
     n_y, n_x = u.shape
-    interface_points = []
+    interface_points = List.empty_list(types.UniTuple(types.float64, 2))
 
-    # Check horizontal edges
-    for i in range(n_x - 1):
-        for j in range(n_y):
-            u1, u2 = u[j, i], u[j, i + 1]
-            if (u1 - u_pt) * (u2 - u_pt) <= 0 and u1 != u2:
-                # Linear interpolation to find exact interface location
-                alpha = (u_pt - u1) / (u2 - u1)
-                x_int = dx * i + alpha * dx
-                y_int = dy * j
-                interface_points.append([x_int, y_int])
+    # Check horizontal edges (between vertically adjacent cells)
+    for j in range(n_y - 1):
+        for i in range(n_x):
+            u1 = u[j, i]
+            u2 = u[j + 1, i]
 
-    # Check vertical edges
-    for i in range(n_x):
-        for j in range(n_y - 1):
-            u1, u2 = u[j, i], u[j + 1, i]
-            if (u1 - u_pt) * (u2 - u_pt) <= 0 and u1 != u2:
-                alpha = (u_pt - u1) / (u2 - u1)
-                x_int = dx * i
-                y_int = dy * j + alpha * dy
-                interface_points.append([x_int, y_int])
+            # Check if interface crosses this edge
+            if (u1 <= u_pt <= u2) or (u2 <= u_pt <= u1):
+                # Handle case where interface is exactly at a node
+                if u1 == u_pt:
+                    x_coord = i * dx
+                    y_coord = j * dy
+                    interface_points.append((x_coord, y_coord))
+                elif u2 == u_pt:
+                    x_coord = i * dx
+                    y_coord = (j + 1) * dy
+                    interface_points.append((x_coord, y_coord))
+                else:
+                    # Linear interpolation to find exact crossing point
+                    if abs(u2 - u1) > 1e-12:  # Avoid division by very small numbers
+                        alpha = (u_pt - u1) / (u2 - u1)
+                        x_coord = i * dx
+                        y_coord = (j + alpha) * dy
+                        interface_points.append((x_coord, y_coord))
 
-    return (
-        np.array(interface_points) if interface_points else np.array([]).reshape(0, 2)
-    )
+    # Check vertical edges (between horizontally adjacent cells)
+    for j in range(n_y):
+        for i in range(n_x - 1):
+            u1 = u[j, i]
+            u2 = u[j, i + 1]
+
+            # Check if interface crosses this edge
+            if (u1 <= u_pt <= u2) or (u2 <= u_pt <= u1):
+                # Handle case where interface is exactly at a node
+                if u1 == u_pt:
+                    x_coord = i * dx
+                    y_coord = j * dy
+                    interface_points.append((x_coord, y_coord))
+                elif u2 == u_pt:
+                    x_coord = (i + 1) * dx
+                    y_coord = j * dy
+                    interface_points.append((x_coord, y_coord))
+                else:
+                    # Linear interpolation to find exact crossing point
+                    if abs(u2 - u1) > 1e-12:  # Avoid division by very small numbers
+                        alpha = (u_pt - u1) / (u2 - u1)
+                        x_coord = (i + alpha) * dx
+                        y_coord = j * dy
+                        interface_points.append((x_coord, y_coord))
+
+    return interface_points
 
 
+@njit
 def compute_temperature_gradients(
     u: np.ndarray, dx: float, dy: float
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -47,19 +76,24 @@ def compute_temperature_gradients(
     grad_x[:, 1:-1] = (u[:, 2:] - u[:, :-2]) / (2 * dx)
 
     # Forward/backward differences at boundaries
-    grad_y[0, :] = (u[1, :] - u[0, :]) / dy
-    grad_y[-1, :] = (u[-1, :] - u[-2, :]) / dy
-    grad_x[:, 0] = (u[:, 1] - u[:, 0]) / dx
-    grad_x[:, -1] = (u[:, -1] - u[:, -2]) / dx
+    grad_y[0, :] = (-3 * u[0, :] + 4 * u[1, :] - u[2, :]) / (2 * dy)
+    grad_y[-1, :] = (3 * u[-1, :] - 4 * u[-2, :] + u[-3, :]) / (2 * dy)
+    grad_x[:, 0] = (-3 * u[:, 0] + 4 * u[:, 1] - u[:, 2]) / (2 * dx)
+    grad_x[:, -1] = (3 * u[:, -1] - 4 * u[:, -2] + u[:, -3]) / (2 * dx)
 
     return grad_x, grad_y
 
 
-def interpolate_to_point(n_x, n_y, field, x, y, dx, dy):
+@njit
+def interpolate_to_point(
+    field: np.ndarray, x: float, y: float, dx: float, dy: float
+) -> float:
     """Bilinear interpolation of field value at point (x, y)"""
+    n_y, n_x = field.shape
+
     # Find surrounding grid points
-    i = np.clip(int(x / dx), 0, n_x - 2)
-    j = np.clip(int(y / dy), 0, n_y - 2)
+    i = max(0, min(int(x / dx + 1e-16), n_x - 2))
+    j = max(0, min(int(y / dy + 1e-16), n_y - 2))
 
     # Local coordinates
     xi = (x - i * dx) / dx
@@ -71,7 +105,7 @@ def interpolate_to_point(n_x, n_y, field, x, y, dx, dy):
     f01 = field[j + 1, i]
     f11 = field[j + 1, i + 1]
 
-    return (
+    return float(
         f00 * (1 - xi) * (1 - eta)
         + f10 * xi * (1 - eta)
         + f01 * (1 - xi) * eta
@@ -79,6 +113,7 @@ def interpolate_to_point(n_x, n_y, field, x, y, dx, dy):
     )
 
 
+@njit
 def compute_normal_derivatives_at_interface(
     u: np.ndarray,
     u_pt: float,
@@ -90,27 +125,26 @@ def compute_normal_derivatives_at_interface(
     k_0: float,
     peclet_number: float,
 ) -> np.ndarray:
-    """Compute normal temperature derivatives at interface points"""
-    if len(interface_points) == 0:
-        return np.array([])
+    if interface_points.shape[0] == 0:
+        return np.empty(0, dtype=np.float64)
 
     n_y, n_x = u.shape
-
     grad_x, grad_y = compute_temperature_gradients(u, dx, dy)
-    LV_n_values = []
+    LV_n_values = np.empty(interface_points.shape[0], dtype=np.float64)
 
-    for point in interface_points:
-        x_int, y_int = point
+    for idx in range(interface_points.shape[0]):
+        x_int = float(interface_points[idx, 0])
+        y_int = float(interface_points[idx, 1])
 
         # Interpolate gradient at interface point
-        grad_x_int = interpolate_to_point(n_x, n_y, grad_x, x_int, y_int, dx, dy)
-        grad_y_int = interpolate_to_point(n_x, n_y, grad_y, x_int, y_int, dx, dy)
+        grad_x_int = interpolate_to_point(grad_x, x_int, y_int, dx, dy)
+        grad_y_int = interpolate_to_point(grad_y, x_int, y_int, dx, dy)
 
         # Normal vector (pointing from solid to liquid)
         grad_mag = np.sqrt(grad_x_int**2 + grad_y_int**2)
         if grad_mag > 1e-12:
-            nx = grad_x_int / grad_mag  # Changed variable name to avoid conflict
-            ny = grad_y_int / grad_mag  # Changed variable name to avoid conflict
+            nx = grad_x_int / grad_mag
+            ny = grad_y_int / grad_mag
         else:
             nx, ny = 1.0, 0.0  # Default normal if gradient is zero
 
@@ -129,11 +163,12 @@ def compute_normal_derivatives_at_interface(
 
         # Stefan condition: k_l * dT_l/dn - k_s * dT_s/dn = L * V_n
         LV_n = (k_l * du_dn_l - k_s * du_dn_s) / (k_0 * peclet_number)
-        LV_n_values.append(LV_n)
+        LV_n_values[idx] = LV_n
 
-    return np.array(LV_n_values)
+    return LV_n_values
 
 
+@njit
 def compute_stefan_source_term(
     u: np.ndarray,
     u_pt: float,
@@ -148,9 +183,11 @@ def compute_stefan_source_term(
     n_y, n_x = u.shape
 
     # Find interface points
-    interface_points = find_interface_points(u, u_pt, dx, dy)
+    interface_points = np.asarray(find_interface_points(u, u_pt, dx, dy))
 
-    if len(interface_points) == 0:
+    print(interface_points.shape)
+
+    if interface_points.shape[0] == 0:
         return np.zeros_like(u)
 
     # Compute L*V_n at interface points
@@ -160,22 +197,26 @@ def compute_stefan_source_term(
 
     # Distribute each L*V_n value to nearby grid points
     source_term = np.zeros_like(u)
-    sigma = min(dx, dy)  # Gaussian width
+    sigma = 2 * min(dx, dy)  # Gaussian width
 
-    x = np.linspace(0, (n_x - 1) * dx, n_x)
-    y = np.linspace(0, (n_y - 1) * dy, n_y)
-    X, Y = np.meshgrid(x, y, indexing="xy")
+    # Create coordinate arrays
+    for i in range(n_x):
+        for j in range(n_y):
+            x_grid = dx * i
+            y_grid = dy * j
 
-    for k, (interface_point, LV_n) in enumerate(zip(interface_points, LV_n_values)):
-        x_int, y_int = interface_point
+            for k in range(interface_points.shape[0]):
+                x_int = interface_points[k, 0]
+                y_int = interface_points[k, 1]
+                LV_n = LV_n_values[k]
 
-        # Create local Gaussian centered at this interface point
-        distances_sq = (X - x_int) ** 2 + (Y - y_int) ** 2
-        local_delta = np.exp(-0.5 * distances_sq / sigma**2) / (
-            sigma * np.sqrt(2 * np.pi)
-        )
+                # Create local Gaussian centered at this interface point
+                distance_sq = (x_grid - x_int) ** 2 + (y_grid - y_int) ** 2
+                local_delta = np.exp(-0.5 * distance_sq / sigma**2) / (
+                    sigma * np.sqrt(2 * np.pi)
+                )
 
-        # Add contribution from this interface point
-        source_term -= local_delta * LV_n
+                # Add contribution from this interface point
+                source_term[j, i] -= local_delta * LV_n
 
     return source_term
