@@ -81,6 +81,62 @@ def find_interface_points(u, u_pt, dx, dy) -> List:
 
 
 @njit
+def compute_segment_lengths(
+    interface_pts: np.ndarray,
+    grad_x: np.ndarray,
+    grad_y: np.ndarray,
+    dx: float,
+    dy: float,
+    search_radius: float,
+) -> np.ndarray:
+    N = interface_pts.shape[0]
+    seglen = np.empty(N, dtype=np.float64)
+    r2max = search_radius * search_radius
+
+    for i in range(N):
+        xi, yi = interface_pts[i, 0], interface_pts[i, 1]
+        # compute local normal & tangent
+        Tx = interpolate_to_point(grad_x, xi, yi, dx, dy)
+        Ty = interpolate_to_point(grad_y, xi, yi, dx, dy)
+        mag = np.hypot(Tx, Ty) + 1e-16
+        tx, ty = -Ty / mag, Tx / mag  # unit tangent
+
+        best_left = np.inf
+        best_right = np.inf
+
+        # search neighbors
+        for j in range(N):
+            if j == i:
+                continue
+            xj, yj = interface_pts[j, 0], interface_pts[j, 1]
+            dxij = xj - xi
+            dyij = yj - yi
+            if dxij * dxij + dyij * dyij > r2max:
+                continue
+            proj = dxij * tx + dyij * ty
+
+            if 0.0 < proj < best_right:
+                best_right = proj
+            elif proj < 0.0 and -proj < best_left:
+                best_left = -proj
+
+        # form length
+        if best_left < np.inf and best_right < np.inf:
+            ds_i = 0.5 * (best_left + best_right)
+        elif best_left < np.inf:
+            ds_i = 0.5 * best_left
+        elif best_right < np.inf:
+            ds_i = 0.5 * best_right
+        else:
+            ds_i = max(dx, dy)
+
+        # enforce minimum
+        seglen[i] = max(ds_i, 0.1 * max(dx, dy))
+
+    return seglen
+
+
+@njit
 def compute_temperature_gradients(
     u: np.ndarray, dx: float, dy: float
 ) -> Tuple[np.ndarray, np.ndarray]:
