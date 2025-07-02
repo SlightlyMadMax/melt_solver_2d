@@ -1,15 +1,13 @@
 from typing import Tuple
 import numpy as np
-from numba import njit, types
+from numba import njit
 from numba.typed.typedlist import List
 
 
 @njit
-def find_interface_points(
-    u: np.ndarray, u_pt: float, dx: float, dy: float
-) -> List[types.UniTuple(types.float64, 2)]:
+def find_interface_points(u, u_pt, dx, dy) -> List:
     n_y, n_x = u.shape
-    interface_points = List.empty_list(types.UniTuple(types.float64, 2))
+    interface_points = List()
 
     # Check horizontal edges (between vertically adjacent cells)
     for j in range(n_y - 1):
@@ -21,20 +19,29 @@ def find_interface_points(
             if (u1 <= u_pt <= u2) or (u2 <= u_pt <= u1):
                 # Handle case where interface is exactly at a node
                 if u1 == u_pt:
-                    x_coord = i * dx
-                    y_coord = j * dy
-                    interface_points.append((x_coord, y_coord))
+                    point = (i * dx, j * dy)
                 elif u2 == u_pt:
-                    x_coord = i * dx
-                    y_coord = (j + 1) * dy
-                    interface_points.append((x_coord, y_coord))
+                    point = (i * dx, (j + 1) * dy)
                 else:
                     # Linear interpolation to find exact crossing point
                     if abs(u2 - u1) > 1e-12:  # Avoid division by very small numbers
                         alpha = (u_pt - u1) / (u2 - u1)
-                        x_coord = i * dx
-                        y_coord = (j + alpha) * dy
-                        interface_points.append((x_coord, y_coord))
+                        point = (i * dx, (j + alpha) * dy)
+                    else:
+                        continue  # Skip if temperature difference is too small
+
+                # Check for exact duplicates before adding
+                is_duplicate = False
+                for k in range(len(interface_points)):
+                    if (
+                        interface_points[k][0] == point[0]
+                        and interface_points[k][1] == point[1]
+                    ):
+                        is_duplicate = True
+                        break
+
+                if not is_duplicate:
+                    interface_points.append(point)
 
     # Check vertical edges (between horizontally adjacent cells)
     for j in range(n_y):
@@ -46,20 +53,29 @@ def find_interface_points(
             if (u1 <= u_pt <= u2) or (u2 <= u_pt <= u1):
                 # Handle case where interface is exactly at a node
                 if u1 == u_pt:
-                    x_coord = i * dx
-                    y_coord = j * dy
-                    interface_points.append((x_coord, y_coord))
+                    point = (i * dx, j * dy)
                 elif u2 == u_pt:
-                    x_coord = (i + 1) * dx
-                    y_coord = j * dy
-                    interface_points.append((x_coord, y_coord))
+                    point = ((i + 1) * dx, j * dy)
                 else:
                     # Linear interpolation to find exact crossing point
                     if abs(u2 - u1) > 1e-12:  # Avoid division by very small numbers
                         alpha = (u_pt - u1) / (u2 - u1)
-                        x_coord = (i + alpha) * dx
-                        y_coord = j * dy
-                        interface_points.append((x_coord, y_coord))
+                        point = ((i + alpha) * dx, j * dy)
+                    else:
+                        continue  # Skip if temperature difference is too small
+
+                # Check for exact duplicates before adding
+                is_duplicate = False
+                for k in range(len(interface_points)):
+                    if (
+                        interface_points[k][0] == point[0]
+                        and interface_points[k][1] == point[1]
+                    ):
+                        is_duplicate = True
+                        break
+
+                if not is_duplicate:
+                    interface_points.append(point)
 
     return interface_points
 
