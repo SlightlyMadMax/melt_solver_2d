@@ -187,57 +187,73 @@ def interpolate_to_point(
 
 @njit
 def compute_normal_derivatives_at_interface(
+    interface_points: np.ndarray, grad_x: np.ndarray, grad_y: np.ndarray, dx, dy
+) -> Tuple[np.ndarray, np.ndarray]:
+    m = interface_points.shape[0]
+    nx_arr = np.empty(m, dtype=np.float64)
+    ny_arr = np.empty(m, dtype=np.float64)
+
+    for idx in range(m):
+        x_int = float(interface_points[idx, 0])
+        y_int = float(interface_points[idx, 1])
+
+        gx = interpolate_to_point(grad_x, x_int, y_int, dx, dy)
+        gy = interpolate_to_point(grad_y, x_int, y_int, dx, dy)
+
+        mag = np.sqrt(gx * gx + gy * gy)
+        if mag > 1e-12:
+            nx_arr[idx] = gx / mag
+            ny_arr[idx] = gy / mag
+        else:
+            nx_arr[idx] = 1.0
+            ny_arr[idx] = 0.0
+
+    return nx_arr, ny_arr
+
+
+@njit
+def compute_normal_velocities_at_interface(
     u: np.ndarray,
     u_pt: float,
     interface_points: np.ndarray,
+    grad_x: np.ndarray,
+    grad_y: np.ndarray,
     dx: float,
     dy: float,
-    k_l: float,
-    k_s: float,
-    k_0: float,
+    k_l_star: float,
+    k_s_star: float,
     peclet_number: float,
 ) -> np.ndarray:
     if interface_points.shape[0] == 0:
         return np.empty(0, dtype=np.float64)
 
-    n_y, n_x = u.shape
-    grad_x, grad_y = compute_temperature_gradients(u, dx, dy)
-    LV_n_values = np.empty(interface_points.shape[0], dtype=np.float64)
+    nx, ny = compute_normal_derivatives_at_interface(
+        interface_points=interface_points, grad_x=grad_x, grad_y=grad_y, dx=dx, dy=dy
+    )
+    v_n_inv_ste = np.empty(interface_points.shape[0], dtype=np.float64)
 
     for idx in range(interface_points.shape[0]):
         x_int = float(interface_points[idx, 0])
         y_int = float(interface_points[idx, 1])
 
-        # Interpolate gradient at interface point
-        grad_x_int = interpolate_to_point(grad_x, x_int, y_int, dx, dy)
-        grad_y_int = interpolate_to_point(grad_y, x_int, y_int, dx, dy)
-
-        # Normal vector (pointing from solid to liquid)
-        grad_mag = np.sqrt(grad_x_int**2 + grad_y_int**2)
-        if grad_mag > 1e-12:
-            nx = grad_x_int / grad_mag
-            ny = grad_y_int / grad_mag
-        else:
-            nx, ny = 1.0, 0.0  # Default normal if gradient is zero
-
         # Compute one-sided derivatives along normal
         h = min(dx, dy) * 0.5  # Step size for derivative approximation
 
         # Liquid side (positive normal direction)
-        x_l, y_l = x_int + h * nx, y_int + h * ny
-        u_l = interpolate_to_point(n_x, n_y, u, x_l, y_l, dx, dy)
+        x_l, y_l = x_int + h * nx[idx], y_int + h * ny[idx]
+        u_l = interpolate_to_point(u, x_l, y_l, dx, dy)
         du_dn_l = (u_l - u_pt) / h
 
         # Solid side (negative normal direction)
-        x_s, y_s = x_int - h * nx, y_int - h * ny
-        u_s = interpolate_to_point(n_x, n_y, u, x_s, y_s, dx, dy)
+        x_s, y_s = x_int - h * nx[idx], y_int - h * ny[idx]
+        u_s = interpolate_to_point(u, x_s, y_s, dx, dy)
         du_dn_s = (u_pt - u_s) / h
 
-        # Stefan condition: k_l * dT_l/dn - k_s * dT_s/dn = L * V_n
-        LV_n = (k_l * du_dn_l - k_s * du_dn_s) / (k_0 * peclet_number)
-        LV_n_values[idx] = LV_n
+        # Stefan condition: k_l_star * dT_l/dn - k_s_star * dT_s/dn = V_n / Ste
+        LV_n = (k_l_star * du_dn_l - k_s_star * du_dn_s) / peclet_number
+        v_n_inv_ste[idx] = LV_n
 
-    return LV_n_values
+    return v_n_inv_ste
 
 
 @njit
@@ -246,49 +262,97 @@ def compute_stefan_source_term(
     u_pt: float,
     dx: float,
     dy: float,
-    k_l: float,
-    k_s: float,
-    k_0: float,
+    k_l_star: float,
+    k_s_star: float,
     peclet_number: float,
 ) -> np.ndarray:
-    """Compute the Stefan source term -δ_s * L * V_n"""
+    """Compute the Stefan source term -δ_s * V_n / Ste"""
     n_y, n_x = u.shape
 
     # Find interface points
-    interface_points = np.asarray(find_interface_points(u, u_pt, dx, dy))
-
-    print(interface_points.shape)
+    interface_points = np.asarray(
+        list(find_interface_points(u=u, u_pt=u_pt, dx=dx, dy=dy))
+    )
 
     if interface_points.shape[0] == 0:
         return np.zeros_like(u)
 
-    # Compute L*V_n at interface points
-    LV_n_values = compute_normal_derivatives_at_interface(
-        u, u_pt, interface_points, dx, dy, k_l, k_s, k_0, peclet_number
+    grad_x, grad_y = compute_temperature_gradients(u=u, dx=dx, dy=dy)
+
+    # Compute V_n / Ste at interface points
+    v_n_inv_ste_arr = compute_normal_velocities_at_interface(
+        u=u,
+        u_pt=u_pt,
+        interface_points=interface_points,
+        grad_x=grad_x,
+        grad_y=grad_y,
+        dx=dx,
+        dy=dy,
+        k_l_star=k_l_star,
+        k_s_star=k_s_star,
+        peclet_number=peclet_number,
     )
 
-    # Distribute each L*V_n value to nearby grid points
+    seg_len = compute_segment_lengths(
+        interface_pts=interface_points,
+        grad_x=grad_x,
+        grad_y=grad_y,
+        dx=dx,
+        dy=dy,
+        search_radius=3 * max(dy, dx),
+    )
+
+    # Distribute -δ_s * V_n / Ste to nearby grid points
     source_term = np.zeros_like(u)
-    sigma = 2 * min(dx, dy)  # Gaussian width
+    sigma = 1.5 * min(dx, dy)  # Gaussian width
 
-    # Create coordinate arrays
-    for i in range(n_x):
-        for j in range(n_y):
-            x_grid = dx * i
-            y_grid = dy * j
+    for k in range(interface_points.shape[0]):
+        x_int = interface_points[k, 0]
+        y_int = interface_points[k, 1]
+        v_n_inv_ste = v_n_inv_ste_arr[k]
 
-            for k in range(interface_points.shape[0]):
-                x_int = interface_points[k, 0]
-                y_int = interface_points[k, 1]
-                LV_n = LV_n_values[k]
+        # Find grid points within 3σ for efficiency
+        i_min = max(0, int((x_int - 3 * sigma) / dx))
+        i_max = min(n_x, int((x_int + 3 * sigma) / dx) + 1)
+        j_min = max(0, int((y_int - 3 * sigma) / dy))
+        j_max = min(n_y, int((y_int + 3 * sigma) / dy) + 1)
 
-                # Create local Gaussian centered at this interface point
+        # Local normalization factor to account for truncation
+        total_weight = 0.0
+        weights = np.zeros((j_max - j_min, i_max - i_min))
+
+        for j in range(j_min, j_max):
+            for i in range(i_min, i_max):
+                x_grid = dx * i
+                y_grid = dy * j
+
                 distance_sq = (x_grid - x_int) ** 2 + (y_grid - y_int) ** 2
-                local_delta = np.exp(-0.5 * distance_sq / sigma**2) / (
-                    sigma * np.sqrt(2 * np.pi)
-                )
+                # Correct 2D Gaussian normalization
+                weight = np.exp(-0.5 * distance_sq / sigma**2) / (2 * np.pi * sigma**2)
+                weights[j - j_min, i - i_min] = weight
+                total_weight += weight * dx * dy
 
-                # Add contribution from this interface point
-                source_term[j, i] -= local_delta * LV_n
+        # Normalize to preserve total contribution
+        if total_weight > 0:
+            normalization = 1.0 / total_weight
+            for j in range(j_min, j_max):
+                for i in range(i_min, i_max):
+                    source_term[j, i] -= (
+                        weights[j - j_min, i - i_min]
+                        * normalization
+                        * v_n_inv_ste
+                        * seg_len[k]
+                    )
+
+    # print(source_term)
+
+    # total_latent_heat = -np.sum(source_term) * dx * dy
+    # expected_latent_heat = np.sum(v_n_inv_ste_arr * seg_len)
+    #
+    # print(
+    #     f"Total latent heat: {total_latent_heat}, expected: {expected_latent_heat}, relative error: {abs((total_latent_heat - expected_latent_heat)/ expected_latent_heat) * 100}"
+    # )
+    #
+    # raise Exception
 
     return source_term
