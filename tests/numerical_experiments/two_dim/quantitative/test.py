@@ -22,7 +22,7 @@ from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
 from src.utils.time_utils import get_remaining_time
-from tests.numerical_experiments.two_dim.quantative.analytical_solver import (
+from tests.numerical_experiments.two_dim.quantitative.analytical_solver import (
     StefanCornerSolver,
     StefanParameters,
 )
