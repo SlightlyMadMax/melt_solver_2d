@@ -18,11 +18,7 @@ def plot_velocity_field(
     equal_aspect: Optional[bool] = True,
     stride: int = 2,
 ):
-    n_y, n_x = v_x.shape
-    dx, dy = geometry.dx, geometry.dy
-    x = np.linspace(0, (n_x - 1) * dx, n_x)
-    y = np.linspace(0, (n_y - 1) * dy, n_y)
-    X, Y = np.meshgrid(x, y)
+    X, Y = geometry.mesh_grid
 
     X_sub = X[::stride, ::stride]
     Y_sub = Y[::stride, ::stride]
