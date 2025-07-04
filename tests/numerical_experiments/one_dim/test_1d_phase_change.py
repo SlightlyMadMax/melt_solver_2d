@@ -90,6 +90,8 @@ cfg = ExperimentConfig(
     epsilon=1e-6,
 )
 
+print(cfg)
+
 bcs = BoundaryConditions(
     top=BoundaryCondition(
         boundary_type=BoundaryConditionType.DIRICHLET,
