@@ -304,18 +304,19 @@ def compute_stefan_source_term(
 
     # Distribute -δ_s * V_n / Ste to nearby grid points
     source_term = np.zeros_like(u)
-    sigma = 1.5 * min(dx, dy)  # Gaussian width
+    sigma_x = 0.8 * dx
+    sigma_y = 0.8 * dy
 
     for k in range(interface_points.shape[0]):
         x_int = interface_points[k, 0]
         y_int = interface_points[k, 1]
-        v_n_inv_ste = v_n_inv_ste_arr[k]
+        v_n = v_n_inv_ste_arr[k]
 
         # Find grid points within 3σ for efficiency
-        i_min = max(0, int((x_int - 3 * sigma) / dx))
-        i_max = min(n_x, int((x_int + 3 * sigma) / dx) + 1)
-        j_min = max(0, int((y_int - 3 * sigma) / dy))
-        j_max = min(n_y, int((y_int + 3 * sigma) / dy) + 1)
+        i_min = max(0, int((x_int - 3 * sigma_x) / dx))
+        i_max = min(n_x, int((x_int + 3 * sigma_x) / dx) + 1)
+        j_min = max(0, int((y_int - 3 * sigma_y) / dy))
+        j_max = min(n_y, int((y_int + 3 * sigma_y) / dy) + 1)
 
         # Local normalization factor to account for truncation
         total_weight = 0.0
@@ -325,10 +326,10 @@ def compute_stefan_source_term(
             for i in range(i_min, i_max):
                 x_grid = dx * i
                 y_grid = dy * j
-
-                distance_sq = (x_grid - x_int) ** 2 + (y_grid - y_int) ** 2
-                # Correct 2D Gaussian normalization
-                weight = np.exp(-0.5 * distance_sq / sigma**2) / (2 * np.pi * sigma**2)
+                weight = (
+                    np.exp(-0.5 * ((x_grid - x_int) / sigma_x) ** 2)
+                    * np.exp(-0.5 * ((y_grid - y_int) / sigma_y) ** 2)
+                ) / (2 * np.pi * sigma_x * sigma_y)
                 weights[j - j_min, i - i_min] = weight
                 total_weight += weight * dx * dy
 
@@ -340,12 +341,12 @@ def compute_stefan_source_term(
                     source_term[j, i] -= (
                         weights[j - j_min, i - i_min]
                         * normalization
-                        * v_n_inv_ste
+                        * v_n
                         * seg_len[k]
                     )
 
     # print(source_term)
-
+    #
     # total_latent_heat = -np.sum(source_term) * dx * dy
     # expected_latent_heat = np.sum(v_n_inv_ste_arr * seg_len)
     #
