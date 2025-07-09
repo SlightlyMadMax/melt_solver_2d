@@ -119,9 +119,9 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Formula: Ste = specific_heat_liquid * temperature_difference / specific_latent_heat
         """
         return (
-            self.material_props.specific_heat_liquid
+            self.volumetric_heat_capacity_ref
             * self.delta_u
-            / self.material_props.specific_latent_heat
+            / self.material_props.volumetric_latent_heat
         )
 
     @property
