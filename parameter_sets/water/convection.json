@@ -1,0 +1,29 @@
+{
+  "geometry": {
+    "width": 0.038,
+    "height": 0.038,
+    "end_time": 1600,
+    "n_x": 151,
+    "n_y": 151,
+    "n_t": 160000
+  },
+  "material_props": {
+    "u_pt": 273.15,
+    "specific_heat_liquid": 4205,
+    "specific_heat_solid": 4205,
+    "specific_latent_heat": 1e-6,
+    "density_liquid": 999.97,
+    "density_solid": 999.97,
+    "thermal_conductivity_liquid": 0.5466,
+    "thermal_conductivity_solid": 0.5466,
+    "kinematic_viscosity_coeffs": [1.57e-6],
+    "volumetric_thermal_exp_coeffs": [7.68e-06]
+  },
+  "u_ref": 277.15,
+  "delta_u": 10.0,
+  "v": 0.016,
+  "l": 0.038,
+  "delta": null,
+  "epsilon": 0.00004,
+  "save_interval": 1000
+}
