@@ -11,12 +11,13 @@ from src.core.geometry import DomainGeometry
 def plot_velocity_field(
     v_x: NDArray[np.float64],
     v_y: NDArray[np.float64],
+    u_dim: NDArray[np.float64],
     geometry: DomainGeometry,
     graph_id: int,
     show_graph: bool = True,
     directory: str = "../graphs/velocity/",
     equal_aspect: Optional[bool] = True,
-    stride: int = 2,
+    stride: int = 8,
 ):
     X, Y = geometry.mesh_grid
 
@@ -26,6 +27,16 @@ def plot_velocity_field(
     v_y_sub = v_y[::stride, ::stride]
 
     plt.figure(figsize=(8, 6))
+
+    contour = plt.contourf(
+        X,
+        Y,
+        u_dim,
+        25,
+        cmap="viridis",
+        extend="both",
+    )
+    cbar = plt.colorbar(contour)
     plt.quiver(
         X_sub,
         Y_sub,
@@ -33,13 +44,13 @@ def plot_velocity_field(
         v_y_sub,
         angles="xy",
         scale_units="xy",
-        scale=1,
-        color="blue",
+        scale=0.2,
+        color="black",
+        width=0.003,
     )
-
     plt.xlabel("x, м")
     plt.ylabel("y, м")
-    plt.title("Поле скоростей")
+    # plt.title("Поле скоростей")
 
     if equal_aspect:
         plt.axis("equal")
