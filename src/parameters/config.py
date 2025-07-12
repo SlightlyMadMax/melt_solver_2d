@@ -140,7 +140,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         return (
             G
-            * self.thermal_exp_coefficient_at_u_ref
+            * abs(self.thermal_exp_coefficient_at_u_ref)
             * self.delta_u
             * self.l
             * self.l
