@@ -183,8 +183,8 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
-            u_dim=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
+            u=self._iter_u,
+            u_pt_non_dim=self.cfg.u_pt_non_dim,
             c_ref=self.cfg.volumetric_heat_capacity_ref,
             c_solid=props.volumetric_heat_capacity_solid,
             c_liquid=props.volumetric_heat_capacity_liquid,
@@ -193,8 +193,6 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
             k_solid=props.thermal_conductivity_solid,
             k_liquid=props.thermal_conductivity_liquid,
             delta=delta,
-            h_y=dy,
-            h_x=dx,
         )
         self._compute_sweep_x_coeff(
             u=u,

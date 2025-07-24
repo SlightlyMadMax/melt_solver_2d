@@ -400,13 +400,12 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             u=u * self.cfg.delta_u + self.cfg.u_ref,
             u_pt=self.cfg.material_props.u_pt,
         )
-        u_dim = self._iter_u * self.cfg.delta_u + self.cfg.u_ref
 
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
-            u_dim=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
+            u=self._iter_u,
+            u_pt_non_dim=self.cfg.u_pt_non_dim,
             c_ref=self.cfg.volumetric_heat_capacity_ref,
             c_solid=props.volumetric_heat_capacity_solid,
             c_liquid=props.volumetric_heat_capacity_liquid,

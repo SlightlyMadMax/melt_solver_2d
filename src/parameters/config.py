@@ -52,6 +52,13 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return self.material_props.u_pt - self.u_ref
 
     @property
+    def u_pt_non_dim(self) -> float:
+        """
+        Calculate the nondimensionalized phase transition temperature.
+        """
+        return (self.material_props.u_pt - self.u_ref) / self.delta_u
+
+    @property
     def volumetric_heat_capacity_ref(self):
         """
         Calculate the smoothed volumetric heat capacity at the reference temperature.
