@@ -396,8 +396,8 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             sf=sf,
-            u=u * self.cfg.delta_u + self.cfg.u_ref,
-            u_pt=self.cfg.material_props.u_pt,
+            u=u,
+            u_pt=self.cfg.u_pt_non_dim,
         )
 
         self.compute_effective_properties(

@@ -169,29 +169,18 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             sf=sf,
-            u=u * self.cfg.delta_u + self.cfg.u_ref,
-            u_pt=self.cfg.material_props.u_pt,
+            u=u,
+            u_pt=self.cfg.u_pt_non_dim,
         )
         u_dim = self._iter_u * self.cfg.delta_u + self.cfg.u_ref
         delta = get_mushy_zone_temperature_range(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            h_x=dx,
-            h_y=dy,
+            u=u_dim, u_pt=self.cfg.material_props.u_pt
         )
 
         self.compute_effective_properties(
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             u=self._iter_u,
-            u_pt_non_dim=self.cfg.u_pt_non_dim,
-            c_ref=self.cfg.volumetric_heat_capacity_ref,
-            c_solid=props.volumetric_heat_capacity_solid,
-            c_liquid=props.volumetric_heat_capacity_liquid,
-            l_solid=props.volumetric_latent_heat,
-            k_ref=self.cfg.thermal_conductivity_ref,
-            k_solid=props.thermal_conductivity_solid,
-            k_liquid=props.thermal_conductivity_liquid,
             delta=delta,
         )
         self._compute_sweep_x_coeff(
