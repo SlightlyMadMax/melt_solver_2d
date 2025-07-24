@@ -10,12 +10,12 @@
   "material_props": {
     "u_pt": 273.15,
     "specific_heat_liquid": 4200,
-    "specific_heat_solid": 2100,
+    "specific_heat_solid": 4200,
     "specific_latent_heat": 333000.0,
     "density_liquid": 1000,
     "density_solid": 1000,
     "thermal_conductivity_liquid": 0.59,
-    "thermal_conductivity_solid": 2.21,
+    "thermal_conductivity_solid": 0.59,
     "kinematic_viscosity_coeffs": [
         0.000108963453,
         -9.28722151e-07,
