@@ -386,7 +386,6 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         time: float = 0.0,
     ) -> None:
         geometry: DomainGeometry = self.cfg.geometry
-        props: MaterialProperties = self.cfg.material_props
         n_x, n_y = geometry.n_x, geometry.n_y
         dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
         dx_scaled = dx / self.cfg.l
@@ -405,14 +404,6 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             u=self._iter_u,
-            u_pt_non_dim=self.cfg.u_pt_non_dim,
-            c_ref=self.cfg.volumetric_heat_capacity_ref,
-            c_solid=props.volumetric_heat_capacity_solid,
-            c_liquid=props.volumetric_heat_capacity_liquid,
-            l_solid=props.volumetric_latent_heat,
-            k_ref=self.cfg.thermal_conductivity_ref,
-            k_solid=props.thermal_conductivity_solid,
-            k_liquid=props.thermal_conductivity_liquid,
             delta=delta,
         )
 

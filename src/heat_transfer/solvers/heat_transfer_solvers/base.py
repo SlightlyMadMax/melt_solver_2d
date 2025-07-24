@@ -90,30 +90,30 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         u: NDArray[np.float64],
-        u_pt_non_dim: float,
-        c_ref: float,
-        c_solid: float,
-        c_liquid: float,
-        l_solid: float,
-        k_ref: float,
-        k_solid: float,
-        k_liquid: float,
         delta: float,
     ) -> None:
         step_fn = get_step_fn(self.step_scheme)
         delta_fn = get_delta_fn(self.delta_scheme)
+        props = self.cfg.material_props
+        c_ref = self.cfg.volumetric_heat_capacity_ref
+        k_ref = self.cfg.thermal_conductivity_ref
+
+        c_solid_nd = props.volumetric_heat_capacity_solid / c_ref
+        c_liquid_nd = props.volumetric_heat_capacity_liquid / c_ref
+        latent_heat_nd = props.volumetric_latent_heat / (c_ref * self.cfg.delta_u)
+        k_solid_nd = props.thermal_conductivity_solid / k_ref
+        k_liquid_nd = props.thermal_conductivity_liquid / k_ref
+
         self._compute_effective_properties(
             c_eff=c_eff,
             k_eff=k_eff,
             u=u,
-            u_pt_non_dim=u_pt_non_dim,
-            c_ref=c_ref,
-            c_solid=c_solid,
-            c_liquid=c_liquid,
-            l_solid=l_solid,
-            k_ref=k_ref,
-            k_solid=k_solid,
-            k_liquid=k_liquid,
+            u_pt_non_dim=self.cfg.u_pt_non_dim,
+            c_solid=c_solid_nd,
+            c_liquid=c_liquid_nd,
+            l_solid=latent_heat_nd,
+            k_solid=k_solid_nd,
+            k_liquid=k_liquid_nd,
             delta=delta,
             step_fn=step_fn,
             delta_fn=delta_fn,
@@ -126,11 +126,9 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_eff: NDArray[np.float64],
         u: NDArray[np.float64],
         u_pt_non_dim: float,
-        c_ref: float,
         c_solid: float,
         c_liquid: float,
         l_solid: float,
-        k_ref: float,
         k_solid: float,
         k_liquid: float,
         delta: float,
@@ -138,35 +136,27 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         delta_fn: callable,
     ) -> None:
         n_y, n_x = u.shape
-        inv_c_ref = 1.0 / c_ref
-        inv_k_ref = 1.0 / k_ref
 
         for j in range(n_y):
             for i in range(n_x):
-                c_eff[j, i] = (
-                    c_smoothed(
-                        u=u[j, i],
-                        u_pt=u_pt_non_dim,
-                        c_solid=c_solid,
-                        c_liquid=c_liquid,
-                        l_solid=l_solid,
-                        delta=delta,
-                        delta_fn=delta_fn,
-                        step_fn=step_fn,
-                    )
-                    * inv_c_ref
+                c_eff[j, i] = c_smoothed(
+                    u=u[j, i],
+                    u_pt=u_pt_non_dim,
+                    c_solid=c_solid,
+                    c_liquid=c_liquid,
+                    l_solid=l_solid,
+                    delta=delta,
+                    delta_fn=delta_fn,
+                    step_fn=step_fn,
                 )
 
-                k_eff[j, i] = (
-                    k_smoothed(
-                        u=u[j, i],
-                        u_pt=u_pt_non_dim,
-                        k_solid=k_solid,
-                        k_liquid=k_liquid,
-                        delta=delta,
-                        step_fn=step_fn,
-                    )
-                    * inv_k_ref
+                k_eff[j, i] = k_smoothed(
+                    u=u[j, i],
+                    u_pt=u_pt_non_dim,
+                    k_solid=k_solid,
+                    k_liquid=k_liquid,
+                    delta=delta,
+                    step_fn=step_fn,
                 )
 
 
