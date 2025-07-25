@@ -134,10 +134,9 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
 
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
 
-        u_dim = u * self.cfg.delta_u + self.cfg.u_ref
         calculate_indicator_function(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
+            u=u,
+            u_pt=self.cfg.u_pt_non_dim,
             eps=self.cfg.epsilon,
             delta=delta,
             result=self.c_ind,
