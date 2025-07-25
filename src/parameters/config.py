@@ -23,10 +23,10 @@ class ExperimentConfig(BaseModel, FileIOMixin):
 
     # — Smoothing parameters —
     u_solid: Optional[float] = Field(
-        ..., gt=0.0, le=273.15, description="Solid phase temperature [K]."
+        ..., gt=0.0, description="Solid phase temperature [K]."
     )
     u_liquid: Optional[float] = Field(
-        ..., ge=273.15, description="Liquid phase temperature [K]."
+        ..., gt=0.0, description="Liquid phase temperature [K]."
     )
     epsilon: float = Field(
         ...,
