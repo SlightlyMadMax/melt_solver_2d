@@ -146,7 +146,7 @@ if __name__ == "__main__":
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         bc_order=1,
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
     )
 
     start_time = time.perf_counter()
