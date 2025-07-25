@@ -401,10 +401,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         )
 
         self.compute_effective_properties(
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            u=self._iter_u,
-            delta=delta,
+            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u
         )
 
         self._compute_sweep_x_coeff(

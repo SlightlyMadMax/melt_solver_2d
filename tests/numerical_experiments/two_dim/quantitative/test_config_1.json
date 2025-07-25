@@ -28,7 +28,8 @@
   "delta_u": 5.0,
   "v": 0.01,
   "l": 1.0,
-  "delta": null,
+  "u_solid": 273.1,
+  "u_liquid": 273.2,
   "epsilon": 0.00001,
   "save_interval": 1440
 }

@@ -14,7 +14,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
     geometry: DomainGeometry = Field(..., description="Domain geometry")
 
     # — Experiment characteristics —
-    u_ref: float = Field(..., gte=0.0, description="Reference temperature [K].")
+    u_ref: float = Field(..., gt=0.0, description="Reference temperature [K].")
     delta_u: float = Field(
         ..., gt=0.0, description="Characteristic temperature difference [K]."
     )
@@ -22,10 +22,11 @@ class ExperimentConfig(BaseModel, FileIOMixin):
     l: float = Field(..., gt=0.0, description="Characteristic length [m].")
 
     # — Smoothing parameters —
-    delta: Optional[float] = Field(
-        None,
-        gt=0.0,
-        description="Default temperature smoothing parameter (temperature range of the phase change region).",
+    u_solid: Optional[float] = Field(
+        ..., gt=0.0, le=273.15, description="Solid phase temperature [K]."
+    )
+    u_liquid: Optional[float] = Field(
+        ..., ge=273.15, description="Liquid phase temperature [K]."
     )
     epsilon: float = Field(
         ...,
@@ -57,6 +58,20 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the nondimensionalized phase transition temperature.
         """
         return (self.material_props.u_pt - self.u_ref) / self.delta_u
+
+    @property
+    def delta_nd(self) -> float:
+        """
+        Nondimensional mushy zone temperature range.
+        """
+        return (self.u_liquid - self.u_solid) / self.delta_u
+
+    @property
+    def u_mid_nd(self) -> float:
+        """
+        Nondimensional temperature of the mushy zone.
+        """
+        return ((self.u_liquid + self.u_solid) / 2.0 - self.u_ref) / self.delta_u
 
     @property
     def volumetric_heat_capacity_ref(self):

@@ -52,7 +52,7 @@ print(cfg)
 
 geometry: DomainGeometry = cfg.geometry
 
-max_temp = 273.65
+max_temp = 273.2
 min_temp = 268.15
 
 bcs = BoundaryConditions(
@@ -87,8 +87,8 @@ heat_transfer_solver = HeatTransferSolver(
     max_iters=1,
     tolerance=1e-6,
     urf=1.0,
-    step_scheme=StepScheme.ERF,
-    delta_scheme=DeltaScheme.GAUSS,
+    step_scheme=StepScheme.HYPER,
+    delta_scheme=DeltaScheme.HYPER,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
