@@ -100,7 +100,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
 
         c_solid_nd = props.volumetric_heat_capacity_solid / c_ref
         c_liquid_nd = props.volumetric_heat_capacity_liquid / c_ref
-        latent_heat_nd = props.volumetric_latent_heat / (c_ref * self.cfg.delta_u)
+        latent_heat_nd = 1.0 / self.cfg.stefan_number
         k_solid_nd = props.thermal_conductivity_solid / k_ref
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
 
