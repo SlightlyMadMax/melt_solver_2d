@@ -163,11 +163,8 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        delta = get_mushy_zone_temperature_range(u * delta_u + u_ref, u_pt=u_pt)
-        u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        delta = get_mushy_zone_temperature_range(u * delta_u + u_ref, u_pt=u_pt)
-        sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=delta, time=t)
-
+        u = heat_transfer_solver.solve(u=u, sf=sf, delta=0.01, time=t)
+        sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
         if n % cfg.save_interval == 0:
             # t_min = t / 60
             # if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
