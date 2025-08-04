@@ -51,7 +51,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
                 c[j, i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
-                rhs[j, i] = w[j, i] + dt * (
+                rhs[j, i] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     - c_ind[j, i] * sf[j, i]
                 )
@@ -93,7 +93,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
 
                 c[i, j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
-                rhs[i, j] = w[j, i] + dt * (
+                rhs[i, j] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
                     - c_ind[j, i] * sf[j, i]
                 )
