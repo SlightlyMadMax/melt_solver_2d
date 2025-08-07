@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
@@ -188,11 +190,10 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: Optional[float] = None,
         time: float = 0.0,
     ) -> None:
         geometry: DomainGeometry = self.cfg.geometry
-        props: MaterialProperties = self.cfg.material_props
         n_x, n_y = geometry.n_x, geometry.n_y
         dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
         dx_scaled = dx / self.cfg.l
@@ -206,16 +207,9 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             u=u,
             u_pt=self.cfg.u_pt_non_dim,
         )
-        u_dim = self._iter_u * self.cfg.delta_u + self.cfg.u_ref
-        delta = get_mushy_zone_temperature_range(
-            u=u_dim, u_pt=self.cfg.material_props.u_pt
-        )
 
         self.compute_effective_properties(
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            u=self._iter_u,
-            delta=delta,
+            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u, delta=delta
         )
 
         self._compute_sweep_x_coeff(

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
@@ -382,7 +384,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: Optional[float] = None,
         time: float = 0.0,
     ) -> None:
         geometry: DomainGeometry = self.cfg.geometry
@@ -401,7 +403,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         )
 
         self.compute_effective_properties(
-            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u
+            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u, delta=delta
         )
 
         self._compute_sweep_x_coeff(

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -54,7 +56,7 @@ class HeatTransferSolver:
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: Optional[float] = None,
         time: float = 0.0,
     ):
         return self.solver.solve(u=u, sf=sf, delta=delta, time=time)
