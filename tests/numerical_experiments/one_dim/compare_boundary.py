@@ -59,8 +59,8 @@ def compare_num_with_analytic(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(cfg.delta)
-            if cfg.delta is not None
+            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u, 3))
+            if cfg.delta_nd is not None
             else "адаптивная дельта"
         ),
     )
@@ -80,8 +80,8 @@ def compare_num_with_analytic(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(cfg.delta)
-            if cfg.delta is not None
+            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u, 3))
+            if cfg.delta_nd is not None
             else "адаптивная дельта"
         ),
     )
