@@ -50,10 +50,10 @@ else:
 geometry = DomainGeometry(
     width=1.0,
     height=8.0,
-    end_time=60.0 * 60.0 * 24.0 * 100.0,  # 300 days
+    end_time=60.0 * 60.0 * 24.0 * 25.0,  # 25 days
     n_x=21,
     n_y=301,
-    n_t=24 * 100 * 10,
+    n_t=60 * 24 * 25,
 )
 
 print(geometry)
@@ -143,9 +143,9 @@ for n in range(1, geometry.n_t + 1):
     if not fixed_delta:
         delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_non_dim)
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
-    if n % 240 == 0:
+    if n % 1440 == 0:
         time_arr.append(t)
-        print(f"ДЕНЬ: {int(n / 240)}")
+        print(f"ДЕНЬ: {int(n / 1440)}")
         for j in range(geometry.n_y - 2):
             u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
             u_ref = cfg.u_pt_ref
