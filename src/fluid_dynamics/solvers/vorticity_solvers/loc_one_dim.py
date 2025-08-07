@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
@@ -103,7 +105,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
-        delta: float,
+        delta: Optional[float] = None,
         time: float = 0.0,
     ) -> NDArray[np.float64]:
         geometry: DomainGeometry = self.cfg.geometry
@@ -119,7 +121,7 @@ class LODNavierStokesScheme(ImplicitVorticitySolver):
             u=u_dim,
             u_pt=self.cfg.material_props.u_pt,
             eps=self.cfg.epsilon,
-            delta=delta,
+            delta=delta or self.cfg.delta_nd,
             result=self.c_ind,
         )
 
