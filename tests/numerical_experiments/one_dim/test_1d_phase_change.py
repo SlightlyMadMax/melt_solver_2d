@@ -86,7 +86,8 @@ cfg = ExperimentConfig(
     delta_u=0.5 * (max_temp - min_temp),
     v=0.01,
     l=geometry.max_dimension,
-    delta=delta,
+    u_solid=273.0,
+    u_liquid=273.3,
     epsilon=1e-6,
 )
 
@@ -139,9 +140,8 @@ i = int(geometry.n_x / 2)
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
-    delta = get_mushy_zone_temperature_range(
-        u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
-    )
+    if not fixed_delta:
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_non_dim)
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % 240 == 0:
         time_arr.append(t)
