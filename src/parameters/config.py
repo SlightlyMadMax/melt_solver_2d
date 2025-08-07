@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from pydantic import BaseModel, Field, PositiveInt, DirectoryPath
@@ -44,6 +44,17 @@ class ExperimentConfig(BaseModel, FileIOMixin):
     save_interval: Optional[PositiveInt] = Field(
         None, description="Steps between saves"
     )
+
+    def scaled_grid_steps(self) -> Tuple[float, float, float]:
+        """
+        Calculate nondimensionalized space and time grid steps.
+        :return: dx_scaled, dy_scaled, dt_scaled
+        """
+        return (
+            self.geometry.dx / self.l,
+            self.geometry.dy / self.l,
+            self.geometry.dt * self.v / self.l,
+        )
 
     @property
     def u_pt_ref(self) -> float:
