@@ -166,17 +166,8 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=0.01, time=t)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
         if n % cfg.save_interval == 0:
-            # t_min = t / 60
-            # if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15.0, 17.0, 19.0}:
-            #     print("bruh")
-            #     np.savez_compressed(f"../data/gallium/test/coarse/u_{n}.npz", u=u)
             u_dim = u * delta_u + u_ref
             sf_dim = sf * v * l
-            # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
-            # max_speed, speed_ind = max_speed_in_solid_phase(v_x, v_y, u_dim, u_pt)
-            # max_sf, sf_ind = max_sf_in_solid_phase(sf_dim, u_dim, u_pt)
-
-            # plot_latent_heat_field(u_dim, cfg, delta, material_props.volumetric_latent_heat, n)
             plot_temperature(
                 u=u_dim,
                 cfg=cfg,
