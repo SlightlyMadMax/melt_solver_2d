@@ -56,8 +56,6 @@ geometry = DomainGeometry(
     n_t=60 * 24 * 25,
 )
 
-print(geometry)
-
 material_props = MaterialProperties(
     u_pt=273.15,
     specific_heat_liquid=4120.7,
@@ -141,7 +139,17 @@ start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_non_dim)
+        delta = get_mushy_zone_temperature_range(
+            u,
+            u_pt=cfg.u_pt_non_dim,
+            n_nodes=1,
+            h_x=geometry.dx,
+            h_y=geometry.dy,
+            min_delta=0.01,
+            max_delta=(max_temp - min_temp) / cfg.delta_u,
+        )
+    else:
+        delta = None
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % 1440 == 0:
         time_arr.append(t)
