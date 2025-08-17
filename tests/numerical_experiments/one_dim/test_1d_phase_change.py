@@ -87,6 +87,7 @@ cfg = ExperimentConfig(
     u_solid=273.0,
     u_liquid=273.3,
     epsilon=1e-6,
+    save_interval=int(60 * 60 / geometry.dt),
 )
 
 print(cfg)
@@ -151,7 +152,7 @@ for n in range(1, geometry.n_t + 1):
     else:
         delta = None
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
-    if n % 1440 == 0:
+    if n % cfg.save_interval == 0:
         time_arr.append(t)
         print(f"ДЕНЬ: {int(n / 1440)}")
         for j in range(geometry.n_y - 2):
