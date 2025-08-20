@@ -47,7 +47,7 @@ else:
 geometry = DomainGeometry(
     width=1.0,
     height=2.0,
-    end_time=60.0 * 60.0 * 24.0,  # 25 days
+    end_time=60.0 * 60.0 * 24.0,
     n_x=5,
     n_y=301,
     n_t=60 * 24,
