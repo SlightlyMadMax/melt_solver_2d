@@ -84,8 +84,8 @@ cfg = ExperimentConfig(
     delta_u=0.5 * (max_temp - min_temp),
     v=0.01,
     l=geometry.max_dimension,
-    u_solid=273.0,
-    u_liquid=273.3,
+    u_solid=273.15 - delta / 2,
+    u_liquid=273.15 + delta / 2,
     epsilon=1e-6,
     save_interval=int(60 * 60 / geometry.dt),
 )
