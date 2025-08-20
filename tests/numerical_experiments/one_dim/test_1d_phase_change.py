@@ -154,7 +154,7 @@ for n in range(1, geometry.n_t + 1):
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % cfg.save_interval == 0:
         time_arr.append(t)
-        print(f"ДЕНЬ: {int(n / 1440)}")
+        print(f"ДЕНЬ: {int(n / cfg.save_interval)}")
         for j in range(geometry.n_y - 2):
             u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
             u_ref = cfg.u_pt_ref
