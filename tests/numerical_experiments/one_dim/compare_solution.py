@@ -138,8 +138,8 @@ def calculate_and_plot_temperature_error(
     print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
 
     L2_error = np.linalg.norm(
-        num[1:-1, 1:-1] - non_dim_analytical[1:-1, 1:-1]
-    ) / np.sqrt(num[1:-1, 1:-1].size)
+        num[1:-1, center_index] - non_dim_analytical[1:-1, center_index]
+    ) / np.sqrt(num[1:-1, center_index].size)
     print(f"L2 temperature error: {L2_error}")
 
     ax = plt.axes()
