@@ -66,6 +66,7 @@ def get_water_temp(
 def get_analytic_solution(
     cfg: ExperimentConfig,
     t: float,
+    gamma: float,
     min_temp: float,
     max_temp: float,
 ) -> np.ndarray:
@@ -75,6 +76,7 @@ def get_analytic_solution(
 
     :param cfg: Experiment configuration (domain geometry, material properties, etc.).
     :param t: Time
+    :param gamma: Proportionality coefficient between interface position and sqrt(time).
     :param min_temp: Initial temperature of the solid phase region.
     :param max_temp: Initial temperature of the liquid phase region.
     :return: Temperature distribution for the model problem at the time corresponding to the position of the free boundary s_0.
@@ -82,19 +84,6 @@ def get_analytic_solution(
     geometry: DomainGeometry = cfg.geometry
     material_props: MaterialProperties = cfg.material_props
     result = np.empty((geometry.n_y, geometry.n_x))
-
-    gamma: float = fsolve(  # noqa
-        lambda x: trans_eq(
-            gamma=x,
-            material_props=material_props,
-            min_temp=min_temp + ABS_ZERO,
-            max_temp=max_temp + ABS_ZERO,
-        ),
-        0.0002,  # noqa
-    )[0]
-
-    residual = trans_eq(gamma, material_props, min_temp + ABS_ZERO, max_temp + ABS_ZERO)
-    print(f"Gamma: {gamma}, Residual: {residual}")
 
     s = t**0.5 * gamma
 
@@ -118,3 +107,21 @@ def get_analytic_solution(
         )
 
     return result
+
+
+def calculate_gamma(cfg: ExperimentConfig, min_temp: float, max_temp: float) -> float:
+    material_props: MaterialProperties = cfg.material_props
+    gamma: float = fsolve(  # noqa
+        lambda x: trans_eq(
+            gamma=x,
+            material_props=material_props,
+            min_temp=min_temp + ABS_ZERO,
+            max_temp=max_temp + ABS_ZERO,
+        ),
+        0.0002,  # noqa
+    )[0]
+
+    residual = trans_eq(gamma, material_props, min_temp + ABS_ZERO, max_temp + ABS_ZERO)
+    print(f"Gamma: {gamma}, Residual: {residual}")
+
+    return gamma

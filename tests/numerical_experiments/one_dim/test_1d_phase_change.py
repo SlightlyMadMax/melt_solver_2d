@@ -3,8 +3,6 @@ import time
 import numpy as np
 import os
 
-
-from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import (
     BoundaryConditionType,
@@ -20,11 +18,10 @@ from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
-from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
-    get_analytic_solution,
-)
-from tests.numerical_experiments.one_dim.compare_boundary import (
-    compare_num_with_analytic,
+from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import calculate_gamma
+from tests.numerical_experiments.one_dim.compare_solution import (
+    calculate_and_plot_interface_error,
+    calculate_and_plot_temperature_error,
 )
 
 
@@ -49,11 +46,11 @@ else:
 
 geometry = DomainGeometry(
     width=1.0,
-    height=8.0,
-    end_time=60.0 * 60.0 * 24.0 * 25.0,  # 25 days
-    n_x=21,
+    height=2.0,
+    end_time=60.0 * 60.0 * 24.0,  # 25 days
+    n_x=5,
     n_y=301,
-    n_t=60 * 24 * 25,
+    n_t=60 * 24,
 )
 
 material_props = MaterialProperties(
@@ -143,11 +140,11 @@ for n in range(1, geometry.n_t + 1):
         delta = get_mushy_zone_temperature_range(
             u,
             u_pt=cfg.u_pt_non_dim,
-            n_nodes=1,
-            h_x=geometry.dx,
-            h_y=geometry.dy,
-            min_delta=0.01,
-            max_delta=(max_temp - min_temp) / cfg.delta_u,
+            # n_nodes=1,
+            # h_x=geometry.dx,
+            # h_y=geometry.dy,
+            # min_delta=0.01,
+            # max_delta=(max_temp - min_temp) / cfg.delta_u,
         )
     else:
         delta = None
@@ -168,33 +165,22 @@ for n in range(1, geometry.n_t + 1):
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
-u_analytical = (
-    get_analytic_solution(
-        cfg=cfg,
-        t=geometry.n_t * geometry.dt,
-        min_temp=min_temp,
-        max_temp=max_temp,
-    )
-    - ABS_ZERO
-    - cfg.u_ref
-) / cfg.delta_u
+gamma = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
 
-temp_top = u_analytical[-1, int(geometry.n_x / 2)] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-temp_near_top = (
-    u_analytical[-2, int(geometry.n_x / 2)] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-)
-print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
-L2_error = np.linalg.norm(u[1:-1, 1:-1] - u_analytical[1:-1, 1:-1]) / np.sqrt(
-    u[1:-1, 1:-1].size
-)
-print(f"L2 error: {L2_error}")
-
-compare_num_with_analytic(
+calculate_and_plot_temperature_error(
     cfg=cfg,
-    num=boundary,
-    time=time_arr,
+    gamma=gamma,
+    num=u,
     min_temp=min_temp,
     max_temp=max_temp,
+    show_graphs=True,
+    dir_name=dir_path,
+)
+calculate_and_plot_interface_error(
+    cfg=cfg,
+    gamma=gamma,
+    num=boundary,
+    time=time_arr,
     show_graphs=True,
     dir_name=dir_path,
 )
