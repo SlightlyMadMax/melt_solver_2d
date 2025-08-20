@@ -121,7 +121,7 @@ def calculate_and_plot_temperature_error(
     geometry: DomainGeometry = cfg.geometry
     dim_analytical = get_analytical_solution(
         cfg=cfg,
-        t=geometry.n_t * geometry.dt,
+        t=geometry.end_time,
         gamma=gamma,
         min_temp=min_temp,
         max_temp=max_temp,
