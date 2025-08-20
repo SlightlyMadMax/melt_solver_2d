@@ -63,7 +63,7 @@ def get_water_temp(
     )
 
 
-def get_analytic_solution(
+def get_analytical_solution(
     cfg: ExperimentConfig,
     t: float,
     gamma: float,

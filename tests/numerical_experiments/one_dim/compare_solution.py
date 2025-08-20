@@ -5,7 +5,7 @@ from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.parameters.config import ExperimentConfig
 from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
-    get_analytic_solution,
+    get_analytical_solution,
 )
 
 
@@ -119,7 +119,7 @@ def calculate_and_plot_temperature_error(
     :return: None
     """
     geometry: DomainGeometry = cfg.geometry
-    dim_analytical = get_analytic_solution(
+    dim_analytical = get_analytical_solution(
         cfg=cfg,
         t=geometry.n_t * geometry.dt,
         gamma=gamma,
