@@ -96,37 +96,3 @@ def get_delta_fn(scheme: DeltaScheme):
         DeltaScheme.PARABOLIC: delta_parabolic,
         DeltaScheme.BOX: delta_box,
     }[scheme]
-
-
-@njit
-def c_smoothed(
-    u: float,
-    u_pt: float,
-    c_solid: float,
-    c_liquid: float,
-    l_solid: float,
-    delta: float,
-    step_fn: callable,
-    delta_fn: callable,
-) -> float:
-    if delta <= 0:
-        return c_solid if u < u_pt else c_liquid
-    return (
-        c_solid
-        + (c_liquid - c_solid) * step_fn(u, u_pt, delta)
-        + l_solid * delta_fn(u, u_pt, delta)
-    )
-
-
-@njit
-def k_smoothed(
-    u: float,
-    u_pt: float,
-    k_solid: float,
-    k_liquid: float,
-    delta: float,
-    step_fn: callable,
-) -> float:
-    if delta <= 0:
-        return k_solid if u < u_pt else k_liquid
-    return k_solid + (k_liquid - k_solid) * step_fn(u, u_pt, delta)
