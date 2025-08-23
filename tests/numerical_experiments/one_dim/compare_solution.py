@@ -104,10 +104,11 @@ def calculate_and_plot_temperature_error(
     min_temp: float,
     max_temp: float,
     dir_name: str,
+    t_init: float = 0.0,
     show_graphs: bool = True,
-) -> None:
+) -> float:
     """
-    Calculate L2 error of the temperature field.
+    Calculate RMS error of the temperature field.
 
     :param cfg: Experiment configuration containing physical parameters (thermal conductivity, etc.).
     :param gamma: Proportionality coefficient between interface position and sqrt(time).
@@ -115,51 +116,54 @@ def calculate_and_plot_temperature_error(
     :param min_temp: Initial temperature of the solid phase region.
     :param max_temp: Initial temperature of the liquid phase region.
     :param dir_name: Directory where the graphs will be saved.
+    :param t_init: Initial time. If not set, considering it equal to zero.
     :param show_graphs: If True, display the graphs in a new window.
-    :return: None
+    :return: temperature's RMS error
     """
     geometry: DomainGeometry = cfg.geometry
     dim_analytical = get_analytical_solution(
         cfg=cfg,
-        t=geometry.end_time,
+        t=geometry.end_time + t_init,
         gamma=gamma,
         min_temp=min_temp,
         max_temp=max_temp,
     )
     non_dim_analytical = (dim_analytical - ABS_ZERO - cfg.u_ref) / cfg.delta_u
-    dim_num = num * cfg.delta_u + cfg.u_ref + ABS_ZERO
-    y = np.linspace(0, geometry.height, geometry.n_y)
+    # dim_num = num * cfg.delta_u + cfg.u_ref + ABS_ZERO
+    # y = np.linspace(0, geometry.height, geometry.n_y)
 
     center_index = int(geometry.n_x / 2)
-    temp_top = non_dim_analytical[-1, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-    temp_near_top = (
-        non_dim_analytical[-2, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-    )
-    print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
+    # temp_top = non_dim_analytical[-1, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
+    # temp_near_top = (
+    #     non_dim_analytical[-2, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
+    # )
+    # print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
 
-    L2_error = np.linalg.norm(
-        num[1:-1, center_index] - non_dim_analytical[1:-1, center_index]
-    ) / np.sqrt(num[1:-1, center_index].size)
-    print(f"L2 temperature error: {L2_error}")
+    error_rms = np.sqrt(
+        np.mean((num[1:-1, center_index] - non_dim_analytical[1:-1, center_index]) ** 2)
+    )
+    print(f"Temperature RMS: {error_rms}")
 
-    ax = plt.axes()
-    plt.plot(
-        y,
-        dim_analytical[:, center_index],
-        linewidth=1,
-        label="Analytical",
-    )
-    plt.plot(
-        y,
-        dim_num[:, center_index],
-        linewidth=1,
-        label="Numerical",
-    )
-    plt.grid()
-    ax.set_title("Temperature distribution")
-    ax.set_xlabel("Y, m")
-    ax.set_ylabel("Temperature, C")
-    ax.legend()
-    plt.savefig(f"{dir_name}/temperature_profile.png")
-    if show_graphs:
-        plt.show()
+    # ax = plt.axes()
+    # plt.plot(
+    #     y,
+    #     dim_analytical[:, center_index],
+    #     linewidth=1,
+    #     label="Analytical",
+    # )
+    # plt.plot(
+    #     y,
+    #     dim_num[:, center_index],
+    #     linewidth=1,
+    #     label="Numerical",
+    # )
+    # plt.grid()
+    # ax.set_title("Temperature distribution")
+    # ax.set_xlabel("Y, m")
+    # ax.set_ylabel("Temperature, C")
+    # ax.legend()
+    # plt.savefig(f"{dir_name}/temperature_profile.png")
+    # if show_graphs:
+    #     plt.show()
+
+    return error_rms
