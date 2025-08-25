@@ -153,7 +153,11 @@ for n in range(1, geometry.n_t + 1):
         time_arr.append(t)
         print(f"ДЕНЬ: {int(n / cfg.save_interval)}")
         for j in range(geometry.n_y - 2):
-            u0, u1, u2 = u[j, i], u[j + 1, i], u[j + 2, i]
+            u0, u1, u2 = (
+                u[j, i],
+                u[j + 1, i],
+                u[j + 2, i],
+            )
             u_ref = cfg.u_pt_ref
             y0 = j * geometry.dy
             y1 = (j + 1) * geometry.dy
