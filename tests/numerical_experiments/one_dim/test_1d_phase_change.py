@@ -125,9 +125,20 @@ heat_transfer_solver = HeatTransferSolver(
     delta_scheme=DeltaScheme.GAUSS,
 )
 
-u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
-u[0, :] = min_temp
-u = (u - cfg.u_ref) / cfg.delta_u
+if s_0 == 0.0:
+    u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
+    u[0, :] = min_temp
+    u = (u - cfg.u_ref) / cfg.delta_u
+else:
+    t_init = (s_0 / gamma) ** 2
+    u = get_analytical_solution(
+        cfg=cfg,
+        t=t_init,
+        gamma=gamma,
+        min_temp=min_temp,
+        max_temp=max_temp,
+    )
+    u = (u - ABS_ZERO - cfg.u_ref) / cfg.delta_u
 
 boundary = [0.0]
 time_arr = [0.0]
