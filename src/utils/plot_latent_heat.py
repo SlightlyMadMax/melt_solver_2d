@@ -1,10 +1,31 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from numba import njit
 
 from src.heat_transfer.coefficient_smoothing.coefficients import delta_gauss
-from src.heat_transfer.coefficient_smoothing.mushy_zone import get_dilated_mushy_mask
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
+from src.utils.array_masks import dilate_mask
+
+
+@njit
+def mark_mushy(u_dim, u_pt, delta, mushy_mask):
+    n_y, n_x = u_dim.shape
+    for j in range(n_y):
+        for i in range(n_x):
+            mushy_mask[j, i] = abs(u_dim[j, i] - u_pt) <= delta
+
+
+@njit
+def get_dilated_mushy_mask(
+    u_dim: np.ndarray, u_pt: float, delta: float, extend_by: int = 1
+) -> np.ndarray:
+    mushy_mask = np.empty_like(u_dim, dtype=np.uint8)
+    mushy_dilated = np.copy(mushy_mask)
+    mark_mushy(u_dim, u_pt, delta, mushy_mask)
+    dilate_mask(mushy_mask, mushy_dilated, extend_by)
+
+    return mushy_dilated
 
 
 def latent_heat_density_field(
