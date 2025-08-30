@@ -1,7 +1,7 @@
 import numpy as np
 
 from abc import abstractmethod
-from typing import Optional, Union, Tuple
+from typing import Optional, Callable
 
 from numba import njit
 from numpy.typing import NDArray
@@ -139,8 +139,8 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid: float,
         k_liquid: float,
         delta: float,
-        step_fn: callable,
-        delta_fn: callable,
+        step_fn: Callable,
+        delta_fn: Callable,
     ) -> None:
         n_y, n_x = u.shape
 
