@@ -89,7 +89,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Nondimensional mushy zone temperature range.
         """
-        return self.delta_left_nd + self.delta_right_nd
+        return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
 
     @property
     def volumetric_heat_capacity_ref(self):
