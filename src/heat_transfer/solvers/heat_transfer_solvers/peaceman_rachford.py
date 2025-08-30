@@ -399,7 +399,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
             conv_y=self._conv_y,
             sf=sf,
             u=u,
-            u_pt=self.cfg.u_pt_non_dim,
+            u_pt=self.cfg.u_pt_nd,
         )
 
         self.compute_effective_properties(

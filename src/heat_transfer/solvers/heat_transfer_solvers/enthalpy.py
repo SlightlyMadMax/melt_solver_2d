@@ -275,7 +275,7 @@ class EnthalpySolver(ImplicitHeatTransferSolver):
             conv_y=self._conv_y,
             sf=sf,
             u=u,
-            u_pt=self.cfg.u_pt_non_dim,
+            u_pt=self.cfg.u_pt_nd,
         )
         u_dim = self._iter_u * self.cfg.delta_u + self.cfg.u_ref
 

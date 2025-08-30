@@ -138,7 +138,7 @@ class PRNavierStokesScheme(ImplicitVorticitySolver):
 
         calculate_indicator_function(
             u=u,
-            u_pt=self.cfg.u_pt_non_dim,
+            u_pt=self.cfg.u_pt_nd,
             eps=self.cfg.epsilon,
             delta=delta or self.cfg.delta_nd,
             result=self.c_ind,

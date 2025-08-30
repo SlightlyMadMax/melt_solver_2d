@@ -64,7 +64,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return self.material_props.u_pt - self.u_ref
 
     @property
-    def u_pt_non_dim(self) -> float:
+    def u_pt_nd(self) -> float:
         """
         Calculate the nondimensionalized phase transition temperature.
         """

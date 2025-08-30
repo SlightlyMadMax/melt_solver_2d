@@ -81,7 +81,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
             # else:
             delta = self.cfg.delta_nd
 
-        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_non_dim
+        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_nd
         if delta <= 0:
             return k_solid_nd if u <= u_0 else k_liquid_nd
 
@@ -109,7 +109,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
 
         delta = self.cfg.delta_nd if delta is None else delta
-        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_non_dim
+        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_nd
 
         self._compute_effective_properties(
             c_eff=c_eff,

@@ -1,13 +1,8 @@
-from typing import Optional
-
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
 from src.core.geometry import DomainGeometry
-from src.heat_transfer.coefficient_smoothing.mushy_zone import (
-    get_mushy_zone_temperature_range,
-)
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ImplicitHeatTransferSolver,
 )
@@ -15,7 +10,6 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.parameters.material_properties import MaterialProperties
 
 
 @register_solver(HeatTransferSolverName.DOUGLAS_RACHFORD)
@@ -205,7 +199,7 @@ class DouglasRachfordSolver(ImplicitHeatTransferSolver):
             conv_y=self._conv_y,
             sf=sf,
             u=u,
-            u_pt=self.cfg.u_pt_non_dim,
+            u_pt=self.cfg.u_pt_nd,
         )
 
         self.compute_effective_properties(
