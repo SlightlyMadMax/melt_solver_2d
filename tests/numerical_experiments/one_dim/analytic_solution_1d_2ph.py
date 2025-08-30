@@ -109,7 +109,7 @@ def get_analytical_solution(
     return result
 
 
-def calculate_gamma(cfg: ExperimentConfig, min_temp: float, max_temp: float) -> float:
+def calculate_gamma(cfg: ExperimentConfig, min_temp: float, max_temp: float) -> tuple[float, float]:
     material_props: MaterialProperties = cfg.material_props
     gamma: float = fsolve(  # noqa
         lambda x: trans_eq(
@@ -122,6 +122,5 @@ def calculate_gamma(cfg: ExperimentConfig, min_temp: float, max_temp: float) -> 
     )[0]
 
     residual = trans_eq(gamma, material_props, min_temp + ABS_ZERO, max_temp + ABS_ZERO)
-    print(f"Gamma: {gamma}, Residual: {residual}")
 
-    return gamma
+    return gamma, residual
