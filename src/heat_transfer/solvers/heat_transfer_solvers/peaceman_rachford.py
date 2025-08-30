@@ -384,7 +384,7 @@ class PeacemanRachfordSolver(ImplicitHeatTransferSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: Optional[float] = None,
+        delta: tuple[float, float] | None = None,
         time: float = 0.0,
     ) -> None:
         geometry: DomainGeometry = self.cfg.geometry

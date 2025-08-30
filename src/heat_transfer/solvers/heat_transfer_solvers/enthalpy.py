@@ -259,7 +259,7 @@ class EnthalpySolver(ImplicitHeatTransferSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: tuple[float, float] | None = None,
         time: float = 0.0,
     ) -> None:
         geometry: DomainGeometry = self.cfg.geometry
