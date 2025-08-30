@@ -1,5 +1,7 @@
 import math
 from enum import Enum
+from typing import Callable
+
 from numba import njit
 
 
@@ -19,12 +21,12 @@ class DeltaScheme(Enum):
 
 
 @njit
-def step_erf(u, u0, delta):
+def step_erf(u: float, u0: float, delta: float) -> float:
     return 0.5 * (1.0 + math.erf((u - u0) / (math.sqrt(2) * delta)))
 
 
 @njit
-def step_hyper(u, u0, delta):
+def step_hyper(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if abs(diff) < delta:
         return 0.5 * (1.0 + math.tanh(3.0 * diff / math.sqrt(delta**2 - diff**2)))
@@ -32,7 +34,7 @@ def step_hyper(u, u0, delta):
 
 
 @njit
-def step_lin(u, u0, delta):
+def step_lin(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if diff >= delta:
         return 1.0
@@ -42,7 +44,7 @@ def step_lin(u, u0, delta):
 
 
 @njit
-def step_const(u, u0, delta):
+def step_const(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if diff >= delta:
         return 1.0
@@ -69,14 +71,14 @@ def delta_gauss_asym(
 
 
 @njit
-def delta_gauss(u, u0, delta):
+def delta_gauss(u: float, u0: float, delta: float) -> float:
     return math.exp(-((u - u0) ** 2) / (2 * delta**2)) / (
         math.sqrt(2 * math.pi) * delta
     )
 
 
 @njit
-def delta_hyper(u, u0, delta):
+def delta_hyper(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if abs(diff) < delta:
         return (1.5 * (delta**2 / (delta**2 - diff**2) ** 1.5)) / (
@@ -86,7 +88,7 @@ def delta_hyper(u, u0, delta):
 
 
 @njit
-def delta_parabolic(u, u0, delta):
+def delta_parabolic(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if abs(diff) <= delta:
         return 0.75 * (1 - diff**2 / delta**2) / delta
@@ -94,11 +96,11 @@ def delta_parabolic(u, u0, delta):
 
 
 @njit
-def delta_box(u, u0, delta):
+def delta_box(u: float, u0: float, delta: float) -> float:
     return (0.5 / delta) if abs(u - u0) <= delta else 0.0
 
 
-def get_step_fn(scheme: StepScheme):
+def get_step_fn(scheme: StepScheme) -> Callable[[float, float, float], float]:
     return {
         StepScheme.ERF: step_erf,
         StepScheme.HYPER: step_hyper,
@@ -107,7 +109,12 @@ def get_step_fn(scheme: StepScheme):
     }[scheme]
 
 
-def get_delta_fn(scheme: DeltaScheme):
+def get_delta_fn(
+    scheme: DeltaScheme,
+) -> (
+    Callable[[float, float, float], float]
+    | Callable[[float, float, float, float], float]
+):
     return {
         DeltaScheme.GAUSS_ASYM: delta_gauss_asym,
         DeltaScheme.GAUSS: delta_gauss,
