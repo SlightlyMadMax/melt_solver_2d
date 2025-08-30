@@ -34,7 +34,7 @@ def step_hyper(u: float, u0: float, delta: float) -> float:
 
 
 @njit
-def step_lin(u: float, u0: float, delta: float) -> float:
+def step_linear(u: float, u0: float, delta: float) -> float:
     diff = u - u0
     if diff >= delta:
         return 1.0
@@ -104,7 +104,7 @@ def get_step_fn(scheme: StepScheme) -> Callable[[float, float, float], float]:
     return {
         StepScheme.ERF: step_erf,
         StepScheme.HYPER: step_hyper,
-        StepScheme.LINEAR: step_lin,
+        StepScheme.LINEAR: step_linear,
         StepScheme.CONST: step_const,
     }[scheme]
 
