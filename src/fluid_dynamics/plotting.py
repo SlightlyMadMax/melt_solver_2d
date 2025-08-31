@@ -74,11 +74,7 @@ def plot_stream_function(
     directory: str = "../graphs/stream_function/",
     equal_aspect: Optional[bool] = True,
 ):
-    n_y, n_x = stream_function.shape
-    dx, dy = geometry.dx, geometry.dy
-    x = np.linspace(0, (n_x - 1) * dx, n_x)
-    y = np.linspace(0, (n_y - 1) * dy, n_y)
-    X, Y = np.meshgrid(x, y)
+    X, Y = geometry.mesh_grid
 
     plt.figure(figsize=(8, 6))
     cp = plt.contour(X, Y, stream_function, levels=15, cmap="viridis")
