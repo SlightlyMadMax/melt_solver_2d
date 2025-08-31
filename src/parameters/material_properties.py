@@ -32,11 +32,13 @@ class MaterialProperties(BaseModel):
     )
     kinematic_viscosity_coeffs: List[float] = Field(
         ...,
+        min_length=1,
         description="Polynomial coefficients for kinematic viscosity at reference temperature. "
         "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
     )
     volumetric_thermal_exp_coeffs: List[float] = Field(
         ...,
+        min_length=1,
         description="Polynomial coefficients for volumetric thermal expansion coefficient at reference temperature. "
         "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
     )
@@ -60,11 +62,13 @@ class MaterialProperties(BaseModel):
     @property
     def volumetric_latent_heat(self) -> float:
         """
-        Calculate the volumetric latent heat of fusion
-        (given the density of the solid phase is equal to that of the liquid phase when melting/freezing).
+        Calculate the volumetric latent heat of fusion.
+        Assumes the density at phase change to be the average of the densities.
         Formula: volumetric_latent_heat = density * specific_latent_heat
         """
-        return self.density_liquid * self.specific_latent_heat
+        return (
+            0.5 * (self.density_liquid + self.density_solid) * self.specific_latent_heat
+        )
 
     @property
     def thermal_diffusivity_solid(self) -> float:
