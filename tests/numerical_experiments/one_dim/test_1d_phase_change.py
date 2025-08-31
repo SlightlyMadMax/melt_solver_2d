@@ -86,7 +86,7 @@ cfg = ExperimentConfig(
     epsilon=1e-6,
     save_interval=int(60 * 60 / geometry.dt),
 )
-gamma = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
+gamma, residual = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
 print(cfg)
 
 bcs = BoundaryConditions(
