@@ -9,16 +9,19 @@ from src.core.boundary_conditions import (
     BoundaryConditions,
     BoundaryCondition,
 )
+from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
 )
-from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
-from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import calculate_gamma
+from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
+    calculate_gamma,
+    get_analytical_solution,
+)
 from tests.numerical_experiments.one_dim.compare_solution import (
     calculate_and_plot_interface_error,
     calculate_and_plot_temperature_error,
@@ -44,14 +47,8 @@ else:
     delta = float(delta)
     fixed_delta = True
 
-geometry = DomainGeometry(
-    width=1.0,
-    height=2.0,
-    end_time=60.0 * 60.0 * 24.0,
-    n_x=5,
-    n_y=301,
-    n_t=60 * 24,
-)
+s_0 = 0.05
+t_init = 0.0
 
 material_props = MaterialProperties(
     u_pt=273.15,
@@ -74,6 +71,16 @@ material_props = MaterialProperties(
 max_temp = 278.15
 min_temp = 268.15
 
+
+geometry = DomainGeometry(
+    width=1.0,
+    height=2.0,
+    end_time=60.0 * 60.0 * 24.0,
+    n_x=6,
+    n_y=300,
+    n_t=6 * 60 * 24,
+)
+
 cfg = ExperimentConfig(
     geometry=geometry,
     material_props=material_props,
@@ -81,8 +88,8 @@ cfg = ExperimentConfig(
     delta_u=0.5 * (max_temp - min_temp),
     v=0.01,
     l=geometry.max_dimension,
-    u_solid=273.15 - delta / 2,
-    u_liquid=273.15 + delta / 2,
+    u_solid=273.15 - delta,
+    u_liquid=273.15 + delta,
     epsilon=1e-6,
     save_interval=int(60 * 60 / geometry.dt),
 )
@@ -147,42 +154,52 @@ i = int(geometry.n_x / 2)
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
+
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(
-            u,
-            u_pt=cfg.u_pt_non_dim,
-            # n_nodes=1,
-            # h_x=geometry.dx,
-            # h_y=geometry.dy,
-            # min_delta=0.01,
-            # max_delta=(max_temp - min_temp) / cfg.delta_u,
-        )
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=3)
     else:
         delta = None
+
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
+
     if n % cfg.save_interval == 0:
         time_arr.append(t)
         print(f"ДЕНЬ: {int(n / cfg.save_interval)}")
+        dy = geometry.dy
+        u_pt = cfg.u_pt_nd
         for j in range(geometry.n_y - 2):
-            u0, u1, u2 = (
+            um1, u0, up1, up2 = (
+                u[j - 1, i],
                 u[j, i],
                 u[j + 1, i],
                 u[j + 2, i],
             )
-            u_ref = cfg.u_pt_ref
-            y0 = j * geometry.dy
-            y1 = (j + 1) * geometry.dy
-            y2 = (j + 2) * geometry.dy
-            pt = get_pt_quadratic(u0, u1, u2, u_ref, y0, y1, y2)
-            if pt is not None:
-                boundary.append(pt)
-                break
+
+            y0 = j * dy
+            yp1 = (j + 1) * dy
+            yp2 = (j + 2) * dy
+
+            s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
+
+            m_left = (u0 - um1) / dy
+            s_left_piece = y0 + (u_pt - u0) / m_left
+
+            m_right = (up2 - up1) / dy
+            s_right_piece = yp1 + (u_pt - up1) / m_right
+
+            if (abs(m_left) > abs(m_right)) and (y0 <= s_left_piece <= yp1):
+                s_num = s_left_piece
+            elif y0 <= s_right_piece <= yp1:
+                s_num = s_right_piece
+            else:
+                s_num = s_lin  # fallback
+
+            boundary.append(s_num)
+            break
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
-gamma = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
-
-calculate_and_plot_temperature_error(
+rms = calculate_and_plot_temperature_error(
     cfg=cfg,
     gamma=gamma,
     num=u,
@@ -190,7 +207,10 @@ calculate_and_plot_temperature_error(
     max_temp=max_temp,
     show_graphs=True,
     dir_name=dir_path,
+    t_init=t_init,
 )
+
+print(f"Temperature rms: {rms}")
 calculate_and_plot_interface_error(
     cfg=cfg,
     gamma=gamma,
