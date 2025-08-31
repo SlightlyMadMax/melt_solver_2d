@@ -71,25 +71,31 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return (self.material_props.u_pt - self.u_ref) / self.delta_u
 
     @property
-    def delta_left_nd(self) -> float:
+    def delta_left_nd(self) -> Optional[float]:
         """
         Nondimensional mushy zone temperature range in the solid region.
         """
-        return (self.material_props.u_pt - self.u_solid) / self.delta_u
+        if self.u_solid:
+            return (self.material_props.u_pt - self.u_solid) / self.delta_u
+        return None
 
     @property
-    def delta_right_nd(self) -> float:
+    def delta_right_nd(self) -> Optional[float]:
         """
         Nondimensional mushy zone temperature range in the liquid region.
         """
-        return (self.u_liquid - self.material_props.u_pt) / self.delta_u
+        if self.u_liquid:
+            return (self.u_liquid - self.material_props.u_pt) / self.delta_u
+        return None
 
     @property
-    def delta_nd(self) -> float:
+    def delta_nd(self) -> Optional[float]:
         """
         Nondimensional mushy zone temperature range.
         """
-        return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
+        if self.delta_left_nd and self.delta_right_nd:
+            return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
+        return None
 
     @property
     def volumetric_heat_capacity_ref(self):
