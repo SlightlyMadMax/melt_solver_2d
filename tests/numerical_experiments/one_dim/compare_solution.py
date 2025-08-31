@@ -47,7 +47,7 @@ def calculate_and_plot_interface_error(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u, 3))
+            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u / 2, 3))
             if cfg.delta_nd is not None
             else "адаптивная дельта"
         ),
@@ -69,7 +69,7 @@ def calculate_and_plot_interface_error(
         linewidth=1,
         color="r",
         label=(
-            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u, 3))
+            "дельта = " + str(round(cfg.delta_nd * cfg.delta_u / 2, 3))
             if cfg.delta_nd is not None
             else "адаптивная дельта"
         ),
