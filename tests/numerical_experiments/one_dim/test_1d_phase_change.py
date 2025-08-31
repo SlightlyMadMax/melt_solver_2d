@@ -47,7 +47,7 @@ else:
     delta = float(delta)
     fixed_delta = True
 
-s_0 = 0.05
+s_0 = 0.0
 t_init = 0.0
 
 material_props = MaterialProperties(
@@ -88,12 +88,13 @@ cfg = ExperimentConfig(
     delta_u=0.5 * (max_temp - min_temp),
     v=0.01,
     l=geometry.max_dimension,
-    u_solid=273.15 - delta,
-    u_liquid=273.15 + delta,
+    u_solid=273.15 - delta if delta else None,
+    u_liquid=273.15 + delta if delta else None,
     epsilon=1e-6,
     save_interval=int(60 * 60 / geometry.dt),
 )
 gamma, residual = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
+print(f"Gamma: {gamma}, residual: {residual}.\n")
 print(cfg)
 
 bcs = BoundaryConditions(
@@ -121,7 +122,7 @@ bcs = BoundaryConditions(
 
 heat_transfer_solver = HeatTransferSolver(
     cfg=cfg,
-    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     fixed_delta=fixed_delta,
@@ -129,7 +130,7 @@ heat_transfer_solver = HeatTransferSolver(
     tolerance=1e-6,
     urf=1.0,
     step_scheme=StepScheme.ERF,
-    delta_scheme=DeltaScheme.GAUSS,
+    delta_scheme=DeltaScheme.GAUSS_ASYM,
 )
 
 if s_0 == 0.0:
@@ -147,8 +148,8 @@ else:
     )
     u = (u - ABS_ZERO - cfg.u_ref) / cfg.delta_u
 
-boundary = [0.0]
-time_arr = [0.0]
+boundary = [s_0]
+time_arr = [t_init]
 i = int(geometry.n_x / 2)
 
 start_time = time.perf_counter()
@@ -156,46 +157,49 @@ for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
 
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=3)
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=2)
     else:
         delta = None
 
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
 
     if n % cfg.save_interval == 0:
-        time_arr.append(t)
+        time_arr.append(t + t_init)
         print(f"ДЕНЬ: {int(n / cfg.save_interval)}")
         dy = geometry.dy
         u_pt = cfg.u_pt_nd
-        for j in range(geometry.n_y - 2):
-            um1, u0, up1, up2 = (
-                u[j - 1, i],
-                u[j, i],
-                u[j + 1, i],
-                u[j + 2, i],
-            )
+        s_real = gamma * t**0.5
+        diff = u - u_pt
+        j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
+        um1, u0, up1, up2 = (
+            u[j - 1, i],
+            u[j, i],
+            u[j + 1, i],
+            u[j + 2, i],
+        )
 
-            y0 = j * dy
-            yp1 = (j + 1) * dy
-            yp2 = (j + 2) * dy
+        y0 = j * dy
+        yp1 = (j + 1) * dy
+        yp2 = (j + 2) * dy
 
-            s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
+        s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
 
-            m_left = (u0 - um1) / dy
-            s_left_piece = y0 + (u_pt - u0) / m_left
+        m_left = (u0 - um1) / dy
+        s_left_piece = y0 + (u_pt - u0) / m_left
 
-            m_right = (up2 - up1) / dy
-            s_right_piece = yp1 + (u_pt - up1) / m_right
+        m_right = (up2 - up1) / dy
+        s_right_piece = yp1 + (u_pt - up1) / m_right
+        print(
+            f"s_left = {abs(s_left_piece - s_real) * 100 / s_real}, s_right = {abs(s_right_piece - s_real) * 100 / s_real}, s_lin = {abs(s_lin - s_real) * 100 / s_real}"
+        )
+        if (abs(m_left) > abs(m_right)) and (y0 <= s_left_piece <= yp1):
+            s_num = s_left_piece
+        elif y0 <= s_right_piece <= yp1:
+            s_num = s_right_piece
+        else:
+            s_num = s_lin  # fallback
 
-            if (abs(m_left) > abs(m_right)) and (y0 <= s_left_piece <= yp1):
-                s_num = s_left_piece
-            elif y0 <= s_right_piece <= yp1:
-                s_num = s_right_piece
-            else:
-                s_num = s_lin  # fallback
-
-            boundary.append(s_num)
-            break
+        boundary.append(s_num)
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
