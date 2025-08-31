@@ -65,23 +65,24 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: tuple[float, float] | None = None,
         time: float = 0.0,
     ) -> None: ...
 
-    def compute_k_eff(self, u: float, delta: Optional[float] = None) -> float:
+    def compute_k_eff(
+        self, u: float, delta: tuple[float, float] | None = None
+    ) -> float:
         props = self.cfg.material_props
         k_ref = self.cfg.thermal_conductivity_ref
         k_solid_nd = props.thermal_conductivity_solid / k_ref
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
 
         if delta is None:
-            # if is_asymmetric:
-            #     delta = (self.cfg.delta_left_nd, self.cfg.delta_right_nd)
-            # else:
             delta = self.cfg.delta_nd
+        else:
+            delta = max(delta[0], delta[1])
 
-        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_nd
+        u_0 = self.cfg.u_pt_nd
         if delta <= 0:
             return k_solid_nd if u <= u_0 else k_liquid_nd
 
@@ -94,7 +95,7 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         u: NDArray[np.float64],
-        delta: Optional[float] = None,
+        delta: Optional[tuple[float, float]] = None,
     ) -> None:
         step_fn = get_step_fn(self.step_scheme)
         delta_fn = get_delta_fn(self.delta_scheme)
@@ -108,27 +109,49 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         k_solid_nd = props.thermal_conductivity_solid / k_ref
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
 
-        delta = self.cfg.delta_nd if delta is None else delta
-        u_0 = self.cfg.u_mid_nd if delta is None else self.cfg.u_pt_nd
-
-        self._compute_effective_properties(
-            c_eff=c_eff,
-            k_eff=k_eff,
-            u=u,
-            u_0=u_0,
-            c_solid=c_solid_nd,
-            c_liquid=c_liquid_nd,
-            l_solid=latent_heat_nd,
-            k_solid=k_solid_nd,
-            k_liquid=k_liquid_nd,
-            delta=delta,
-            step_fn=step_fn,
-            delta_fn=delta_fn,
+        delta = (
+            (self.cfg.delta_left_nd, self.cfg.delta_right_nd)
+            if delta is None
+            else delta
         )
+
+        is_asymmetric = self.delta_scheme == DeltaScheme.GAUSS_ASYM
+
+        if is_asymmetric:
+            self._compute_effective_properties_asym(
+                c_eff=c_eff,
+                k_eff=k_eff,
+                u=u,
+                u_0=self.cfg.u_pt_nd,
+                c_solid=c_solid_nd,
+                c_liquid=c_liquid_nd,
+                l_solid=latent_heat_nd,
+                k_solid=k_solid_nd,
+                k_liquid=k_liquid_nd,
+                delta_left=delta[0],
+                delta_right=delta[1],
+                step_fn=step_fn,
+                delta_fn=delta_fn,
+            )
+        else:
+            self._compute_effective_properties_sym(
+                c_eff=c_eff,
+                k_eff=k_eff,
+                u=u,
+                u_0=self.cfg.u_pt_nd,
+                c_solid=c_solid_nd,
+                c_liquid=c_liquid_nd,
+                l_solid=latent_heat_nd,
+                k_solid=k_solid_nd,
+                k_liquid=k_liquid_nd,
+                delta_max=max(delta[0], delta[1]),
+                step_fn=step_fn,
+                delta_fn=delta_fn,
+            )
 
     @staticmethod
     @njit
-    def _compute_effective_properties(
+    def _compute_effective_properties_asym(
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         u: NDArray[np.float64],
@@ -138,21 +161,58 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         l_solid: float,
         k_solid: float,
         k_liquid: float,
-        delta: float,
+        delta_left: float,
+        delta_right: float,
         step_fn: Callable,
         delta_fn: Callable,
     ) -> None:
         n_y, n_x = u.shape
-
         c_diff = c_liquid - c_solid
         k_diff = k_liquid - k_solid
+        delta_max = max(delta_left, delta_right)
+
         for j in range(n_y):
             for i in range(n_x):
-                if delta <= 0:
+                if delta_left <= 0 and delta_right <= 0:
                     c_eff[j, i] = c_solid if u[j, i] <= u_0 else c_liquid
                     k_eff[j, i] = k_solid if u[j, i] <= u_0 else k_liquid
-                step_val = step_fn(u[j, i], u_0, delta)
-                delta_val = delta_fn(u[j, i], u_0, delta)
+                    continue
+
+                step_val = step_fn(u[j, i], u_0, delta_max)
+                delta_val = delta_fn(u[j, i], u_0, delta_left, delta_right)
+
+                c_eff[j, i] = c_solid + c_diff * step_val + l_solid * delta_val
+                k_eff[j, i] = k_solid + k_diff * step_val
+
+    @staticmethod
+    @njit
+    def _compute_effective_properties_sym(
+        c_eff: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        u: NDArray[np.float64],
+        u_0: float,
+        c_solid: float,
+        c_liquid: float,
+        l_solid: float,
+        k_solid: float,
+        k_liquid: float,
+        delta_max: float,
+        step_fn: Callable,
+        delta_fn: Callable,
+    ) -> None:
+        n_y, n_x = u.shape
+        c_diff = c_liquid - c_solid
+        k_diff = k_liquid - k_solid
+
+        for j in range(n_y):
+            for i in range(n_x):
+                if delta_max <= 0:
+                    c_eff[j, i] = c_solid if u[j, i] <= u_0 else c_liquid
+                    k_eff[j, i] = k_solid if u[j, i] <= u_0 else k_liquid
+                    continue
+
+                step_val = step_fn(u[j, i], u_0, delta_max)
+                delta_val = delta_fn(u[j, i], u_0, delta_max)
 
                 c_eff[j, i] = c_solid + c_diff * step_val + l_solid * delta_val
                 k_eff[j, i] = k_solid + k_diff * step_val
@@ -169,7 +229,7 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: tuple[float, float] | None = None,
         time: float = 0.0,
     ) -> None: ...
 
@@ -219,6 +279,6 @@ class ExplicitHeatTransferSolver(BaseHeatTransferSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float,
+        delta: tuple[float, float] | None = None,
         time: float = 0.0,
     ) -> None: ...
