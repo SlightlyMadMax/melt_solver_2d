@@ -129,41 +129,40 @@ def calculate_and_plot_temperature_error(
         max_temp=max_temp,
     )
     non_dim_analytical = (dim_analytical - ABS_ZERO - cfg.u_ref) / cfg.delta_u
-    # dim_num = num * cfg.delta_u + cfg.u_ref + ABS_ZERO
-    # y = np.linspace(0, geometry.height, geometry.n_y)
+    dim_num = num * cfg.delta_u + cfg.u_ref + ABS_ZERO
+    y = np.linspace(0, geometry.height, geometry.n_y)
 
     center_index = int(geometry.n_x / 2)
-    # temp_top = non_dim_analytical[-1, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-    # temp_near_top = (
-    #     non_dim_analytical[-2, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
-    # )
-    # print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
+    temp_top = non_dim_analytical[-1, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
+    temp_near_top = (
+        non_dim_analytical[-2, center_index] * cfg.delta_u + ABS_ZERO + cfg.u_ref
+    )
+    print(f"Temperature at and near the top boundary: {temp_top} C, {temp_near_top} C")
 
     error_rms = np.sqrt(
         np.mean((num[1:-1, center_index] - non_dim_analytical[1:-1, center_index]) ** 2)
     )
-    print(f"Temperature RMS: {error_rms}")
 
-    # ax = plt.axes()
-    # plt.plot(
-    #     y,
-    #     dim_analytical[:, center_index],
-    #     linewidth=1,
-    #     label="Analytical",
-    # )
-    # plt.plot(
-    #     y,
-    #     dim_num[:, center_index],
-    #     linewidth=1,
-    #     label="Numerical",
-    # )
-    # plt.grid()
-    # ax.set_title("Temperature distribution")
-    # ax.set_xlabel("Y, m")
-    # ax.set_ylabel("Temperature, C")
-    # ax.legend()
-    # plt.savefig(f"{dir_name}/temperature_profile.png")
-    # if show_graphs:
-    #     plt.show()
+    ax = plt.axes()
+    plt.plot(
+        y,
+        dim_analytical[:, center_index],
+        linewidth=1,
+        label="Analytical",
+    )
+    plt.plot(
+        y,
+        dim_num[:, center_index],
+        linewidth=1,
+        label="Numerical",
+    )
+    plt.grid()
+    ax.set_title("Temperature distribution")
+    ax.set_xlabel("Y, m")
+    ax.set_ylabel("Temperature, C")
+    ax.legend()
+    plt.savefig(f"{dir_name}/temperature_profile.png")
+    if show_graphs:
+        plt.show()
 
     return error_rms
