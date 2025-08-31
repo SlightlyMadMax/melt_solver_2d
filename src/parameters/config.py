@@ -23,10 +23,10 @@ class ExperimentConfig(BaseModel, FileIOMixin):
 
     # — Smoothing parameters —
     u_solid: Optional[float] = Field(
-        ..., gt=0.0, description="Solid phase temperature [K]."
+        None, gt=0.0, description="Solid phase temperature [K]."
     )
     u_liquid: Optional[float] = Field(
-        ..., gt=0.0, description="Liquid phase temperature [K]."
+        None, gt=0.0, description="Liquid phase temperature [K]."
     )
     epsilon: float = Field(
         ...,
@@ -50,11 +50,8 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate nondimensionalized space and time grid steps.
         :return: dx_scaled, dy_scaled, dt_scaled
         """
-        return (
-            self.geometry.dx / self.l,
-            self.geometry.dy / self.l,
-            self.geometry.dt * self.v / self.l,
-        )
+        dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
+        return dx / self.l, dy / self.l, dt * self.v / self.l
 
     @property
     def u_pt_ref(self) -> float:
@@ -75,7 +72,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Nondimensional mushy zone temperature range in the solid region.
         """
-        if self.u_solid:
+        if self.u_solid is not None:
             return (self.material_props.u_pt - self.u_solid) / self.delta_u
         return None
 
@@ -84,7 +81,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Nondimensional mushy zone temperature range in the liquid region.
         """
-        if self.u_liquid:
+        if self.u_liquid is not None:
             return (self.u_liquid - self.material_props.u_pt) / self.delta_u
         return None
 
@@ -93,14 +90,14 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Nondimensional mushy zone temperature range.
         """
-        if self.delta_left_nd and self.delta_right_nd:
+        if self.delta_left_nd is not None and self.delta_right_nd is not None:
             return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
         return None
 
     @property
-    def volumetric_heat_capacity_ref(self):
+    def volumetric_heat_capacity_ref(self) -> float:
         """
-        Calculate the smoothed volumetric heat capacity at the reference temperature.
+        Calculate the volumetric heat capacity at the reference temperature.
         """
         if self.u_ref < self.material_props.u_pt:
             return self.material_props.volumetric_heat_capacity_solid
@@ -113,9 +110,9 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
 
     @property
-    def thermal_conductivity_ref(self):
+    def thermal_conductivity_ref(self) -> float:
         """
-        Calculate the smoothed thermal conductivity at the reference temperature.
+        Calculate the thermal conductivity at the reference temperature.
         """
         if self.u_ref < self.material_props.u_pt:
             return self.material_props.thermal_conductivity_solid
@@ -128,7 +125,14 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
 
     @property
-    def kinematic_viscosity_at_u_ref(self) -> float:
+    def thermal_diffusivity_ref(self) -> float:
+        """
+        Calculate the thermal diffusivity at the reference temperature.
+        """
+        return self.thermal_conductivity_ref / self.volumetric_heat_capacity_ref
+
+    @property
+    def kinematic_viscosity_ref(self) -> float:
         """
         Calculate the kinematic viscosity coefficient at the reference temperature using polynomial evaluation.
         """
@@ -137,7 +141,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
 
     @property
-    def thermal_exp_coefficient_at_u_ref(self) -> float:
+    def thermal_exp_coefficient_ref(self) -> float:
         """
         Calculate the volumetric thermal expansion coefficient at the reference temperature using polynomial evaluation.
         """
@@ -146,7 +150,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
 
     @property
-    def peclet_number(self):
+    def peclet_number(self) -> float:
         """
         Calculate the Péclet number at the reference temperature.
         Formula: Pe = characteristic_length * flow_velocity *  volumetric_heat_capacity / thermal_conductivity
@@ -159,7 +163,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         )
 
     @property
-    def stefan_number(self):
+    def stefan_number(self) -> float:
         """
         Calculate the Stefan number for liquid phase.
         Formula: Ste = specific_heat_liquid * temperature_difference / specific_latent_heat
@@ -176,7 +180,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the Reynolds number at the reference temperature.
         Formula: Re = characteristic_length * flow_velocity / kinematic_viscosity
         """
-        return self.v * self.l / self.kinematic_viscosity_at_u_ref
+        return self.v * self.l / self.kinematic_viscosity_ref
 
     @property
     def grashof_number(self) -> float:
@@ -186,12 +190,12 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         return (
             G
-            * abs(self.thermal_exp_coefficient_at_u_ref)
+            * abs(self.thermal_exp_coefficient_ref)
             * self.delta_u
             * self.l
             * self.l
             * self.l
-            / (self.kinematic_viscosity_at_u_ref * self.kinematic_viscosity_at_u_ref)
+            / (self.kinematic_viscosity_ref * self.kinematic_viscosity_ref)
         )
 
     @property
@@ -200,10 +204,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the Prandtl number at the reference temperature.
         Formula: Pr = kinematic_viscosity / thermal_diffusivity
         """
-        return (
-            self.kinematic_viscosity_at_u_ref
-            / self.material_props.thermal_diffusivity_solid
-        )
+        return self.kinematic_viscosity_ref / self.thermal_diffusivity_ref
 
     @property
     def rayleigh_number(self) -> float:
