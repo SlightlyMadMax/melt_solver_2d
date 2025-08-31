@@ -77,7 +77,7 @@ geometry = DomainGeometry(
     height=2.0,
     end_time=60.0 * 60.0 * 24.0,
     n_x=6,
-    n_y=300,
+    n_y=501,
     n_t=6 * 60 * 24,
 )
 
@@ -130,7 +130,7 @@ heat_transfer_solver = HeatTransferSolver(
     tolerance=1e-6,
     urf=1.0,
     step_scheme=StepScheme.ERF,
-    delta_scheme=DeltaScheme.GAUSS_ASYM,
+    delta_scheme=DeltaScheme.GAUSS,
 )
 
 if s_0 == 0.0:
@@ -157,7 +157,7 @@ for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
 
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=2)
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=1)
     else:
         delta = None
 
