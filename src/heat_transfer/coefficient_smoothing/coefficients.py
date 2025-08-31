@@ -58,7 +58,7 @@ def delta_gauss_asym(
     u: float, u0: float, delta_left: float, delta_right: float
 ) -> float:
     diff = u - u0
-    norm_coeff = 1.0 / (math.sqrt(2 * math.pi) * (delta_left + delta_right))
+    norm_coeff = 2.0 / (math.sqrt(2 * math.pi) * (delta_left + delta_right))
 
     if diff <= 0:  # Solid side (u <= u0)
         if delta_left <= 0:
