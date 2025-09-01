@@ -21,6 +21,7 @@ from src.heat_transfer.coefficient_smoothing.coefficients import (
     DeltaScheme,
 )
 from src.heat_transfer.init_values import init_temperature, DomainShape
+from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
