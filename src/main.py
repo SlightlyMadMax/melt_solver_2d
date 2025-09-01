@@ -16,11 +16,6 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
     initialize_velocity,
 )
-from src.fluid_dynamics.utils import (
-    calculate_velocity_from_sf,
-    max_sf_in_solid_phase,
-    max_speed_in_solid_phase,
-)
 from src.heat_transfer.coefficient_smoothing.coefficients import (
     StepScheme,
     DeltaScheme,
@@ -30,11 +25,10 @@ from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
 )
-from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
+from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
-from src.utils.plot_latent_heat import plot_latent_heat_field
 from src.utils.time_utils import get_remaining_time
 
 
