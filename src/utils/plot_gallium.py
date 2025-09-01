@@ -33,7 +33,6 @@ for file_path in paths:
     ax.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
 
 
-# Create custom legend handles
 legend_elements = [
     mlines.Line2D(
         [], [], linestyle="--", color="red", linewidth=2, label="Численное решение"
