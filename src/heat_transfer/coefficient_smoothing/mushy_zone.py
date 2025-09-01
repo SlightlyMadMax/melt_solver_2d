@@ -230,17 +230,36 @@ def normalize_components(gx, gy):
 
 
 @njit
-def get_mushy_zone_temperature_range(u: np.ndarray, u_pt: float) -> float:
+def get_mushy_zone_temperature_range(
+    u: np.ndarray, u_pt: float, n_nodes: int = 1
+) -> tuple[float, float]:
     n_y, n_x = u.shape
 
-    max_delta = 0.0
+    max_delta_left = 0.0
+    max_delta_right = 0.0
     for i in range(n_x - 1):
         for j in range(n_y - 1):
             if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                du = abs(u[j + 1, i] - u[j, i])
-                max_delta = du if du > max_delta else max_delta
-            if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
-                du = abs(u[j, i + 1] - u[j, i])
-                max_delta = du if du > max_delta else max_delta
+                left_index = max(0, j - (n_nodes - 1))
+                right_index = min(n_y - 1, j + n_nodes)
 
-    return max_delta
+                du_left = abs(u[left_index, i] - u_pt)
+                max_delta_left = du_left if du_left > max_delta_left else max_delta_left
+
+                du_right = abs(u[right_index, i] - u_pt)
+                max_delta_right = (
+                    du_right if du_right > max_delta_right else max_delta_right
+                )
+            if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
+                left_index = max(0, i - (n_nodes - 1))
+                right_index = min(n_x - 1, i + n_nodes)
+
+                du_left = abs(u[j, left_index] - u_pt)
+                max_delta_left = du_left if du_left > max_delta_left else max_delta_left
+
+                du_right = abs(u[j, right_index] - u_pt)
+                max_delta_right = (
+                    du_right if du_right > max_delta_right else max_delta_right
+                )
+
+    return max_delta_left, max_delta_right
