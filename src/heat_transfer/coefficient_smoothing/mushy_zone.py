@@ -233,33 +233,60 @@ def normalize_components(gx, gy):
 def get_mushy_zone_temperature_range(
     u: np.ndarray, u_pt: float, n_nodes: int = 1
 ) -> tuple[float, float]:
+    """
+    Returns (max_delta_solid, max_delta_liquid), where each value is the
+    maximum absolute deviation |u - u_pt| found on the corresponding side
+    of interfaces (solid: u - u_pt <= 0, liquid: u - u_pt > 0).
+    """
     n_y, n_x = u.shape
 
-    max_delta_left = 0.0
-    max_delta_right = 0.0
+    max_delta_solid = 0.0
+    max_delta_liquid = 0.0
+
     for i in range(n_x - 1):
         for j in range(n_y - 1):
             if (u[j + 1, i] - u_pt) * (u[j, i] - u_pt) <= 0.0:
                 left_index = max(0, j - (n_nodes - 1))
                 right_index = min(n_y - 1, j + n_nodes)
 
-                du_left = abs(u[left_index, i] - u_pt)
-                max_delta_left = du_left if du_left > max_delta_left else max_delta_left
+                signed_left = u[left_index, i] - u_pt
+                du_left = abs(signed_left)
+                if signed_left <= 0.0:
+                    if du_left > max_delta_solid:
+                        max_delta_solid = du_left
+                else:
+                    if du_left > max_delta_liquid:
+                        max_delta_liquid = du_left
 
-                du_right = abs(u[right_index, i] - u_pt)
-                max_delta_right = (
-                    du_right if du_right > max_delta_right else max_delta_right
-                )
+                signed_right = u[right_index, i] - u_pt
+                du_right = abs(signed_right)
+                if signed_right <= 0.0:
+                    if du_right > max_delta_solid:
+                        max_delta_solid = du_right
+                else:
+                    if du_right > max_delta_liquid:
+                        max_delta_liquid = du_right
+
             if (u[j, i + 1] - u_pt) * (u[j, i] - u_pt) <= 0.0:
                 left_index = max(0, i - (n_nodes - 1))
                 right_index = min(n_x - 1, i + n_nodes)
 
-                du_left = abs(u[j, left_index] - u_pt)
-                max_delta_left = du_left if du_left > max_delta_left else max_delta_left
+                signed_left = u[j, left_index] - u_pt
+                du_left = abs(signed_left)
+                if signed_left <= 0.0:
+                    if du_left > max_delta_solid:
+                        max_delta_solid = du_left
+                else:
+                    if du_left > max_delta_liquid:
+                        max_delta_liquid = du_left
 
-                du_right = abs(u[j, right_index] - u_pt)
-                max_delta_right = (
-                    du_right if du_right > max_delta_right else max_delta_right
-                )
+                signed_right = u[j, right_index] - u_pt
+                du_right = abs(signed_right)
+                if signed_right <= 0.0:
+                    if du_right > max_delta_solid:
+                        max_delta_solid = du_right
+                else:
+                    if du_right > max_delta_liquid:
+                        max_delta_liquid = du_right
 
-    return max_delta_left, max_delta_right
+    return max_delta_solid, max_delta_liquid
