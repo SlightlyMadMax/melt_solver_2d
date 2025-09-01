@@ -25,6 +25,6 @@
   "l": 0.015,
   "u_solid": 301.23,
   "u_liquid": 301.43,
-  "epsilon": 0.000025,
+  "epsilon": 0.00001,
   "save_interval": 1200
 }
