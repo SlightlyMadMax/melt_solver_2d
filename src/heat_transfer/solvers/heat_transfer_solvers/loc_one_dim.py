@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray

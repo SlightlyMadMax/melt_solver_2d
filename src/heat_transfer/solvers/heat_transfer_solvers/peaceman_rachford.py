@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
@@ -13,7 +11,6 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
     register_solver,
 )
-from src.parameters.material_properties import MaterialProperties
 
 
 @register_solver(HeatTransferSolverName.PEACEMAN_RACHFORD)
