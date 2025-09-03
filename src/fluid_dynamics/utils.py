@@ -87,8 +87,9 @@ def calculate_indicator_function(
     # )
 
     # --- Variant 4: exponential form (one-sided smoothing) ----------------------
-    # exp_term = np.exp(-diff_u / delta_inner)
-    # result[interior] = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
+    # exp_term = np.exp((delta - diff_u) / delta)
+    # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
+    # result[interior] = np.where(diff_u < 0, temp, 0.0)
 
 
 def calculate_vorticity_from_sf(
