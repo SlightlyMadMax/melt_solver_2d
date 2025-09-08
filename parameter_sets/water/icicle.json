@@ -19,11 +19,10 @@
     "kinematic_viscosity_coeffs": [1.57e-6],
     "volumetric_thermal_exp_coeffs": [7.68e-6]
   },
-  "u_ref": 273.15,
+  "u_ref": 277.15,
   "delta_u": 8.0,
   "v": 0.04,
   "l": 0.4,
-  "delta": null,
   "epsilon": 0.00001,
   "save_interval": 6000
 }
