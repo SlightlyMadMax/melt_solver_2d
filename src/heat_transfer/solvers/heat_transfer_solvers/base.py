@@ -1,6 +1,6 @@
 import numpy as np
 
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import Optional, Callable
 
 from numba import njit
@@ -228,20 +228,107 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
                 k_eff[j, i] = k_solid + k_diff * step_val
 
 
-class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
+class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self._initialize_sweep_arrays()
 
-    @abstractmethod
     def solve_linear(
         self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
+        u: np.ndarray,
+        sf: Optional[np.ndarray] = None,
         delta: tuple[float, float] | None = None,
         time: float = 0.0,
-    ) -> None: ...
+    ) -> None:
+        """
+        Advance the solution by one ADI time step.
+
+        Performs an x-direction sweep followed by a y-direction sweep using
+        the coefficients provided by `_compute_sweep_x_coeffs` and
+        `_compute_sweep_y_coeffs`. Boundary conditions are applied between
+        the sweeps.
+
+        :param u: solution array at the beginning of the step (u^n).
+        :param sf: stream function
+        :param delta: phase change smoothing range
+        :param time: current physical time.
+        :return:
+        """
+        self._prepare(sf, delta)
+        n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
+        dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps()
+
+        self._compute_sweep_x_coeffs(state=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled)
+
+        self._new_u = np.copy(u)
+
+        self._apply_boundary_conditions_x(time=time)
+
+        self._solve_sweep_x(
+            n=n_y,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            result=self._new_u,
+        )
+
+        self._compute_sweep_y_coeffs(state=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled)
+
+        self._apply_boundary_conditions_y(time=time)
+
+        self._solve_sweep_y(
+            n=n_x,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            result=self._new_u,
+        )
+
+    def _apply_boundary_conditions_x(self, time: float) -> None:
+        self._apply_standard_bc(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            bc=self.bcs.left,
+            side=0,
+            time=time,
+            k_eff_slice=self._k_eff[:, 0],
+        )
+        self._apply_standard_bc(
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            bc=self.bcs.right,
+            side=1,
+            time=time,
+            k_eff_slice=self._k_eff[:, -1],
+        )
+
+    def _apply_boundary_conditions_y(self, time: float) -> None:
+        self._apply_standard_bc(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            bc=self.bcs.bottom,
+            side=0,
+            time=time,
+            k_eff_slice=self._k_eff[0, :],
+        )
+        self._apply_standard_bc(
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            bc=self.bcs.top,
+            side=1,
+            time=time,
+            k_eff_slice=self._k_eff[-1, :],
+        )
 
     def _apply_standard_bc(
         self,

@@ -2,9 +2,8 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.core.geometry import DomainGeometry
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
-    ImplicitHeatTransferSolver,
+    ADIHeatSolver,
 )
 from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
     HeatTransferSolverName,
@@ -13,10 +12,44 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
 
 
 @register_solver(HeatTransferSolverName.LOC_ONE_DIM)
-class LocOneDimSolver(ImplicitHeatTransferSolver):
+class LocOneDimSolver(ADIHeatSolver):
+    def _compute_sweep_x_coeffs(
+        self, state: np.ndarray, dt: float, dx: float, dy: float
+    ) -> None:
+        self._compute_sweep_x_coeffs_jit(
+            u=state,
+            conv_x=self._conv_x,
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            dx=dx,
+            dt=dt,
+            peclet_number=self.cfg.peclet_number,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+        )
+
+    def _compute_sweep_y_coeffs(
+        self, state: np.ndarray, dt: float, dx: float, dy: float
+    ) -> None:
+        self._compute_sweep_y_coeffs_jit(
+            u=self._new_u,
+            conv_y=self._conv_y,
+            c_eff=self._c_eff,
+            k_eff=self._k_eff,
+            dy=dy,
+            dt=dt,
+            peclet_number=self.cfg.peclet_number,
+            a_y=self._a_y,
+            b_y=self._b_y,
+            c_y=self._c_y,
+            rhs=self._rhs_y,
+        )
+
     @staticmethod
     @njit
-    def _compute_sweep_x_coeff(
+    def _compute_sweep_x_coeffs_jit(
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         c_eff: NDArray[np.float64],
@@ -58,31 +91,9 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
 
                 rhs[j, i] = u[j, i]
 
-    def _apply_boundary_conditions_x(self, time: float) -> None:
-        self._apply_standard_bc(
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-            bc=self.bcs.left,
-            side=0,
-            time=time,
-            k_eff_slice=self._k_eff[:, 0],
-        )
-        self._apply_standard_bc(
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-            bc=self.bcs.right,
-            side=1,
-            time=time,
-            k_eff_slice=self._k_eff[:, -1],
-        )
-
     @staticmethod
     @njit
-    def _compute_sweep_y_coeff(
+    def _compute_sweep_y_coeffs_jit(
         u: NDArray[np.float64],
         conv_y: NDArray[np.float64],
         c_eff: NDArray[np.float64],
@@ -123,102 +134,3 @@ class LocOneDimSolver(ImplicitHeatTransferSolver):
                 )
 
                 rhs[i, j] = u[j, i]
-
-    def _apply_boundary_conditions_y(self, time: float) -> None:
-        self._apply_standard_bc(
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            bc=self.bcs.bottom,
-            side=0,
-            time=time,
-            k_eff_slice=self._k_eff[0, :],
-        )
-        self._apply_standard_bc(
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            bc=self.bcs.top,
-            side=1,
-            time=time,
-            k_eff_slice=self._k_eff[-1, :],
-        )
-
-    def solve_linear(
-        self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        delta: tuple[float, float] | None = None,
-        time: float = 0.0,
-    ) -> None:
-        geometry: DomainGeometry = self.cfg.geometry
-        n_x, n_y = geometry.n_x, geometry.n_y
-        dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
-        dx_scaled = dx / self.cfg.l
-        dy_scaled = dy / self.cfg.l
-        dt_scaled = dt * self.cfg.v / self.cfg.l
-
-        self.convective_operator(
-            conv_x=self._conv_x,
-            conv_y=self._conv_y,
-            sf=sf,
-            u=u,
-            u_pt=self.cfg.u_pt_nd,
-        )
-
-        self.compute_effective_properties(
-            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u, delta=delta
-        )
-        self._compute_sweep_x_coeff(
-            u=u,
-            conv_x=self._conv_x,
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            dx=dx_scaled,
-            dt=dt_scaled,
-            peclet_number=self.cfg.peclet_number,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-        )
-
-        self._apply_boundary_conditions_x(time=time)
-
-        self._new_u = np.copy(u)
-
-        self._solve_sweep_x(
-            n=n_y,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-            result=self._new_u,
-        )
-
-        self._compute_sweep_y_coeff(
-            u=self._new_u,
-            conv_y=self._conv_y,
-            c_eff=self._c_eff,
-            k_eff=self._k_eff,
-            dy=dy_scaled,
-            dt=dt_scaled,
-            peclet_number=self.cfg.peclet_number,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
-            rhs=self._rhs_y,
-        )
-
-        self._apply_boundary_conditions_y(time=time)
-
-        self._solve_sweep_y(
-            n=n_x,
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            result=self._new_u,
-        )
