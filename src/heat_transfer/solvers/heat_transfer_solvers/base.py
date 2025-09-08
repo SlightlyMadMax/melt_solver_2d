@@ -271,14 +271,3 @@ class ImplicitHeatTransferSolver(BaseHeatTransferSolver, Sweep2DMixin):
             raise NotImplementedError("BC type not supported")
 
         return True
-
-
-class ExplicitHeatTransferSolver(BaseHeatTransferSolver):
-    @abstractmethod
-    def solve_linear(
-        self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        delta: tuple[float, float] | None = None,
-        time: float = 0.0,
-    ) -> None: ...
