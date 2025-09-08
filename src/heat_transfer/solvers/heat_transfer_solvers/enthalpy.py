@@ -11,10 +11,10 @@ from src.heat_transfer.solvers.heat_transfer_solvers.base import (
 
 class EnthalpySolver(ADIHeatSolver):
     def _compute_sweep_x_coeffs(
-        self, state: np.ndarray, dt: float, dx: float, dy: float
+        self, u: np.ndarray, dt: float, dx: float, dy: float
     ) -> None:
         self._compute_sweep_x_coeffs_jit(
-            u=state,
+            u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             c_eff=self._c_eff,
@@ -30,7 +30,7 @@ class EnthalpySolver(ADIHeatSolver):
         )
 
     def _compute_sweep_y_coeffs(
-        self, state: np.ndarray, dt: float, dx: float, dy: float
+        self, u: np.ndarray, dt: float, dx: float, dy: float
     ) -> None:
         self._compute_sweep_y_coeffs_jit(
             u=self._new_u,
