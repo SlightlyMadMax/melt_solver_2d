@@ -1,7 +1,7 @@
 import typing
 from enum import Enum
 
-from src.heat_transfer.solvers.heat_transfer_solvers.base import BaseHeatTransferSolver
+from src.heat_transfer.solvers.heat_transfer_solvers.base import BaseHeatSolver
 
 
 class HeatTransferSolverName(Enum):
@@ -29,7 +29,7 @@ class HeatTransferSolverRegistry:
         cls._registry[solver_name] = solver_class
 
     @classmethod
-    def get_solver_class(cls, solver_name: HeatTransferSolverName) -> typing.Type[BaseHeatTransferSolver]:
+    def get_solver_class(cls, solver_name: HeatTransferSolverName) -> typing.Type[BaseHeatSolver]:
         try:
             return cls._registry[solver_name]
         except KeyError:

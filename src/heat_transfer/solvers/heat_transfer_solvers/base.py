@@ -24,7 +24,7 @@ from src.heat_transfer.coefficient_smoothing.coefficients import (
 from src.parameters.config import ExperimentConfig
 
 
-class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
+class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
     def __init__(
         self,
         cfg: ExperimentConfig,
@@ -59,6 +59,16 @@ class BaseHeatTransferSolver(IterativeSolverMixin, BaseSolver):
         self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
+
+    def _prepare(self, sf: np.ndarray, delta: tuple[float, float] | None = None):
+        self.convective_operator(
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
+            sf=sf,
+        )
+        self.compute_effective_properties(
+            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u, delta=delta
+        )
 
     @abstractmethod
     def solve_linear(
