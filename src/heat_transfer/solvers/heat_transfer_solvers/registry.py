@@ -8,7 +8,6 @@ class HeatTransferSolverName(Enum):
     LOC_ONE_DIM = "Locally one-dimensional"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
-    EXPLICIT = "Explicit"
 
 
 def register_solver(solver_name: HeatTransferSolverName):
