@@ -12,7 +12,6 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import calculate_indicator_function
 
 
 @register_solver(VorticitySolverName.EXPLICIT)
@@ -94,26 +93,10 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         dy_scaled = dy / self.cfg.l
         dt_scaled = dt * self.cfg.v / self.cfg.l
 
-        self.convective_operator(w=w, conv_x=self._conv_x, conv_y=self._conv_y)
-        u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        calculate_indicator_function(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            eps=self.cfg.epsilon,
-            delta=delta or self.cfg.delta_nd,
-            result=self.c_ind,
-        )
+        self._prepare(sf=sf, u=u, conv_w=w, delta=delta)
+
         self._new_w = np.copy(w)
-        self.calculate_boundary_conditions(
-            sf=sf,
-            top_bc=self.top_bc,
-            right_bc=self.right_bc,
-            bottom_bc=self.bottom_bc,
-            left_bc=self.left_bc,
-            order=self.bc_order,
-            dx=dx_scaled,
-            dy=dy_scaled,
-        )
+
         self._compute_vorticity(
             w=w,
             sf=sf,

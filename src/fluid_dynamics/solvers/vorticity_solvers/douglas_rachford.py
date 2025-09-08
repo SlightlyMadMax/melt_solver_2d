@@ -1,25 +1,72 @@
-from typing import Optional
-
 import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
-    ImplicitVorticitySolver,
+    ADIVorticitySolver,
 )
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
 )
-from src.fluid_dynamics.utils import calculate_indicator_function
 
 
 @register_solver(VorticitySolverName.DOUGLAS_RACHFORD)
-class DRNavierStokesScheme(ImplicitVorticitySolver):
+class DRNavierStokesScheme(ADIVorticitySolver):
+    def _compute_sweep_x_coeffs(
+        self,
+        w: np.ndarray,
+        sf: np.ndarray,
+        u: np.ndarray,
+        dt: float,
+        dx: float,
+        dy: float,
+    ) -> None:
+        self._compute_sweep_x_coeffs_jit(
+            w=w,
+            sf=sf,
+            u=u,
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
+            c_ind=self.c_ind,
+            dx=dx,
+            dy=dy,
+            dt=dt,
+            u_pt_ref=self.cfg.u_pt_ref,
+            delta_u=self.cfg.delta_u,
+            reynolds_number=self.cfg.reynolds_number,
+            grashof_number=self.cfg.grashof_number,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+        )
+
+    def _compute_sweep_y_coeffs(
+        self,
+        w: np.ndarray,
+        sf: np.ndarray,
+        u: np.ndarray,
+        dt: float,
+        dx: float,
+        dy: float,
+    ) -> None:
+        self._compute_sweep_y_coeffs_jit(
+            w_old=w,
+            w_prev=self._new_w,
+            conv_y=self._conv_y,
+            dy=dy,
+            dt=dt,
+            reynolds_number=self.cfg.reynolds_number,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+        )
+
     @staticmethod
     @njit
-    def _compute_sweep_x_coeff(
+    def _compute_sweep_x_coeffs_jit(
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
@@ -69,7 +116,7 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
 
     @staticmethod
     @njit
-    def _compute_sweep_y_coeff(
+    def _compute_sweep_y_coeffs_jit(
         w_old: NDArray[np.float64],
         w_prev: NDArray[np.float64],
         conv_y: NDArray[np.float64],
@@ -104,98 +151,3 @@ class DRNavierStokesScheme(ImplicitVorticitySolver):
                         + conv_y[j, i, 2] * w_old[j - 1, i]
                     )
                 )
-
-    def solve(
-        self,
-        w: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        u: NDArray[np.float64],
-        delta: Optional[float] = None,
-        time: float = 0.0,
-    ) -> NDArray[np.float64]:
-        geometry: DomainGeometry = self.cfg.geometry
-        dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
-        n_x, n_y = geometry.n_x, geometry.n_y
-        dx_scaled = dx / self.cfg.l
-        dy_scaled = dy / self.cfg.l
-        dt_scaled = dt * self.cfg.v / self.cfg.l
-
-        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
-        u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        calculate_indicator_function(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            eps=self.cfg.epsilon,
-            delta=delta or self.cfg.delta_nd,
-            result=self.c_ind,
-        )
-
-        self.calculate_boundary_conditions(
-            sf=sf,
-            top_bc=self.top_bc,
-            right_bc=self.right_bc,
-            bottom_bc=self.bottom_bc,
-            left_bc=self.left_bc,
-            order=self.bc_order,
-            dx=dx_scaled,
-            dy=dy_scaled,
-        )
-
-        self._compute_sweep_x_coeff(
-            w=w,
-            sf=sf,
-            u=u,
-            conv_x=self._conv_x,
-            conv_y=self._conv_y,
-            c_ind=self.c_ind,
-            dx=dx_scaled,
-            dy=dy_scaled,
-            dt=dt_scaled,
-            u_pt_ref=self.cfg.u_pt_ref,
-            delta_u=self.cfg.delta_u,
-            reynolds_number=self.cfg.reynolds_number,
-            grashof_number=self.cfg.grashof_number,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-        )
-
-        self._apply_boundary_conditions_x(time=time)
-
-        self._new_w = np.copy(w)
-
-        self._solve_sweep_x(
-            n=n_y,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-            result=self._new_w,
-        )
-
-        self._compute_sweep_y_coeff(
-            w_old=w,
-            w_prev=self._new_w,
-            conv_y=self._conv_y,
-            dy=dy_scaled,
-            dt=dt_scaled,
-            reynolds_number=self.cfg.reynolds_number,
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-        )
-
-        self._apply_boundary_conditions_y(time=time)
-
-        self._solve_sweep_y(
-            n=n_x,
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            result=self._new_w,
-        )
-
-        return self._new_w
