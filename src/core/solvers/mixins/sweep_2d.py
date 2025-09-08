@@ -43,15 +43,41 @@ class Sweep2DMixin:
         self._rhs_x = np.empty((n_y, n_x))
         self._rhs_y = np.empty((n_x, n_y))
 
-    @staticmethod
     @abstractmethod
-    @njit
-    def _compute_sweep_x_coeff(*args, **kwargs) -> None: ...
+    def _compute_sweep_x_coeffs(
+        self, *, state: np.ndarray, dt: float, dx: float, dy: float
+    ) -> None:
+        """
+        Populate the coefficient and RHS arrays for the x-direction tridiagonal sweep.
 
-    @staticmethod
+        Fill the preallocated arrays `self._a_x`, `self._b_x`, `self._c_x` and `self._rhs_x`
+        for the interior grid nodes so that a tridiagonal solve along x (at fixed y)
+        can be performed by `_solve_sweep_x`.
+        :param state: solution at the start of the ADI step (typically u^n). Implementations may also read `self._new_u` if they require the intermediate x-sweep result when building y-coefficients.
+        :param dt: nondimensionalized time step.
+        :param dx: nondimensionalized x grid step.
+        :param dy: nondimensionalized y grid step.
+        :return: None
+        """
+        ...
+
     @abstractmethod
-    @njit
-    def _compute_sweep_y_coeff(*args, **kwargs) -> None: ...
+    def _compute_sweep_y_coeffs(
+        self, *, state: np.ndarray, dt: float, dx: float, dy: float
+    ) -> None:
+        """
+        Populate the coefficient and RHS arrays for the y-direction tridiagonal sweep.
+
+        Fill the preallocated arrays `self._a_y`, `self._b_y`, `self._c_y` and `self._rhs_y`
+        for the interior grid nodes so that a tridiagonal solve along y (at fixed x)
+        can be performed by `_solve_sweep_y`.
+        :param state: solution at the start of the ADI step (typically u^n). Implementations may also read `self._new_u` if they require the intermediate x-sweep result when building y-coefficients.
+        :param dt: nondimensionalized time step.
+        :param dx: nondimensionalized x grid step.
+        :param dy: nondimensionalized y grid step.
+        :return: None
+        """
+        ...
 
     @abstractmethod
     def _apply_boundary_conditions_x(self, *args, **kwargs) -> None: ...
