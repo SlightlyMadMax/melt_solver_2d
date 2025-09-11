@@ -39,6 +39,6 @@ class BaseConvectiveOperator(ABC):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                if u[j, i] < u_pt:
+                if u[j, i] <= u_pt:
                     conv_x[j, i, :] = 0.0
                     conv_y[j, i, :] = 0.0
