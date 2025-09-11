@@ -39,14 +39,15 @@ delta = input(
     "Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: "
 )
 
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("test_config_1.json")
+
 if delta == "":
     delta = None
     fixed_delta = False
 else:
-    delta = float(delta)
+    delta = float(delta) / cfg.delta_u
+    delta = delta, delta
     fixed_delta = True
-
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("test_config_1.json")
 
 print(cfg)
 
@@ -87,8 +88,8 @@ heat_transfer_solver = HeatTransferSolver(
     max_iters=1,
     tolerance=1e-6,
     urf=1.0,
-    step_scheme=StepScheme.HYPER,
-    delta_scheme=DeltaScheme.HYPER,
+    step_scheme=StepScheme.CONST,
+    delta_scheme=DeltaScheme.GAUSS_ASYM,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
@@ -101,7 +102,7 @@ start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd)
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=2)
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % cfg.save_interval == 0:
         print(
@@ -175,4 +176,5 @@ ax.set_xlabel("x (m)")
 ax.set_ylabel("y (m)")
 ax.legend()
 ax.grid(True)
+plt.savefig(dir_path)
 plt.show()
