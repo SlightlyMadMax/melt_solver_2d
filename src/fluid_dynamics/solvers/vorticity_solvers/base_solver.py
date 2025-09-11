@@ -36,6 +36,22 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.bottom_bc: NDArray[np.float64] = np.empty(n_x)
         self.left_bc: NDArray[np.float64] = np.empty(n_y)
         self.penalty_term: NDArray[np.float64] = np.empty((n_y, n_x))
+        self.buoyancy_term: NDArray[np.float64] = np.empty((n_y, n_x))
+
+    def calculate_buoyancy_term(self, u: np.ndarray):
+        dx_scaled, _, _ = self.cfg.scaled_grid_steps()
+        inv_re2 = 1.0 / self.cfg.reynolds_number**2
+        inv_dx = 1.0 / dx_scaled
+        gr = self.cfg.grashof_number
+        u_pt_nd = self.cfg.u_pt_nd
+
+        dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
+
+        self.buoyancy_term[1:-1, 1:-1] = np.where(
+            u[1:-1, 1:-1] - u_pt_nd > 0.0,
+            gr * inv_re2 * dudx,
+            0.0,
+        )
 
     def _prepare(
         self,
@@ -59,6 +75,8 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             delta=delta or self.cfg.delta_nd,
             result=self.penalty_term,
         )
+
+        self.calculate_buoyancy_term(u=u)
 
         self.calculate_boundary_conditions(
             sf=sf,
@@ -97,7 +115,7 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
         dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps()
 
         self._compute_sweep_x_coeffs(
-            w=w, sf=sf, u=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
+            w=w, sf=sf, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
         )
 
         self._apply_boundary_conditions_x(time=time)
@@ -114,7 +132,7 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
         )
 
         self._compute_sweep_y_coeffs(
-            w=w, sf=sf, u=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
+            w=w, sf=sf, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
         )
 
         self._apply_boundary_conditions_y(time=time)
