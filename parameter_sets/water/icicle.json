@@ -3,19 +3,19 @@
     "width": 0.4,
     "height": 0.2,
     "end_time": 3600,
-    "n_x": 201,
-    "n_y": 101,
+    "n_x": 401,
+    "n_y": 201,
     "n_t": 72000
   },
   "material_props": {
     "u_pt": 273.15,
-    "specific_heat_liquid": 4205,
-    "specific_heat_solid": 4205,
+    "specific_heat_liquid": 4212,
+    "specific_heat_solid": 4212,
     "specific_latent_heat": 3.33e5,
-    "density_liquid": 999.975,
-    "density_solid": 999.975,
-    "thermal_conductivity_liquid": 0.5466,
-    "thermal_conductivity_solid": 0.5466,
+    "density_liquid": 999.8,
+    "density_solid": 999.8,
+    "thermal_conductivity_liquid": 0.566,
+    "thermal_conductivity_solid": 0.566,
     "kinematic_viscosity_coeffs": [1.7891578e-6],
     "volumetric_thermal_exp_coeffs": [-6.733353e-05]
   },
@@ -24,5 +24,5 @@
   "v": 0.04,
   "l": 0.4,
   "epsilon": 0.00001,
-  "save_interval": 1200
+  "save_interval": 120
 }
