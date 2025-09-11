@@ -130,13 +130,13 @@ class BCCorrectionNVSolver:
         vorticity: np.ndarray,
         time: float,
     ) -> None:
-        c_ind = self.vorticity_solver.c_ind
+        penalty_term = self.vorticity_solver.penalty_term
         b = self._construct_rhs_for_cg(
             vorticity=vorticity,
             sf_old=sf_old,
-            c_ind=c_ind,
+            penalty_term=penalty_term,
         )
-        A = self._construct_matrix_for_cg(c_ind=c_ind)
+        A = self._construct_matrix_for_cg(penalty_term=penalty_term)
         self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_old,
             A=-A,
@@ -151,14 +151,14 @@ class BCCorrectionNVSolver:
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        c_ind: np.ndarray,
+        penalty_term: np.ndarray,
     ) -> np.ndarray:
         tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
-        c = c_ind[1:-1, 1:-1]
+        c = penalty_term[1:-1, 1:-1]
 
         b_int = -w - 0.5 * tau * ((c + r / self.cfg.reynolds_number) * psi)
 
@@ -166,7 +166,7 @@ class BCCorrectionNVSolver:
 
     def _construct_matrix_for_cg(
         self,
-        c_ind: np.ndarray,
+        penalty_term: np.ndarray,
     ):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
@@ -179,7 +179,7 @@ class BCCorrectionNVSolver:
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = 0.5 * tau * (c_ind + self.rho / re)
+        c = 0.5 * tau * (penalty_term + self.rho / re)
         c_inner_flat = c[1:-1, 1:-1].ravel()
 
         main_diag = -2.0 / dx2 - 2.0 / dy2 - c_inner_flat

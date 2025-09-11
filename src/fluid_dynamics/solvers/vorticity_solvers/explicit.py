@@ -36,7 +36,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         grashof_number: float,
         u_pt_ref: float,
         delta_u: float,
-        c_ind: NDArray[np.float64],
+        penalty_term: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
         inv_dx = 1.0 / dx
@@ -74,7 +74,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - convection
-                    - c_ind[j, i] * sf[j, i]
+                    - penalty_term[j, i] * sf[j, i]
                 )
 
         return result
@@ -115,7 +115,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             delta_u=self.cfg.delta_u,
             reynolds_number=self.cfg.reynolds_number,
             grashof_number=self.cfg.grashof_number,
-            c_ind=self.c_ind,
+            penalty_term=self.penalty_term,
         )
 
         return self._new_w

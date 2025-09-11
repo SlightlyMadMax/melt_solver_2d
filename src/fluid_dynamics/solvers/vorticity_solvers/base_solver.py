@@ -35,7 +35,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.right_bc: NDArray[np.float64] = np.empty(n_y)
         self.bottom_bc: NDArray[np.float64] = np.empty(n_x)
         self.left_bc: NDArray[np.float64] = np.empty(n_y)
-        self.c_ind: NDArray[np.float64] = np.empty((n_y, n_x))
+        self.penalty_term: NDArray[np.float64] = np.empty((n_y, n_x))
 
     def _prepare(
         self,
@@ -57,7 +57,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             u_pt=self.cfg.u_pt_nd,
             eps=self.cfg.epsilon,
             delta=delta or self.cfg.delta_nd,
-            result=self.c_ind,
+            result=self.penalty_term,
         )
 
         self.calculate_boundary_conditions(

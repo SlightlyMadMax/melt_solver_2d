@@ -161,19 +161,19 @@ class FlowCorrectionNVSolver:
         conv_vorticity: np.ndarray,
         time: float,
     ) -> None:
-        c_ind = self.vorticity_solver.c_ind
+        penalty_term = self.vorticity_solver.penalty_term
         self.convective_operator(
             w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
         )
         b = self._construct_rhs_for_cg(
             vorticity=vorticity,
             sf_old=sf_old,
-            c_ind=c_ind,
+            penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
         A = self._construct_matrix_for_cg(
-            c_ind=c_ind,
+            penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
@@ -191,7 +191,7 @@ class FlowCorrectionNVSolver:
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        c_ind: np.ndarray,
+        penalty_term: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
     ) -> np.ndarray:
@@ -200,7 +200,7 @@ class FlowCorrectionNVSolver:
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
-        c = c_ind[1:-1, 1:-1]
+        c = penalty_term[1:-1, 1:-1]
 
         conv = (
             conv_x[1:-1, 1:-1, 0] * sf_old[1:-1, 2:]
@@ -215,7 +215,7 @@ class FlowCorrectionNVSolver:
 
     def _construct_matrix_for_cg(
         self,
-        c_ind: np.ndarray,
+        penalty_term: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
     ):
@@ -228,7 +228,7 @@ class FlowCorrectionNVSolver:
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = 0.5 * tau * (c_ind + self.rho / self.cfg.reynolds_number)
+        c = 0.5 * tau * (penalty_term + self.rho / self.cfg.reynolds_number)
         c_inner_flat = c[1:-1, 1:-1].flatten()
 
         # Extract convective coefficients for inner grid

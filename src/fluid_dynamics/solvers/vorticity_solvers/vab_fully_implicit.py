@@ -29,7 +29,7 @@ class VabFullyImplicitScheme(BaseSolver):
         self._new_w: NDArray[np.float64] = np.zeros((n_y, n_x))
         self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
         self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
-        self.c_ind: NDArray[np.float64] = np.empty((n_y, n_x))
+        self.penalty_term: NDArray[np.float64] = np.empty((n_y, n_x))
         self._rhs: NDArray[np.float64] = np.empty((n_y - 2) * (n_x - 2))
         self._implicit_matrix: csr_matrix = self._precompute_matrix()
         self.lu = splu(self._implicit_matrix.tocsc())
@@ -108,7 +108,7 @@ class VabFullyImplicitScheme(BaseSolver):
             u_pt=self.cfg.material_props.u_pt,
             eps=self.cfg.epsilon,
             delta=delta or self.cfg.delta_nd,
-            result=self.c_ind,
+            result=self.penalty_term,
         )
 
         gr = np.where(
@@ -130,7 +130,7 @@ class VabFullyImplicitScheme(BaseSolver):
                 self._rhs[idx] = (
                     w[j, i] / tau
                     - conv_term
-                    - (inv_re * self.rho[j, i] + self.c_ind[j, i]) * sf[j, i]
+                    - (inv_re * self.rho[j, i] + self.penalty_term[j, i]) * sf[j, i]
                     + gr[j, i] * inv_re2 * dudx
                 )
 

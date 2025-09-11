@@ -28,7 +28,7 @@ class VabishchevichScheme(ADIVorticitySolver):
             u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            c_ind=self.c_ind,
+            penalty_term=self.penalty_term,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -57,7 +57,7 @@ class VabishchevichScheme(ADIVorticitySolver):
             u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            c_ind=self.c_ind,
+            penalty_term=self.penalty_term,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -79,7 +79,7 @@ class VabishchevichScheme(ADIVorticitySolver):
         conv_y: NDArray[np.float64],
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
-        c_ind: NDArray[np.float64],
+        penalty_term: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -124,7 +124,7 @@ class VabishchevichScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
                     )
-                    - c_ind[j, i] * sf[j, i]
+                    - penalty_term[j, i] * sf[j, i]
                 )
 
     @staticmethod
@@ -135,7 +135,7 @@ class VabishchevichScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        c_ind: NDArray[np.float64],
+        penalty_term: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -180,5 +180,5 @@ class VabishchevichScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
                     )
-                    - c_ind[j, i] * sf[j, i]
+                    - penalty_term[j, i] * sf[j, i]
                 )

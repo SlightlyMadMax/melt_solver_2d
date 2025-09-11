@@ -27,7 +27,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             u=u,
             conv_x=self._conv_x,
-            c_ind=self.c_ind,
+            penalty_term=self.penalty_term,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -55,9 +55,8 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             u=u,
             conv_y=self._conv_y,
-            c_ind=self.c_ind,
+            penalty_term=self.penalty_term,
             dx=dx,
-            dy=dy,
             dt=dt,
             u_pt_ref=self.cfg.u_pt_ref,
             delta_u=self.cfg.delta_u,
@@ -76,9 +75,8 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
-        c_ind: NDArray[np.float64],
+        penalty_term: NDArray[np.float64],
         dx: float,
-        dy: float,
         dt: float,
         reynolds_number: float,
         grashof_number: float,
@@ -107,7 +105,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
 
                 rhs[j, i] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
-                    - c_ind[j, i] * sf[j, i]
+                    - penalty_term[j, i] * sf[j, i]
                 )
 
     @staticmethod
@@ -117,7 +115,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        c_ind: NDArray[np.float64],
+        penalty_term: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -149,5 +147,5 @@ class LODNavierStokesScheme(ADIVorticitySolver):
 
                 rhs[i, j] = w[j, i] + 0.5 * dt * (
                     gr * inv_re2 * 0.5 * inv_dx * (u[j, i + 1] - u[j, i - 1])
-                    - c_ind[j, i] * sf[j, i]
+                    - penalty_term[j, i] * sf[j, i]
                 )
