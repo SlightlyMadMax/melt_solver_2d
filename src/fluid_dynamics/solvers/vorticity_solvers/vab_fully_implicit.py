@@ -8,7 +8,7 @@ from scipy.sparse.linalg import splu
 from src.convective_operators import EffectiveSFTransportOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
-from src.fluid_dynamics.utils import calculate_indicator_function
+from src.fluid_dynamics.utils import calculate_penalty_term
 from src.parameters.config import ExperimentConfig
 
 
@@ -103,7 +103,7 @@ class VabFullyImplicitScheme(BaseSolver):
 
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        calculate_indicator_function(
+        calculate_penalty_term(
             u=u_dim,
             u_pt=self.cfg.material_props.u_pt,
             eps=self.cfg.epsilon,

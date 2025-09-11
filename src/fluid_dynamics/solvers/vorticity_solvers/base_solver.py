@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from src.convective_operators import BaseConvectiveOperator, VorticityTransportOperator
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
-from src.fluid_dynamics.utils import VorticityBCMixin, calculate_indicator_function
+from src.fluid_dynamics.utils import VorticityBCMixin, calculate_penalty_term
 from src.parameters.config import ExperimentConfig
 
 
@@ -52,7 +52,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             assert conv_w is not None
             self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
 
-        calculate_indicator_function(
+        calculate_penalty_term(
             u=u,
             u_pt=self.cfg.u_pt_nd,
             eps=self.cfg.epsilon,

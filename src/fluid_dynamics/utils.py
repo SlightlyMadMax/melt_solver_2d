@@ -40,7 +40,7 @@ class VorticityBCMixin:
             raise NotImplementedError
 
 
-def calculate_indicator_function(
+def calculate_penalty_term(
     u: NDArray[np.float64],
     u_pt: float,
     eps: float,
@@ -48,13 +48,13 @@ def calculate_indicator_function(
     delta: float,
 ) -> None:
     """
-    Indicator function for the fictitious domain method.
+    Penalty term for the fictitious domain method.
     Is equal to 0 for liquid phase and 1 / eps^2 for solid phase.
 
     :param u: The dimensional temperature value.
     :param u_pt: The phase transition temperature.
     :param eps: A small parameter.
-    :param result: A ndarray for storing the calculated indicator function values.
+    :param result: A ndarray for storing the calculated penalty term values.
     :return: None.
     """
     result[:, :] = 0.0
