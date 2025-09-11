@@ -5,7 +5,7 @@
     "end_time": 3600,
     "n_x": 201,
     "n_y": 101,
-    "n_t": 360000
+    "n_t": 72000
   },
   "material_props": {
     "u_pt": 273.15,
@@ -16,13 +16,13 @@
     "density_solid": 999.975,
     "thermal_conductivity_liquid": 0.5466,
     "thermal_conductivity_solid": 0.5466,
-    "kinematic_viscosity_coeffs": [1.57e-6],
-    "volumetric_thermal_exp_coeffs": [7.68e-6]
+    "kinematic_viscosity_coeffs": [1.7891578e-6],
+    "volumetric_thermal_exp_coeffs": [-6.733353e-05]
   },
-  "u_ref": 277.15,
+  "u_ref": 273.15,
   "delta_u": 8.0,
   "v": 0.04,
   "l": 0.4,
   "epsilon": 0.00001,
-  "save_interval": 6000
+  "save_interval": 1200
 }
