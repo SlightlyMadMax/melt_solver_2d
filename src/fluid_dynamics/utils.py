@@ -64,10 +64,7 @@ def calculate_penalty_term_coeff(
     # delta_inner = delta[interior]
 
     # --- Variant 1: sharp step ----------------------
-    # mask = diff_u < 0.0
-    # result_interior = np.zeros_like(diff_u)
-    # result_interior[mask] = inv_eps2
-    # result[interior] = result_interior
+    # result[interior] = np.where(u[interior] < u_pt, inv_eps2, 0.0)
 
     # --- Variant 2: error‐function form -------------------
     result[interior] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
