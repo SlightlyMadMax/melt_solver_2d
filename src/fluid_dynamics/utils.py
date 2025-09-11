@@ -40,21 +40,21 @@ class VorticityBCMixin:
             raise NotImplementedError
 
 
-def calculate_penalty_term(
-    u: NDArray[np.float64],
+def calculate_penalty_term_coeff(
+    u: np.ndarray,
     u_pt: float,
     eps: float,
-    result: NDArray[np.float64],
+    result: np.ndarray,
     delta: float,
 ) -> None:
     """
-    Penalty term for the fictitious domain method.
+    Penalty term coefficient for the fictitious domain method.
     Is equal to 0 for liquid phase and 1 / eps^2 for solid phase.
 
-    :param u: The dimensional temperature value.
-    :param u_pt: The phase transition temperature.
-    :param eps: A small parameter.
-    :param result: A ndarray for storing the calculated penalty term values.
+    :param u: nondimensional temperature.
+    :param u_pt: phase transition temperature.
+    :param eps: small parameter.
+    :param result: ndarray for storing the calculated penalty term values.
     :return: None.
     """
     result[:, :] = 0.0
