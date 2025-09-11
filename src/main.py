@@ -168,6 +168,35 @@ if __name__ == "__main__":
 
             # from matplotlib import pyplot as plt
             #
+            # calculate_velocity_from_sf(sf, v_x, v_y, dx, dy)
+            # speed = np.sqrt(v_x**2 + v_y**2)
+            #
+            # X, Y = geometry.mesh_grid
+            # plt.figure(figsize=(8, 6))
+            # ax = plt.axes(
+            #     xlim=(0, cfg.geometry.width),
+            #     ylim=(0, cfg.geometry.height),
+            #     xlabel="x, м",
+            #     ylabel="y, м",
+            # )
+            # contour = plt.contourf(
+            #     X,
+            #     Y,
+            #     speed,
+            #     25,
+            #     cmap="viridis",
+            #     extend="both",
+            # )
+            # cbar = plt.colorbar(contour)
+            #
+            # X_b, Y_b = get_phase_trans_boundary(u=u_dim, cfg=cfg)
+            # plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
+            # ax.legend()
+            #
+            # plt.show()
+
+            # from matplotlib import pyplot as plt
+            #
             # diff = u - cfg.u_pt_nd
             # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
             # latent = np.where(
@@ -175,6 +204,7 @@ if __name__ == "__main__":
             #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
             #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
             # )
+            # # latent = np.where(abs(diff) <= min(delta), 0.5 / min(delta), 0.0)
             # print(delta[0], delta[1])
             # X, Y = geometry.mesh_grid
             # plt.figure(figsize=(8, 6))
