@@ -57,8 +57,6 @@ def calculate_penalty_term_coeff(
     :param result: ndarray for storing the calculated penalty term values.
     :return: None.
     """
-    result[:, :] = 0.0
-
     inv_eps2 = 1.0 / (eps * eps)
     interior = (slice(1, -1), slice(1, -1))
 
