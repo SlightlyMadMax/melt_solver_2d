@@ -16,6 +16,7 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
     initialize_velocity,
 )
+from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.heat_transfer.coefficient_smoothing.coefficients import (
     StepScheme,
     DeltaScheme,
@@ -30,6 +31,7 @@ from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
+from src.utils.stand_with_icicle import init_temperature_icicle
 from src.utils.time_utils import get_remaining_time
 
 
@@ -143,8 +145,8 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.LOC_ONE_DIM,
         convective_term_form=ConvectiveTermForm.UPWIND,
         bc_order=1,
-        step_scheme=StepScheme.ERF,
-        delta_scheme=DeltaScheme.GAUSS_ASYM,
+        step_scheme=StepScheme.CONST,
+        delta_scheme=DeltaScheme.BOX,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -152,15 +154,16 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        convective_term_form=ConvectiveTermForm.UPWIND,
     )
 
+    delta = 0.005, 0.005
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=3)
+        # delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=1)
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=3)
+        # delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=3)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=max(delta), time=t)
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
@@ -194,17 +197,17 @@ if __name__ == "__main__":
             # ax.legend()
             #
             # plt.show()
-
+            #
             # from matplotlib import pyplot as plt
             #
             # diff = u - cfg.u_pt_nd
-            # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
-            # latent = np.where(
-            #     diff <= 0,
-            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
-            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
-            # )
-            # # latent = np.where(abs(diff) <= min(delta), 0.5 / min(delta), 0.0)
+            # # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
+            # # latent = np.where(
+            # #     diff <= 0,
+            # #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
+            # #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
+            # # )
+            # latent = np.where(abs(diff) <= min(delta), 0.5 / min(delta), 0.0)
             # print(delta[0], delta[1])
             # X, Y = geometry.mesh_grid
             # plt.figure(figsize=(8, 6))

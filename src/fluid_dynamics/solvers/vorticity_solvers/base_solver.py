@@ -45,8 +45,32 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         gr = self.cfg.grashof_number
         u_pt_nd = self.cfg.u_pt_nd
 
+        # delta_u = self.cfg.delta_u
+        # u_ref = self.cfg.u_ref
+        # beta = self.cfg.thermal_exp_coefficient_ref
+        # rho_ref = self.cfg.material_props.density_liquid
+        # interior = (slice(1, -1), slice(1, -1))
+        #
+        # u_k = u[interior] * delta_u + u_ref
+        # u_c = u_k + ABS_ZERO
+        # drhodu = (
+        #     0.0673268037314653
+        #     - 2 * 0.00894484552601798 * u_c
+        #     + 3 * 8.78462866500416e-5 * u_c**2
+        #     - 4 * 6.62139792627547e-7 * u_c**3
+        # )
+        #
+        # dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
+        # drhodx = drhodu * dudx
+        # self.buoyancy_term[1:-1, 1:-1] = np.where(
+        #     u[1:-1, 1:-1] - u_pt_nd > 0.0,
+        #     gr * inv_re2 * drhodx / (delta_u * beta * rho_ref),
+        #     0.0,
+        # )
+
         dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
 
+        # self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
         self.buoyancy_term[1:-1, 1:-1] = np.where(
             u[1:-1, 1:-1] - u_pt_nd > 0.0,
             gr * inv_re2 * dudx,
@@ -63,7 +87,13 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         dx_scaled, dy_scaled, _ = self.cfg.scaled_grid_steps()
 
         if isinstance(self.convective_operator, VorticityTransportOperator):
-            self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
+            self.convective_operator(
+                conv_x=self._conv_x,
+                conv_y=self._conv_y,
+                sf=sf,
+                u=u,
+                u_pt=self.cfg.u_pt_nd,
+            )
         else:
             assert conv_w is not None
             self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
