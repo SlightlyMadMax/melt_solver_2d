@@ -41,8 +41,7 @@ if __name__ == "__main__":
 
     geometry: DomainGeometry = cfg.geometry
 
-    dx, dy = geometry.dx, geometry.dy
-    dt = geometry.dt
+    dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
     min_temp = 301.2426
     max_temp = 310.07
