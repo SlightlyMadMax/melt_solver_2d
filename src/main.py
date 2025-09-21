@@ -31,20 +31,25 @@ from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
+from src.utils.convection_benchmark import (
+    calculate_U_profile_X05,
+    calculate_T_profile_X05,
+    calculate_W_profile_X05,
+)
 from src.utils.stand_with_icicle import init_temperature_icicle
 from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
-    cfg = ExperimentConfig.load_from_file("../parameter_sets/octodecane/config.json")
+    cfg = ExperimentConfig.load_from_file("../parameter_sets/water/convection.json")
     print(cfg)
 
     geometry: DomainGeometry = cfg.geometry
 
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.2426
-    max_temp = 310.07
+    min_temp = 273.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -53,6 +58,7 @@ if __name__ == "__main__":
     u_pt = material_props.u_pt
     l = cfg.l
     v = cfg.v
+    dt_scaled = dt * v / l
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
@@ -82,28 +88,28 @@ if __name__ == "__main__":
     u = init_temperature(
         cfg=cfg,
         bcs=u_bcs,
-        shape=DomainShape.UNIFORM_SOLID,
+        shape=DomainShape.LINEAR,
         solid_temp=min_temp,
         liquid_temp=max_temp,
     )
 
     dim_u = u * delta_u + u_ref
-    init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
+    # init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
+    #
+    # print(f"Initial mushy zone temperature range: {max(init_delta):.2f}")
 
-    print(f"Initial mushy zone temperature range: {max(init_delta):.2f}")
-
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        time=0.0,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-    )
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     time=0.0,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    #     min_temp=min_temp + ABS_ZERO,
+    #     max_temp=max_temp + ABS_ZERO,
+    #     actual_temp_units=TemperatureUnit.KELVIN,
+    #     display_temp_units=TemperatureUnit.CELSIUS,
+    # )
 
     # Stream function boundary conditions
     sf_bcs = BoundaryConditions(
@@ -141,8 +147,8 @@ if __name__ == "__main__":
         max_iters=1,
         tolerance=1e-6,
         urf=1.0,
-        solver_name=HeatTransferSolverName.LOC_ONE_DIM,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         bc_order=1,
         step_scheme=StepScheme.CONST,
         delta_scheme=DeltaScheme.BOX,
@@ -153,20 +159,60 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
     )
+
+    alpha = material_props.thermal_diffusivity_liquid
+
+    Y = np.linspace(0, 1, n_y)
+    i_mid = int(n_x / 2)
+    sf_old = np.copy(sf)
+    u_old = np.copy(u)
 
     delta = 0.005, 0.005
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        # delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=1)
+        u_old[:, :] = u
+        sf_old[:, :] = sf
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        # delta = get_mushy_zone_temperature_range(u, cfg.u_pt_nd, n_nodes=3)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=max(delta), time=t)
+
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
             sf_dim = sf * v * l
+
+            calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
+
+            sf_diff = np.max(abs(sf - sf_old) / dt_scaled)
+
+            v_x_scaled = v_x * l / alpha
+            v_y_scaled = v_y * l / alpha
+            u_max, u_min = np.max(v_x_scaled), np.min(v_x_scaled)
+            w_max, w_min = np.max(v_y_scaled), np.min(v_y_scaled)
+
+            u_true = calculate_U_profile_X05(Y)
+            w_true = calculate_W_profile_X05(Y)
+            t_true = calculate_T_profile_X05(Y)
+
+            sigma_u = np.mean((v_x_scaled[:, i_mid] - u_true) ** 2)
+            sigma_w = np.mean((v_y_scaled[:, i_mid] - w_true) ** 2)
+            sigma_t = np.mean((u[:, i_mid] - t_true) ** 2)
+
+            print(u_max, u_min)
+            print(w_max, w_min)
+            print(sigma_u, sigma_w, sigma_t)
+            print(sf_diff)
+
+            if sf_diff < 1e-9:
+                np.savez_compressed(
+                    "../data/water_convection/conv.npz",
+                    v_x=v_x,
+                    v_y=v_y,
+                    u=u,
+                    geometry=geometry,
+                )
+                break
 
             # from matplotlib import pyplot as plt
             #
@@ -232,24 +278,24 @@ if __name__ == "__main__":
             #
             # plt.show()
 
-            plot_temperature(
-                u=u_dim,
-                cfg=cfg,
-                time=t,
-                graph_id=n,
-                plot_boundary=True,
-                show_graph=False,
-                min_temp=min_temp + ABS_ZERO,
-                max_temp=max_temp + ABS_ZERO,
-                actual_temp_units=TemperatureUnit.KELVIN,
-                display_temp_units=TemperatureUnit.CELSIUS,
-            )
-            plot_stream_function(
-                stream_function=sf_dim,
-                geometry=geometry,
-                graph_id=n,
-                show_graph=False,
-            )
+            # plot_temperature(
+            #     u=u_dim,
+            #     cfg=cfg,
+            #     time=t,
+            #     graph_id=n,
+            #     plot_boundary=True,
+            #     show_graph=False,
+            #     min_temp=min_temp + ABS_ZERO,
+            #     max_temp=max_temp + ABS_ZERO,
+            #     actual_temp_units=TemperatureUnit.KELVIN,
+            #     display_temp_units=TemperatureUnit.CELSIUS,
+            # )
+            # plot_stream_function(
+            #     stream_function=sf_dim,
+            #     geometry=geometry,
+            #     graph_id=n,
+            #     show_graph=False,
+            # )
             print(
                 f"Modelling Time: {n * dt:.2f} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
