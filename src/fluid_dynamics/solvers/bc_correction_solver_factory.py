@@ -153,7 +153,7 @@ class BCCorrectionNVSolver:
         sf_old: np.ndarray,
         penalty_term: np.ndarray,
     ) -> np.ndarray:
-        tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
+        _, _, tau = self.cfg.scaled_grid_steps()
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
@@ -170,9 +170,7 @@ class BCCorrectionNVSolver:
     ):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
-        dx = geometry.dx / self.cfg.l
-        dy = geometry.dy / self.cfg.l
-        tau = geometry.dt * self.cfg.v / self.cfg.l
+        dx, dy, tau = self.cfg.scaled_grid_steps()
         re = self.cfg.reynolds_number
         dx2, dy2 = dx**2, dy**2
 
