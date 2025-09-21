@@ -260,7 +260,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
 
         self._compute_sweep_x_coeffs(u=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled)
 
-        self._new_u = np.copy(u)
+        self._new_u[:, :] = u
 
         self._apply_boundary_conditions_x(time=time)
 

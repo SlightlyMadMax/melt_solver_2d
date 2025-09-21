@@ -106,7 +106,7 @@ class MatrixSweepPoissonSolver(BaseSolver):
         :param time: The current time, used to calculate time-dependent boundary conditions.
         :return: The final solution as a 2D NumPy array.
         """
-        self._result = np.copy(initial_guess)
+        self._result[:, :] = initial_guess
         self._matrix_sweep(
             f=rhs,
             right_value=(

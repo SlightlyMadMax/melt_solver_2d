@@ -89,7 +89,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
 
         self._prepare(sf=sf, u=u, conv_w=w, delta=delta)
 
-        self._new_w = np.copy(w)
+        self._new_w[:, :] = w
 
         self._compute_vorticity(
             w=w,

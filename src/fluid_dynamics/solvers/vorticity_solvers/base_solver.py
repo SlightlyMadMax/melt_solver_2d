@@ -153,7 +153,7 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
 
         self._apply_boundary_conditions_x(time=time)
 
-        self._new_w = np.copy(w)
+        self._new_w[:, :] = w
 
         self._solve_sweep_x(
             n=n_y,
