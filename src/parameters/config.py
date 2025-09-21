@@ -1,3 +1,4 @@
+from functools import cached_property
 from typing import Optional, Tuple
 
 import numpy as np
@@ -45,6 +46,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         None, description="Steps between saves"
     )
 
+    @cached_property
     def scaled_grid_steps(self) -> Tuple[float, float, float]:
         """
         Calculate nondimensionalized space and time grid steps.
