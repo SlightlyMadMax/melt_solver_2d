@@ -59,7 +59,6 @@ class BCCorrectionNVSolver:
         )
 
         self._vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
-        self._temp_vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
         self._stream_function: NDArray[np.float64] = np.empty((n_y, n_x))
         self.rho = self.calculate_rho()
 
@@ -91,10 +90,10 @@ class BCCorrectionNVSolver:
         delta: float,
         time: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        old_vorticity = np.copy(w)
+        self._vorticity[:, :] = w
 
         self._solve_vorticity(
-            old_vorticity=old_vorticity,
+            old_vorticity=self._vorticity,
             stream_function=sf,
             temperature=u,
             delta=delta,
@@ -102,7 +101,7 @@ class BCCorrectionNVSolver:
         )
         self._solve_stream_function(
             sf_old=sf,
-            vorticity=self._temp_vorticity,
+            vorticity=self._vorticity,
             time=time,
         )
 
@@ -122,7 +121,7 @@ class BCCorrectionNVSolver:
         delta: float,
         time: float,
     ) -> None:
-        self._temp_vorticity[:, :] = self.vorticity_solver.solve(
+        self._vorticity[:, :] = self.vorticity_solver.solve(
             w=old_vorticity,
             sf=stream_function,
             u=temperature,
