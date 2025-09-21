@@ -96,7 +96,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
         return None
 
-    @property
+    @cached_property
     def volumetric_heat_capacity_ref(self) -> float:
         """
         Calculate the volumetric heat capacity at the reference temperature.
@@ -111,7 +111,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             + self.material_props.volumetric_heat_capacity_liquid
         )
 
-    @property
+    @cached_property
     def thermal_conductivity_ref(self) -> float:
         """
         Calculate the thermal conductivity at the reference temperature.
@@ -126,14 +126,14 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             + self.material_props.thermal_conductivity_liquid
         )
 
-    @property
+    @cached_property
     def thermal_diffusivity_ref(self) -> float:
         """
         Calculate the thermal diffusivity at the reference temperature.
         """
         return self.thermal_conductivity_ref / self.volumetric_heat_capacity_ref
 
-    @property
+    @cached_property
     def kinematic_viscosity_ref(self) -> float:
         """
         Calculate the kinematic viscosity coefficient at the reference temperature using polynomial evaluation.
@@ -142,7 +142,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             self.material_props.kinematic_viscosity_coeffs[::-1], self.u_ref
         )
 
-    @property
+    @cached_property
     def thermal_exp_coefficient_ref(self) -> float:
         """
         Calculate the volumetric thermal expansion coefficient at the reference temperature using polynomial evaluation.
@@ -151,7 +151,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             self.material_props.volumetric_thermal_exp_coeffs[::-1], self.u_ref
         )
 
-    @property
+    @cached_property
     def peclet_number(self) -> float:
         """
         Calculate the Péclet number at the reference temperature.
@@ -164,7 +164,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             / self.thermal_conductivity_ref
         )
 
-    @property
+    @cached_property
     def stefan_number(self) -> float:
         """
         Calculate the Stefan number for liquid phase.
@@ -176,7 +176,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             / self.material_props.volumetric_latent_heat
         )
 
-    @property
+    @cached_property
     def reynolds_number(self) -> float:
         """
         Calculate the Reynolds number at the reference temperature.
@@ -184,7 +184,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         return self.v * self.l / self.kinematic_viscosity_ref
 
-    @property
+    @cached_property
     def grashof_number(self) -> float:
         """
         Calculate the Grashof number at the reference temperature.
@@ -200,7 +200,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             / (self.kinematic_viscosity_ref * self.kinematic_viscosity_ref)
         )
 
-    @property
+    @cached_property
     def prandtl_number(self) -> float:
         """
         Calculate the Prandtl number at the reference temperature.
@@ -208,7 +208,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         return self.kinematic_viscosity_ref / self.thermal_diffusivity_ref
 
-    @property
+    @cached_property
     def rayleigh_number(self) -> float:
         """
         Calculate the Rayleigh number at the reference temperature.
