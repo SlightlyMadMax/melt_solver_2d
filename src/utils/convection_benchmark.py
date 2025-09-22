@@ -113,3 +113,45 @@ def calculate_T_profile_X05(Y):
         result += coeff * (Y**i)
 
     return result
+
+
+def calculate_T_profile_Y05(X):
+    """
+    Calculate temperature T at Y = 0.5 for given X coordinate(s)
+
+    Parameters:
+    X : float or array-like
+        X coordinate(s) where to evaluate T (should be between 0 and 1)
+
+    Returns:
+    float or array
+        Temperature at Y = 0.5
+    """
+    # Coefficients from Table A1 for Temperature at Y = 0.5
+    coefficients = [
+        0.999467521831559,  # a0
+        -6.23069515529224,  # a1
+        -18.9999577130502,  # a2
+        433.527770212382,  # a3
+        7318.66314332766,  # a4
+        -180265.707163689,  # a5
+        1714792.57838228,  # a6
+        -9862261.15685317,  # a7
+        38472869.7475459,  # a8
+        -106665059.51901,  # a9
+        214297962.730994,  # a10
+        -313025047.586471,  # a11
+        328987879.084903,  # a12
+        -242193161.156869,  # a13
+        118435075.266555,
+        -34530031.2923873,
+        4539519.05438302,
+    ]
+
+    X = np.asarray(X)
+    result = np.zeros_like(X, dtype=float)
+
+    for i, coeff in enumerate(coefficients):
+        result += coeff * (X**i)
+
+    return result
