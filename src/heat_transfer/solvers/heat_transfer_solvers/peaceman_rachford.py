@@ -144,7 +144,7 @@ class PeacemanRachfordSolver(ADIHeatSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
-                k_i1pj = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
+                k_ip1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
                 k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
                 k_ijp1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
@@ -171,7 +171,7 @@ class PeacemanRachfordSolver(ADIHeatSolver):
                     * inv_c_eff
                     * inv_peclet_number
                     * (
-                        k_i1pj * (u[j, i + 1] - u[j, i])
+                        k_ip1j * (u[j, i + 1] - u[j, i])
                         - k_im1j * (u[j, i] - u[j, i - 1])
                     )
                     - (
