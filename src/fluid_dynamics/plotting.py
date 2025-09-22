@@ -37,6 +37,9 @@ def plot_velocity_field(
         extend="both",
     )
     cbar = plt.colorbar(contour)
+    cbar.set_ticks(np.linspace(np.min(u_dim), np.max(u_dim), num=6))
+    cbar.set_label("Температура", rotation=270, labelpad=15, fontsize=14)
+
     plt.quiver(
         X_sub,
         Y_sub,
@@ -48,8 +51,8 @@ def plot_velocity_field(
         color="black",
         width=0.003,
     )
-    plt.xlabel("x, м")
-    plt.ylabel("y, м")
+    plt.xlabel("X", fontsize=14)
+    plt.ylabel("Y", fontsize=14)
     # plt.title("Поле скоростей")
 
     if equal_aspect:
