@@ -65,7 +65,7 @@ class BCCorrectionNVSolver:
     def calculate_rho(self):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
-        dy, dx = geometry.dy / self.cfg.l, geometry.dx / self.cfg.l
+        dx, dy, _ = self.cfg.scaled_grid_steps
 
         rho = np.zeros((n_y, n_x))
 
