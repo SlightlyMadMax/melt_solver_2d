@@ -90,13 +90,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         dx_scaled, dy_scaled, _ = self.cfg.scaled_grid_steps
 
         if isinstance(self.convective_operator, VorticityTransportOperator):
-            self.convective_operator(
-                conv_x=self._conv_x,
-                conv_y=self._conv_y,
-                sf=sf,
-                u=u,
-                u_pt=self.cfg.u_pt_nd,
-            )
+            self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         else:
             assert conv_w is not None
             self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
