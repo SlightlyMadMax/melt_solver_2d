@@ -41,7 +41,7 @@ from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
-    cfg = ExperimentConfig.load_from_file("../parameter_sets/water/convection.json")
+    cfg: ExperimentConfig = ExperimentConfig.load_from_file("../parameter_sets/water/convection.json")
     print(cfg)
 
     geometry: DomainGeometry = cfg.geometry
