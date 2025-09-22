@@ -73,12 +73,12 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
         dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
 
-        # self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
-        self.buoyancy_term[1:-1, 1:-1] = np.where(
-            u[1:-1, 1:-1] - u_pt_nd > 0.0,
-            gr * inv_re2 * dudx,
-            0.0,
-        )
+        self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
+        # self.buoyancy_term[1:-1, 1:-1] = np.where(
+        #     u[1:-1, 1:-1] - u_pt_nd > 0.0,
+        #     gr * inv_re2 * dudx,
+        #     0.0,
+        # )
 
     def _prepare(
         self,
