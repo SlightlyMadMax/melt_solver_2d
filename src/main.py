@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
             calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
 
-            sf_diff = np.max(abs(sf - sf_old) / dt_scaled)
+            sf_diff = np.max(np.abs(sf-sf_old)) / np.max(np.abs(sf_old))
 
             v_x_scaled = v_x * l / alpha
             v_y_scaled = v_y * l / alpha
@@ -204,13 +204,12 @@ if __name__ == "__main__":
             print(sigma_u, sigma_w, sigma_t)
             print(sf_diff)
 
-            if sf_diff < 1e-9:
+            if sf_diff < 1e-8:
                 np.savez_compressed(
                     "../data/water_convection/conv.npz",
                     v_x=v_x,
                     v_y=v_y,
                     u=u,
-                    geometry=geometry,
                 )
                 break
 
