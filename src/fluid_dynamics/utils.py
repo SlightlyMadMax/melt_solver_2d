@@ -58,25 +58,22 @@ def calculate_penalty_term_coeff(
     :return: None.
     """
     inv_eps2 = 1.0 / (eps * eps)
-    interior = (slice(1, -1), slice(1, -1))
-
-    diff_u = u[interior] - u_pt
-    # delta_inner = delta[interior]
+    diff_u = u - u_pt
 
     # --- Variant 1: sharp step ----------------------
-    # result[interior] = np.where(u[interior] <= u_pt, inv_eps2, 0.0)
+    # result[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
 
     # --- Variant 2: error‐function form -------------------
-    result[interior] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+    result[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
 
     # --- Variant 3: hyperbolic‐tangent form ---------------
-    # result[interior] = (
+    # result[:, :] = (
     #     0.5
     #     * inv_eps2
     #     * (
     #         1.0
     #         - np.tanh(
-    #             3.0 * diff_u / np.sqrt(delta_inner * delta_inner - diff_u * diff_u)
+    #             3.0 * diff_u / np.sqrt(delta * delta - diff_u * diff_u)
     #         )
     #     )
     # )
@@ -84,7 +81,7 @@ def calculate_penalty_term_coeff(
     # --- Variant 4: exponential form (one-sided smoothing) ----------------------
     # exp_term = np.exp((delta - diff_u) / delta)
     # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
-    # result[interior] = np.where(diff_u <= 0, temp, 0.0)
+    # result[:, :] = np.where(diff_u <= 0, temp, 0.0)
 
 
 def calculate_vorticity_from_sf(
