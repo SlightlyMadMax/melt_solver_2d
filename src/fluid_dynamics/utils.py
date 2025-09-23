@@ -84,6 +84,14 @@ def calculate_penalty_term_coeff(
     # result[:, :] = np.where(diff_u <= 0, temp, 0.0)
 
 
+def calculate_liquid_fraction(
+    u: np.ndarray, u_pt: float, delta: float, result: np.ndarray
+) -> None:
+    diff_u = u - u_pt
+
+    result[:, :] = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
+
+
 def calculate_vorticity_from_sf(
     sf: NDArray[np.float64],
     result: NDArray[np.float64],
