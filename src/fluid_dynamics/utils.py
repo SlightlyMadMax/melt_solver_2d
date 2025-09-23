@@ -173,25 +173,3 @@ def max_speed_in_solid_phase(
 
     max_val = float(values[sub_arg])
     return max_val, (int(pos[0]), int(pos[1]))
-
-
-def calculate_density_x_gradient(
-    u: NDArray[np.float64],
-    u_ref: float,
-    delta_u: float,
-    dx: float,
-    beta: float,
-    rho_ref: float,
-) -> NDArray[np.float64]:
-    u_k = u * delta_u + u_ref
-    u_c = u_k + ABS_ZERO
-    drho_du = (
-        0.0673268037314653
-        - 2 * 0.00894484552601798 * u_c
-        + 3 * 8.78462866500416e-5 * u_c**2
-        - 4 * 6.62139792627547e-7 * u_c**3
-    )
-    du_dx = np.zeros_like(u_k)
-    du_dx[:, 1:-1] = (u_k[:, 2:] - u_k[:, :-2]) / (2 * dx)
-    drho_dx = drho_du * du_dx
-    return drho_dx / (delta_u * beta * rho_ref)
