@@ -26,7 +26,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            s=self.penalty_term,
+            p=self.penalty_term,
             buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
@@ -51,7 +51,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            s=self.penalty_term,
+            p=self.penalty_term,
             buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
@@ -70,7 +70,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        s: NDArray[np.float64],
+        p: NDArray[np.float64],
         buoy: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -105,7 +105,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    - s[j, i] * sf[j, i]
+                    - p[j, i] * sf[j, i]
                 )
 
     @staticmethod
@@ -115,7 +115,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        s: NDArray[np.float64],
+        p: NDArray[np.float64],
         buoy: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -150,5 +150,5 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    - s[j, i] * sf[j, i]
+                    - p[j, i] * sf[j, i]
                 )
