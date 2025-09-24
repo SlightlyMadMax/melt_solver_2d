@@ -158,14 +158,33 @@ class BCCorrectionNVSolver:
         sf_old: np.ndarray,
         penalty_term: np.ndarray,
     ) -> np.ndarray:
-        _, _, tau = self.cfg.scaled_grid_steps
+        n_y, n_x = sf_old.shape
+        dx, dy, tau = self.cfg.scaled_grid_steps
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
-        c = penalty_term[1:-1, 1:-1]
 
-        b_int = -w - 0.5 * tau * ((c + r / self.cfg.reynolds_number) * psi)
+        p = penalty_term
+        c = np.empty((n_y, n_x))
+
+        for j in range(1, n_y - 1):
+            for i in range(1, n_x - 1):
+                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
+                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
+                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
+                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+                c[j, i] = -inv_dx2 * (
+                    p_ip1j * (sf_old[j, i + 1] - sf_old[j, i])
+                    - p_im1j * (sf_old[j, i] - sf_old[j, i - 1])
+                ) - inv_dy2 * (
+                    p_ijp1 * (sf_old[j + 1, i] - sf_old[j, i])
+                    - p_ijm1 * (sf_old[j, i] - sf_old[j - 1, i])
+                )
+
+        b_int = -w - 0.5 * tau * (c[1:-1, 1:-1] + r * psi / self.cfg.reynolds_number)
 
         return b_int.ravel()
 

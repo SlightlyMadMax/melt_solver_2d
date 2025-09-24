@@ -91,6 +91,11 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
+                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
+                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
+                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+
                 a[j, i] = dt_half * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
                 b[j, i] = 1.0 + dt_half * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
@@ -105,7 +110,17 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    - p[j, i] * sf[j, i]
+                    # - p[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        p_ip1j * (sf[j, i + 1] - sf[j, i])
+                        - p_im1j * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        p_ijp1 * (sf[j + 1, i] - sf[j, i])
+                        - p_ijm1 * (sf[j, i] - sf[j - 1, i])
+                    )
                 )
 
     @staticmethod
@@ -136,6 +151,11 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
+                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
+                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
+                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
+                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+
                 a[i, j] = dt_half * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
                 b[i, j] = 1.0 + dt_half * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
@@ -150,5 +170,15 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    - p[j, i] * sf[j, i]
+                    # - p[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        p_ip1j * (sf[j, i + 1] - sf[j, i])
+                        - p_im1j * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        p_ijp1 * (sf[j + 1, i] - sf[j, i])
+                        - p_ijm1 * (sf[j, i] - sf[j - 1, i])
+                    )
                 )

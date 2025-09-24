@@ -170,8 +170,8 @@ if __name__ == "__main__":
         t = n * geometry.dt
         delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
-        sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=max(delta), time=t)
+        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
+        sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
 
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
