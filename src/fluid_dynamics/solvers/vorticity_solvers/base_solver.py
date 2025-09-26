@@ -105,8 +105,8 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             result=self.penalty_term,
         )
 
-        self.px_half = 0.5 * (self.penalty_term[:, :-1] + self.penalty_term[:, 1:])
-        self.py_half = 0.5 * (self.penalty_term[:-1, :] + self.penalty_term[1:, :])
+        self.px_half[:, :] = 0.5 * (self.penalty_term[:, :-1] + self.penalty_term[:, 1:])
+        self.py_half[:, :] = 0.5 * (self.penalty_term[:-1, :] + self.penalty_term[1:, :])
 
         self.calculate_buoyancy_term(u=u)
 
