@@ -138,12 +138,12 @@ class BCCorrectionNVSolver:
         b = self._construct_rhs_for_cg(
             vorticity=vorticity,
             sf_old=sf_old,
-            Sx_half=self.vorticity_solver.px_half,
-            Sy_half=self.vorticity_solver.py_half,
+            px_half=self.vorticity_solver.px_half,
+            py_half=self.vorticity_solver.py_half,
         )
         A = self._construct_matrix_for_cg(
-            Sx_half=self.vorticity_solver.px_half,
-            Sy_half=self.vorticity_solver.py_half,
+            px_half=self.vorticity_solver.px_half,
+            py_half=self.vorticity_solver.py_half,
         )
         self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_old,
@@ -159,8 +159,8 @@ class BCCorrectionNVSolver:
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        Sx_half: np.ndarray,
-        Sy_half: np.ndarray,
+        px_half: np.ndarray,
+        py_half: np.ndarray,
     ) -> np.ndarray:
         n_y, n_x = sf_old.shape
         dx, dy, tau = self.cfg.scaled_grid_steps
@@ -175,16 +175,12 @@ class BCCorrectionNVSolver:
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = Sx_half[j, i]
-                p_im1j = Sx_half[j, i - 1]
-                p_ijp1 = Sy_half[j, i]
-                p_ijm1 = Sy_half[j - 1, i]
                 c[j, i] = -inv_dx2 * (
-                    p_ip1j * (sf_old[j, i + 1] - sf_old[j, i])
-                    - p_im1j * (sf_old[j, i] - sf_old[j, i - 1])
+                    px_half[j, i] * (sf_old[j, i + 1] - sf_old[j, i])
+                    - px_half[j, i - 1] * (sf_old[j, i] - sf_old[j, i - 1])
                 ) - inv_dy2 * (
-                    p_ijp1 * (sf_old[j + 1, i] - sf_old[j, i])
-                    - p_ijm1 * (sf_old[j, i] - sf_old[j - 1, i])
+                    py_half[j, i] * (sf_old[j + 1, i] - sf_old[j, i])
+                    - py_half[j - 1, i] * (sf_old[j, i] - sf_old[j - 1, i])
                 )
 
         b_int = -w - 0.5 * tau * (c[1:-1, 1:-1] + r * psi / self.cfg.reynolds_number)
@@ -193,8 +189,8 @@ class BCCorrectionNVSolver:
 
     def _construct_matrix_for_cg(
         self,
-        Sx_half: np.ndarray,
-        Sy_half: np.ndarray,
+        px_half: np.ndarray,
+        py_half: np.ndarray,
     ):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
@@ -208,18 +204,18 @@ class BCCorrectionNVSolver:
         rho_inner = self.rho[1:-1, 1:-1]
         rho_term_flat = (0.5 * tau * (rho_inner / re)).ravel()
 
-        S_e = Sx_half[1:-1, 1:]
-        S_w = Sx_half[1:-1, :-1]
+        p_e = px_half[1:-1, 1:]
+        s_w = px_half[1:-1, :-1]
 
-        S_n = Sy_half[1:, 1:-1]
-        S_s = Sy_half[:-1, 1:-1]
+        p_n = py_half[1:, 1:-1]
+        s_s = py_half[:-1, 1:-1]
 
-        aE = S_e / dx2
-        aW = S_w / dx2
-        aN = S_n / dy2
-        aS = S_s / dy2
+        a_e = p_e / dx2
+        a_w = s_w / dx2
+        a_n = p_n / dy2
+        a_s = s_s / dy2
 
-        sum_neighbors = aE + aW + aN + aS
+        sum_neighbors = a_e + a_w + a_n + a_s
 
         lam_main = -2.0 / dx2 - 2.0 / dy2
         main_diag = np.full(size, lam_main, dtype=float)
@@ -235,13 +231,13 @@ class BCCorrectionNVSolver:
         for r in range(inner_n_y):
             if inner_n_x > 1:
                 idx = base + np.arange(inner_n_x - 1)
-                side_diag[idx] = 1.0 / dx2 + 0.5 * tau * aE[r, :-1]
+                side_diag[idx] = 1.0 / dx2 + 0.5 * tau * a_e[r, :-1]
             base += inner_n_x
 
         base = 0
         for r in range(inner_n_y - 1):
             idx = base + np.arange(inner_n_x)
-            up_down_diag[idx] = 1.0 / dy2 + 0.5 * tau * aN[r, :]
+            up_down_diag[idx] = 1.0 / dy2 + 0.5 * tau * a_n[r, :]
             base += inner_n_x
 
         diagonals = [main_diag, side_diag, side_diag, up_down_diag, up_down_diag]
