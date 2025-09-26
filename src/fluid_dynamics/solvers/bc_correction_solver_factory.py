@@ -147,8 +147,8 @@ class BCCorrectionNVSolver:
         )
         self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_old,
-            A=-A,
-            b_flat=-b,
+            A=A,
+            b_flat=b,
             time=time,
         )
         # psi_vec = self._stream_function[1:-1, 1:-1].ravel()
