@@ -44,9 +44,9 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _get_ilu_preconditioner(self, A):
+    def _get_ilu_preconditioner(self, A) -> LinearOperator:
         A_csc = A.tocsc()
-        ilu = spilu(A_csc, drop_tol=1e-4, fill_factor=10)
+        ilu = spilu(A_csc, drop_tol=1e-6, fill_factor=20)
         return LinearOperator(A.shape, ilu.solve)
 
     def _get_jacobi_preconditioner(self, A) -> LinearOperator:
