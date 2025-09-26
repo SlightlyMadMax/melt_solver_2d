@@ -1,4 +1,5 @@
 import numpy as np
+import pyamg
 from scipy.sparse import diags
 from scipy.sparse.linalg import LinearOperator, spilu, cg
 
@@ -60,13 +61,17 @@ class ConjugateGradientSolver(BaseSolver):
 
         return LinearOperator(A.shape, matvec=matvec)
 
+    def _get_amg_preconditioner(self, A) -> LinearOperator:
+        ml = pyamg.smoothed_aggregation_solver(A)
+        M = ml.aspreconditioner()
+        return M
+
     def solve(
         self,
         A: diags,
         b_flat: np.ndarray,
         initial_guess: np.ndarray,
         time: float,
-        use_ilu: bool = False,
     ) -> np.ndarray:
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
@@ -79,11 +84,7 @@ class ConjugateGradientSolver(BaseSolver):
         # Initial guess interior flattened
         x0 = initial_guess[1:-1, 1:-1].flatten()
 
-        # Choose preconditioner
-        if use_ilu:
-            preconditioner = self._get_ilu_preconditioner(A)
-        else:
-            preconditioner = self._get_jacobi_preconditioner(A)
+        preconditioner = self._get_amg_preconditioner(A)
 
         # Solve A x = b
         solution_inner_flat, info = cg(
