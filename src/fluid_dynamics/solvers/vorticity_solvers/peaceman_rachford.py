@@ -27,6 +27,8 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             p=self.penalty_term,
+            px_half=self.px_half,
+            py_half=self.py_half,
             buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
@@ -52,6 +54,8 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             p=self.penalty_term,
+            px_half=self.px_half,
+            py_half=self.py_half,
             buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
@@ -71,6 +75,8 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
         p: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
         buoy: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -91,10 +97,10 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
-                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
-                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
-                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+                p_ip1j = px_half[j, i]
+                p_im1j = px_half[j, i - 1]
+                p_ijp1 = py_half[j, i]
+                p_ijm1 = py_half[j - 1, i]
 
                 a[j, i] = dt_half * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
@@ -131,6 +137,8 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
         p: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
         buoy: NDArray[np.float64],
         dx: float,
         dy: float,
@@ -151,10 +159,10 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
-                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
-                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
-                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+                p_ip1j = px_half[j, i]
+                p_im1j = px_half[j, i - 1]
+                p_ijp1 = py_half[j, i]
+                p_ijm1 = py_half[j - 1, i]
 
                 a[i, j] = dt_half * (conv_y[j, i, 0] - inv_re * inv_dy2)
 

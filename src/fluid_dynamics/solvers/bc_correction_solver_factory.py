@@ -135,13 +135,16 @@ class BCCorrectionNVSolver:
         vorticity: np.ndarray,
         time: float,
     ) -> None:
-        penalty_term = self.vorticity_solver.penalty_term
         b = self._construct_rhs_for_cg(
             vorticity=vorticity,
             sf_old=sf_old,
-            penalty_term=penalty_term,
+            Sx_half=self.vorticity_solver.px_half,
+            Sy_half=self.vorticity_solver.py_half,
         )
-        A = self._construct_matrix_for_cg(penalty_term=penalty_term)
+        A = self._construct_matrix_for_cg(
+            Sx_half=self.vorticity_solver.px_half,
+            Sy_half=self.vorticity_solver.py_half,
+        )
         self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_old,
             A=-A,
@@ -156,7 +159,8 @@ class BCCorrectionNVSolver:
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        penalty_term: np.ndarray,
+        Sx_half: np.ndarray,
+        Sy_half: np.ndarray,
     ) -> np.ndarray:
         n_y, n_x = sf_old.shape
         dx, dy, tau = self.cfg.scaled_grid_steps
@@ -167,15 +171,14 @@ class BCCorrectionNVSolver:
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
 
-        p = penalty_term
         c = np.empty((n_y, n_x))
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = 0.5 * (p[j, i] + p[j, i + 1])
-                p_im1j = 0.5 * (p[j, i] + p[j, i - 1])
-                p_ijp1 = 0.5 * (p[j, i] + p[j + 1, i])
-                p_ijm1 = 0.5 * (p[j, i] + p[j - 1, i])
+                p_ip1j = Sx_half[j, i]
+                p_im1j = Sx_half[j, i - 1]
+                p_ijp1 = Sy_half[j, i]
+                p_ijm1 = Sy_half[j - 1, i]
                 c[j, i] = -inv_dx2 * (
                     p_ip1j * (sf_old[j, i + 1] - sf_old[j, i])
                     - p_im1j * (sf_old[j, i] - sf_old[j, i - 1])
@@ -190,7 +193,8 @@ class BCCorrectionNVSolver:
 
     def _construct_matrix_for_cg(
         self,
-        penalty_term: np.ndarray,
+        Sx_half: np.ndarray,
+        Sy_half: np.ndarray,
     ):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
@@ -201,24 +205,47 @@ class BCCorrectionNVSolver:
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = 0.5 * tau * (penalty_term + self.rho / re)
-        c_inner_flat = c[1:-1, 1:-1].ravel()
+        rho_inner = self.rho[1:-1, 1:-1]
+        rho_term_flat = (0.5 * tau * (rho_inner / re)).ravel()
 
-        main_diag = -2.0 / dx2 - 2.0 / dy2 - c_inner_flat
+        S_e = Sx_half[1:-1, 1:]
+        S_w = Sx_half[1:-1, :-1]
 
-        side_diag = np.ones(size - 1) / dx2
-        side_diag[np.arange(1, size) % inner_n_x == 0] = 0
+        S_n = Sy_half[1:, 1:-1]
+        S_s = Sy_half[:-1, 1:-1]
 
-        up_down_diag = np.ones(size - inner_n_x) / dy2
+        aE = S_e / dx2
+        aW = S_w / dx2
+        aN = S_n / dy2
+        aS = S_s / dy2
+
+        sum_neighbors = aE + aW + aN + aS
+
+        lam_main = -2.0 / dx2 - 2.0 / dy2
+        main_diag = np.full(size, lam_main, dtype=float)
+
+        main_diag -= (0.5 * tau * sum_neighbors).ravel()
+
+        main_diag -= rho_term_flat
+
+        side_diag = np.zeros(size - 1, dtype=float)
+        up_down_diag = np.zeros(size - inner_n_x, dtype=float)
+
+        base = 0
+        for r in range(inner_n_y):
+            if inner_n_x > 1:
+                idx = base + np.arange(inner_n_x - 1)
+                side_diag[idx] = 1.0 / dx2 + 0.5 * tau * aE[r, :-1]
+            base += inner_n_x
+
+        base = 0
+        for r in range(inner_n_y - 1):
+            idx = base + np.arange(inner_n_x)
+            up_down_diag[idx] = 1.0 / dy2 + 0.5 * tau * aN[r, :]
+            base += inner_n_x
 
         diagonals = [main_diag, side_diag, side_diag, up_down_diag, up_down_diag]
         offsets = [0, -1, 1, -inner_n_x, inner_n_x]
 
-        m = sparse.diags(
-            diagonals,
-            offsets,
-            shape=(size, size),
-            format="csr",
-        )
-
+        m = sparse.diags(diagonals, offsets, shape=(size, size), format="csr")
         return m

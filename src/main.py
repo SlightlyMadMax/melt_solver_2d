@@ -153,7 +153,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.UPWIND,
         bc_order=1,
         step_scheme=StepScheme.CONST,
-        delta_scheme=DeltaScheme.GAUSS_ASYM,
+        delta_scheme=DeltaScheme.GAUSS,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -161,14 +161,14 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
     )
 
-    # delta = 0.01, 0.01
+    delta = 0.01, 0.01
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
+        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
         # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
