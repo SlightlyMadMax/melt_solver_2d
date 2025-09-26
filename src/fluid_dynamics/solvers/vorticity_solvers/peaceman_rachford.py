@@ -97,11 +97,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = px_half[j, i]
-                p_im1j = px_half[j, i - 1]
-                p_ijp1 = py_half[j, i]
-                p_ijm1 = py_half[j - 1, i]
-
                 a[j, i] = dt_half * (conv_x[j, i, 0] - inv_re * inv_dx2)
 
                 b[j, i] = 1.0 + dt_half * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
@@ -119,13 +114,13 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                     # - p[j, i] * sf[j, i]
                     + inv_dx2
                     * (
-                        p_ip1j * (sf[j, i + 1] - sf[j, i])
-                        - p_im1j * (sf[j, i] - sf[j, i - 1])
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
                     )
                     + inv_dy2
                     * (
-                        p_ijp1 * (sf[j + 1, i] - sf[j, i])
-                        - p_ijm1 * (sf[j, i] - sf[j - 1, i])
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
                     )
                 )
 
@@ -159,11 +154,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                p_ip1j = px_half[j, i]
-                p_im1j = px_half[j, i - 1]
-                p_ijp1 = py_half[j, i]
-                p_ijm1 = py_half[j - 1, i]
-
                 a[i, j] = dt_half * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
                 b[i, j] = 1.0 + dt_half * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
@@ -181,12 +171,12 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                     # - p[j, i] * sf[j, i]
                     + inv_dx2
                     * (
-                        p_ip1j * (sf[j, i + 1] - sf[j, i])
-                        - p_im1j * (sf[j, i] - sf[j, i - 1])
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
                     )
                     + inv_dy2
                     * (
-                        p_ijp1 * (sf[j + 1, i] - sf[j, i])
-                        - p_ijm1 * (sf[j, i] - sf[j - 1, i])
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
                     )
                 )
