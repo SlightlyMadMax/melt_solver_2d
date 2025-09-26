@@ -196,28 +196,30 @@ class BCCorrectionNVSolver:
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
         re = self.cfg.reynolds_number
-        dx2, dy2 = dx**2, dy**2
 
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
+        tau_half = 0.5 * tau
+
         rho_inner = self.rho[1:-1, 1:-1]
-        rho_term_flat = (0.5 * tau * (rho_inner / re)).ravel()
+        rho_term_flat = (tau_half * (rho_inner / re)).ravel()
 
         p_e = px_half[1:-1, 1:]
-        s_w = px_half[1:-1, :-1]
-
+        p_w = px_half[1:-1, :-1]
         p_n = py_half[1:, 1:-1]
-        s_s = py_half[:-1, 1:-1]
+        p_s = py_half[:-1, 1:-1]
 
-        a_e = p_e / dx2
-        a_w = s_w / dx2
-        a_n = p_n / dy2
-        a_s = s_s / dy2
+        a_e = p_e * inv_dx2
+        a_w = p_w * inv_dx2
+        a_n = p_n * inv_dy2
+        a_s = p_s * inv_dy2
 
         sum_neighbors = a_e + a_w + a_n + a_s
 
-        lam_main = -2.0 / dx2 - 2.0 / dy2
+        lam_main = -2.0 * inv_dx2 - 2.0 * inv_dx2
         main_diag = np.full(size, lam_main, dtype=float)
 
         main_diag -= (0.5 * tau * sum_neighbors).ravel()
@@ -231,13 +233,13 @@ class BCCorrectionNVSolver:
         for r in range(inner_n_y):
             if inner_n_x > 1:
                 idx = base + np.arange(inner_n_x - 1)
-                side_diag[idx] = 1.0 / dx2 + 0.5 * tau * a_e[r, :-1]
+                side_diag[idx] = inv_dx2 + 0.5 * tau * a_e[r, :-1]
             base += inner_n_x
 
         base = 0
         for r in range(inner_n_y - 1):
             idx = base + np.arange(inner_n_x)
-            up_down_diag[idx] = 1.0 / dy2 + 0.5 * tau * a_n[r, :]
+            up_down_diag[idx] = inv_dy2 + 0.5 * tau * a_n[r, :]
             base += inner_n_x
 
         diagonals = [main_diag, side_diag, side_diag, up_down_diag, up_down_diag]
