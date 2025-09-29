@@ -45,9 +45,7 @@ if __name__ == "__main__":
         "../parameter_sets/octodecane/config.json"
     )
     print(cfg)
-
     geometry: DomainGeometry = cfg.geometry
-
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
     min_temp = 301.2426
