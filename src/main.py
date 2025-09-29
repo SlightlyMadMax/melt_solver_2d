@@ -31,11 +31,6 @@ from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
-from src.utils.convection_benchmark import (
-    calculate_U_profile_X05,
-    calculate_T_profile_X05,
-    calculate_W_profile_X05,
-)
 from src.utils.stand_with_icicle import init_temperature_icicle
 from src.utils.time_utils import get_remaining_time
 
@@ -162,7 +157,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
     )
 
-    delta = 0.01, 0.01
+    delta = 0.008, 0.008
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
@@ -170,6 +165,10 @@ if __name__ == "__main__":
         u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
         # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
         sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
+
+        if t == 800.0 or t == 1575:
+            print("bruh")
+            np.savez_compressed(f"../data/octodecane/test/u_{n}.npz", u=u)
 
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
@@ -207,14 +206,21 @@ if __name__ == "__main__":
             # from matplotlib import pyplot as plt
             #
             # diff = u - cfg.u_pt_nd
-            # # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
-            # # latent = np.where(
-            # #     diff <= 0,
-            # #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
-            # #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
-            # # )
+
+            # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
+            # latent = np.where(
+            #     diff <= 0,
+            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
+            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
+            # )
+            #
             # latent = np.where(abs(diff) <= min(delta), 0.5 / min(delta), 0.0)
+
             # print(delta[0], delta[1])
+
+            # latent = np.exp(-(diff ** 2) / (2 * delta[0] ** 2)) / (
+            #     np.sqrt(2 * np.pi) * delta[0]
+            # )
             # X, Y = geometry.mesh_grid
             # plt.figure(figsize=(8, 6))
             # ax = plt.axes(
@@ -251,12 +257,12 @@ if __name__ == "__main__":
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
             )
-            plot_stream_function(
-                stream_function=sf_dim,
-                geometry=geometry,
-                graph_id=n,
-                show_graph=False,
-            )
+            # plot_stream_function(
+            #     stream_function=sf_dim,
+            #     geometry=geometry,
+            #     graph_id=n,
+            #     show_graph=False,
+            # )
             print(
                 f"Modelling Time: {n * dt:.2f} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "

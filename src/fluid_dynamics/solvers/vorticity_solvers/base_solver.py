@@ -46,13 +46,11 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         inv_re2 = 1.0 / self.cfg.reynolds_number**2
         inv_dx = 1.0 / dx_scaled
         gr = self.cfg.grashof_number
-        u_pt_nd = self.cfg.u_pt_nd
-
-        # delta_u = self.cfg.delta_u
-        # u_ref = self.cfg.u_ref
-        # beta = self.cfg.thermal_exp_coefficient_ref
-        # rho_ref = self.cfg.material_props.density_liquid
-        # interior = (slice(1, -1), slice(1, -1))
+        delta_u = self.cfg.delta_u
+        u_ref = self.cfg.u_ref
+        beta = self.cfg.thermal_exp_coefficient_ref
+        rho_ref = self.cfg.material_props.density_liquid
+        interior = (slice(1, -1), slice(1, -1))
 
         # u_k = u * delta_u + u_ref
         # u_c = u_k + ABS_ZERO
@@ -67,20 +65,9 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         # drhodx = drhodu[interior] * dudx
         # self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
 
-        # self.buoyancy_term[1:-1, 1:-1] = np.where(
-        #     u[1:-1, 1:-1] - u_pt_nd >= 0.0,
-        #     gr * inv_re2 * drhodx / (delta_u * beta * rho_ref),
-        #     0.0,
-        # )
-
         dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
 
         self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
-        # self.buoyancy_term[1:-1, 1:-1] = np.where(
-        #     u[1:-1, 1:-1] - u_pt_nd > 0.0,
-        #     gr * inv_re2 * dudx,
-        #     0.0,
-        # )
 
     def _prepare(
         self,

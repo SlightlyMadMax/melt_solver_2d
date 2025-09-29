@@ -64,19 +64,12 @@ def calculate_penalty_term_coeff(
     # result[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
 
     # --- Variant 2: error‐function form -------------------
-    result[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+    # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
+    # result[:, :] = inv_eps2 * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
+    # result[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
 
     # --- Variant 3: hyperbolic‐tangent form ---------------
-    # result[:, :] = (
-    #     0.5
-    #     * inv_eps2
-    #     * (
-    #         1.0
-    #         - np.tanh(
-    #             3.0 * diff_u / np.sqrt(delta * delta - diff_u * diff_u)
-    #         )
-    #     )
-    # )
+    result[:, :] = 0.5 * inv_eps2 * (1.0 - np.tanh(diff_u / delta))
 
     # --- Variant 4: exponential form (one-sided smoothing) ----------------------
     # exp_term = np.exp((delta - diff_u) / delta)
