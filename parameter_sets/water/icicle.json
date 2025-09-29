@@ -2,9 +2,9 @@
   "geometry": {
     "width": 0.4,
     "height": 0.2,
-    "end_time": 3600,
-    "n_x": 401,
-    "n_y": 201,
+    "end_time": 7200,
+    "n_x": 201,
+    "n_y": 101,
     "n_t": 72000
   },
   "material_props": {
@@ -20,9 +20,9 @@
     "volumetric_thermal_exp_coeffs": [-6.733353e-05]
   },
   "u_ref": 273.15,
-  "delta_u": 8.0,
+  "delta_u": 5.6,
   "v": 0.04,
   "l": 0.4,
-  "epsilon": 0.00001,
-  "save_interval": 120
+  "epsilon": 0.075,
+  "save_interval": 600
 }
