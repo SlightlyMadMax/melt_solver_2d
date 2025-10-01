@@ -53,7 +53,7 @@ print(cfg)
 
 geometry: DomainGeometry = cfg.geometry
 
-max_temp = 273.2
+max_temp = 273.151
 min_temp = 268.15
 
 bcs = BoundaryConditions(
@@ -102,7 +102,7 @@ start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
     if not fixed_delta:
-        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=2)
+        delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=1)
     u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
     if n % cfg.save_interval == 0:
         print(
