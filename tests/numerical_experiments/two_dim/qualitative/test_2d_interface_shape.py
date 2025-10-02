@@ -149,7 +149,6 @@ heat_transfer_solver = HeatTransferSolver(
     solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
-    fixed_delta=False,
     max_iters=1,
     tolerance=1e-6,
     urf=1.0,

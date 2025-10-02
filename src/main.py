@@ -138,7 +138,6 @@ if __name__ == "__main__":
     heat_transfer_solver = HeatTransferSolver(
         cfg=cfg,
         bcs=u_bcs,
-        fixed_delta=False,
         max_iters=1,
         tolerance=1e-6,
         urf=1.0,
