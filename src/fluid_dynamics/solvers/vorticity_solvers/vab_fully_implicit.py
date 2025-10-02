@@ -8,7 +8,6 @@ from scipy.sparse.linalg import splu
 from src.convective_operators import EffectiveSFTransportOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
-from src.fluid_dynamics.utils import calculate_penalty_term_coeff
 from src.parameters.config import ExperimentConfig
 
 
@@ -83,6 +82,28 @@ class VabFullyImplicitScheme(BaseSolver):
 
         return (1 / tau) * diags([1.0], [0], shape=(size, size)) - A
 
+    def _calculate_penalty_term_coeff(self, u: np.ndarray, delta: float) -> None:
+        u_pt = self.cfg.u_pt_nd
+        eps = self.cfg.epsilon
+        inv_eps2 = 1.0 / (eps * eps)
+        diff_u = u - u_pt
+
+        # --- Variant 1: sharp step ----------------------
+        # self.penalty_term[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
+
+        # --- Variant 2: error‐function form -------------------
+        # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
+        # self.penalty_term[:, :] = inv_eps2 * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
+        # self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+
+        # --- Variant 3: hyperbolic‐tangent form ---------------
+        self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - np.tanh(diff_u / delta))
+
+        # --- Variant 4: exponential form (one-sided smoothing) ----------------------
+        # exp_term = np.exp((delta - diff_u) / delta)
+        # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
+        # self.penalty_term[:, :] = np.where(diff_u <= 0, temp, 0.0)
+
     def solve(
         self,
         w: NDArray[np.float64],
@@ -103,13 +124,7 @@ class VabFullyImplicitScheme(BaseSolver):
 
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.cfg.delta_u + self.cfg.u_ref
-        calculate_penalty_term_coeff(
-            u=u_dim,
-            u_pt=self.cfg.material_props.u_pt,
-            eps=self.cfg.epsilon,
-            delta=delta or self.cfg.delta_nd,
-            result=self.penalty_term,
-        )
+        self._calculate_penalty_term_coeff(u=u_dim, delta=delta or self.cfg.delta_nd)
 
         gr = np.where(
             u * self.cfg.delta_u - self.cfg.u_pt_ref < 0.0,

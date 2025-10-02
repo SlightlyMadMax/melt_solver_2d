@@ -40,43 +40,6 @@ class VorticityBCMixin:
             raise NotImplementedError
 
 
-def calculate_penalty_term_coeff(
-    u: np.ndarray,
-    u_pt: float,
-    eps: float,
-    result: np.ndarray,
-    delta: float,
-) -> None:
-    """
-    Penalty term coefficient for the fictitious domain method.
-    Is equal to 0 for liquid phase and 1 / eps^2 for solid phase.
-
-    :param u: nondimensional temperature.
-    :param u_pt: phase transition temperature.
-    :param eps: small parameter.
-    :param result: ndarray for storing the calculated penalty term values.
-    :return: None.
-    """
-    inv_eps2 = 1.0 / (eps * eps)
-    diff_u = u - u_pt
-
-    # --- Variant 1: sharp step ----------------------
-    # result[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
-
-    # --- Variant 2: error‐function form -------------------
-    # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
-    # result[:, :] = inv_eps2 * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
-    # result[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
-
-    # --- Variant 3: hyperbolic‐tangent form ---------------
-    result[:, :] = 0.5 * inv_eps2 * (1.0 - np.tanh(diff_u / delta))
-
-    # --- Variant 4: exponential form (one-sided smoothing) ----------------------
-    # exp_term = np.exp((delta - diff_u) / delta)
-    # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
-    # result[:, :] = np.where(diff_u <= 0, temp, 0.0)
-
-
 def calculate_liquid_fraction(
     u: np.ndarray, u_pt: float, delta: float, result: np.ndarray
 ) -> None:
