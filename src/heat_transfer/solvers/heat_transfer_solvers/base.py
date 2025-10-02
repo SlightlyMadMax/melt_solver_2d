@@ -60,7 +60,9 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
 
-    def _prepare(self, sf: np.ndarray, u: np.ndarray, delta: tuple[float, float] | None = None):
+    def _prepare(
+        self, sf: np.ndarray, u: np.ndarray, delta: tuple[float, float] | None = None
+    ):
         self.convective_operator(
             conv_x=self._conv_x,
             conv_y=self._conv_y,
@@ -68,9 +70,7 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
             u=u,
             u_pt=self.cfg.u_pt_nd,
         )
-        self.compute_effective_properties(
-            c_eff=self._c_eff, k_eff=self._k_eff, u=self._iter_u, delta=delta
-        )
+        self.compute_effective_properties(u=self._iter_u, delta=delta)
 
     @abstractmethod
     def solve_linear(
@@ -81,31 +81,8 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         time: float = 0.0,
     ) -> None: ...
 
-    def compute_k_eff(
-        self, u: float, delta: tuple[float, float] | None = None
-    ) -> float:
-        props = self.cfg.material_props
-        k_ref = self.cfg.thermal_conductivity_ref
-        k_solid_nd = props.thermal_conductivity_solid / k_ref
-        k_liquid_nd = props.thermal_conductivity_liquid / k_ref
-
-        if delta is None:
-            delta = self.cfg.delta_nd
-        else:
-            delta = max(delta[0], delta[1])
-
-        u_0 = self.cfg.u_pt_nd
-        if delta <= 0:
-            return k_solid_nd if u <= u_0 else k_liquid_nd
-
-        step_fn = get_step_fn(self.step_scheme)
-        step_val = step_fn(u, u_0, delta)
-        return k_solid_nd + (k_liquid_nd - k_solid_nd) * step_val
-
     def compute_effective_properties(
         self,
-        c_eff: NDArray[np.float64],
-        k_eff: NDArray[np.float64],
         u: NDArray[np.float64],
         delta: Optional[tuple[float, float]] = None,
     ) -> None:
@@ -131,8 +108,8 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
 
         if is_asymmetric:
             self._compute_effective_properties_asym(
-                c_eff=c_eff,
-                k_eff=k_eff,
+                c_eff=self._c_eff,
+                k_eff=self._k_eff,
                 u=u,
                 u_0=self.cfg.u_pt_nd,
                 c_solid=c_solid_nd,
@@ -147,8 +124,8 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
             )
         else:
             self._compute_effective_properties_sym(
-                c_eff=c_eff,
-                k_eff=k_eff,
+                c_eff=self._c_eff,
+                k_eff=self._k_eff,
                 u=u,
                 u_0=self.cfg.u_pt_nd,
                 c_solid=c_solid_nd,
