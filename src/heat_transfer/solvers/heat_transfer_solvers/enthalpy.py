@@ -7,8 +7,13 @@ from numpy.typing import NDArray
 from src.heat_transfer.solvers.heat_transfer_solvers.base import (
     ADIHeatSolver,
 )
+from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
+    HeatTransferSolverName,
+    register_solver,
+)
 
 
+@register_solver(HeatTransferSolverName.ENTHALPY)
 class EnthalpySolver(ADIHeatSolver):
     def _compute_sweep_x_coeffs(
         self, u: np.ndarray, dt: float, dx: float, dy: float
