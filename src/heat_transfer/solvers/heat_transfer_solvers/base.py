@@ -30,7 +30,6 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         cfg: ExperimentConfig,
         convective_operator: BaseConvectiveOperator,
         bcs: Optional[BoundaryConditions] = None,
-        fixed_delta: bool = False,
         max_iters: int = 5,
         tolerance: float = 1e-6,
         urf: float = 0.5,
@@ -43,7 +42,6 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         super().__init__(cfg=cfg, bcs=bcs)
 
         self.convective_operator = convective_operator
-        self.fixed_delta = fixed_delta
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
