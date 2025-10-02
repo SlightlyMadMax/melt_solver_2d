@@ -41,7 +41,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.py_half: NDArray[np.float64] = np.empty((n_y - 1, n_x))
         self.buoyancy_term: NDArray[np.float64] = np.empty((n_y, n_x))
 
-    def calculate_buoyancy_term(self, u: np.ndarray):
+    def _calculate_buoyancy_term(self, u: np.ndarray):
         dx_scaled, _, _ = self.cfg.scaled_grid_steps
         inv_re2 = 1.0 / self.cfg.reynolds_number**2
         inv_dx = 1.0 / dx_scaled
@@ -95,7 +95,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.px_half[:, :] = 0.5 * (self.penalty_term[:, :-1] + self.penalty_term[:, 1:])
         self.py_half[:, :] = 0.5 * (self.penalty_term[:-1, :] + self.penalty_term[1:, :])
 
-        self.calculate_buoyancy_term(u=u)
+        self._calculate_buoyancy_term(u=u)
 
         self.calculate_boundary_conditions(
             sf=sf,
