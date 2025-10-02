@@ -72,7 +72,7 @@ class DouglasRachfordSolver(ADIHeatSolver):
         inv_dx2 = inv_dx * inv_dx
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
-        inv_peclet_number = 1.0 / peclet_number
+        inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -83,25 +83,20 @@ class DouglasRachfordSolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a[j, i] = dt * (
-                    conv_x[j, i, 0] - k_ip1j * inv_peclet_number * inv_c_eff * inv_dx2
-                )
+                a[j, i] = dt * (conv_x[j, i, 0] - k_ip1j * inv_pe * inv_c_eff * inv_dx2)
 
                 # Coefficient at T_{i, j}^{n + 1/2}
                 b[j, i] = 1.0 + dt * (
-                    conv_x[j, i, 1]
-                    + (k_ip1j + k_im1j) * inv_peclet_number * inv_c_eff * inv_dx2
+                    conv_x[j, i, 1] + (k_ip1j + k_im1j) * inv_pe * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c[j, i] = dt * (
-                    conv_x[j, i, 2] - k_im1j * inv_peclet_number * inv_c_eff * inv_dx2
-                )
+                c[j, i] = dt * (conv_x[j, i, 2] - k_im1j * inv_pe * inv_c_eff * inv_dx2)
 
                 rhs[j, i] = u[j, i] + dt * (
                     inv_dy2
                     * inv_c_eff
-                    * inv_peclet_number
+                    * inv_pe
                     * (
                         k_ijp1 * (u[j + 1, i] - u[j, i])
                         - k_ijm1 * (u[j, i] - u[j - 1, i])
@@ -132,7 +127,7 @@ class DouglasRachfordSolver(ADIHeatSolver):
         n_y, n_x = u_old.shape
         inv_dy = 1.0 / dy
         inv_dy2 = inv_dy * inv_dy
-        inv_peclet_number = 1.0 / peclet_number
+        inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -141,26 +136,21 @@ class DouglasRachfordSolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a[i, j] = dt * (
-                    conv_y[j, i, 0] - k_ijp1 * inv_peclet_number * inv_c_eff * inv_dy2
-                )
+                a[i, j] = dt * (conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2)
 
                 # Coefficient at T_{i, j}^{n + 1}
                 b[i, j] = 1.0 + dt * (
-                    conv_y[j, i, 1]
-                    + (k_ijp1 + k_ijm1) * inv_peclet_number * inv_c_eff * inv_dy2
+                    conv_y[j, i, 1] + (k_ijp1 + k_ijm1) * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c[i, j] = dt * (
-                    conv_y[j, i, 2] - k_ijm1 * inv_peclet_number * inv_c_eff * inv_dy2
-                )
+                c[i, j] = dt * (conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2)
 
                 # Right-hand side of the equation
                 rhs[i, j] = u_prev[j, i] - dt * (
                     inv_dy2
                     * inv_c_eff
-                    * inv_peclet_number
+                    * inv_pe
                     * (
                         k_ijp1 * (u_old[j + 1, i] - u_old[j, i])
                         - k_ijm1 * (u_old[j, i] - u_old[j - 1, i])
