@@ -58,9 +58,7 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
 
-    def _prepare(
-        self, sf: np.ndarray, delta: tuple[float, float] | None = None
-    ):
+    def _prepare(self, sf: np.ndarray, delta: tuple[float, float] | None = None):
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         self.compute_effective_properties(u=self._iter_u, delta=delta)
 
