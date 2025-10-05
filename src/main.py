@@ -37,14 +37,14 @@ from src.utils.time_utils import get_remaining_time
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/octodecane/config.json"
+        "../parameter_sets/water/freezing.json"
     )
     print(cfg)
     geometry: DomainGeometry = cfg.geometry
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.2426
-    max_temp = 310.07
+    min_temp = 263.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -79,15 +79,18 @@ if __name__ == "__main__":
         ),
     )
 
-    # Initial temperature distribution
-    u = init_temperature(
-        cfg=cfg,
-        bcs=u_bcs,
-        shape=DomainShape.UNIFORM_SOLID,
-        solid_temp=min_temp,
-        liquid_temp=max_temp,
-    )
+    data = np.load("../data/water_freezing/before_freezing.npz")
+    u = data["u"]
+    u[:, -1] = (min_temp - u_ref) / delta_u
 
+    # Initial temperature distribution
+    # u = init_temperature(
+    #     cfg=cfg,
+    #     bcs=u_bcs,
+    #     shape=DomainShape.LINEAR,
+    #     solid_temp=min_temp,
+    #     liquid_temp=max_temp,
+    # )
     dim_u = u * delta_u + u_ref
     init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
 
@@ -131,9 +134,12 @@ if __name__ == "__main__":
     )
 
     # Initial stream function, vorticity and velocity fields
-    sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
-    w = initialize_vorticity(geom=geometry)
-    v_x, v_y = initialize_velocity(geom=geometry)
+    # sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
+    # w = initialize_vorticity(geom=geometry)
+    # v_x, v_y = initialize_velocity(geom=geometry)
+
+    sf = data["sf"]
+    w = data["w"]
 
     heat_transfer_solver = HeatTransferSolver(
         cfg=cfg,
@@ -144,7 +150,7 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.UPWIND,
         bc_order=1,
-        step_scheme=StepScheme.CONST,
+        step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
     )
 
@@ -156,23 +162,29 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
     )
 
-    delta = 0.008, 0.008
+    delta = 0.025, 0.025
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=1)
+        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
-        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
+        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
+        sf[:, :], w[:, :] = navier_solver.solve(
+            w=w, sf=sf, u=u, delta=0.005, time=t
+        )
 
-        if t == 800.0 or t == 1575:
+        # if t == 800.0 or t == 1575:
+        #     print("bruh")
+        #     np.savez_compressed(f"../data/octodecane/test/u_{n}.npz", u=u)
+        if t == 2340:
             print("bruh")
-            np.savez_compressed(f"../data/octodecane/test/u_{n}.npz", u=u)
-
+            np.savez_compressed(
+                f"../data/water_freezing/after_freezing.npz", u=u, sf=sf, w=w
+            )
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
             sf_dim = sf * v * l
-            calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
+            # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
 
             # from matplotlib import pyplot as plt
             #
@@ -244,18 +256,18 @@ if __name__ == "__main__":
             #
             # plt.show()
 
-            plot_temperature(
-                u=u_dim,
-                cfg=cfg,
-                time=t,
-                graph_id=n,
-                plot_boundary=True,
-                show_graph=False,
-                min_temp=min_temp + ABS_ZERO,
-                max_temp=max_temp + ABS_ZERO,
-                actual_temp_units=TemperatureUnit.KELVIN,
-                display_temp_units=TemperatureUnit.CELSIUS,
-            )
+            # plot_temperature(
+            #     u=u_dim,
+            #     cfg=cfg,
+            #     time=t,
+            #     graph_id=n,
+            #     plot_boundary=True,
+            #     show_graph=False,
+            #     min_temp=min_temp + ABS_ZERO,
+            #     max_temp=max_temp + ABS_ZERO,
+            #     actual_temp_units=TemperatureUnit.KELVIN,
+            #     display_temp_units=TemperatureUnit.CELSIUS,
+            # )
             # plot_stream_function(
             #     stream_function=sf_dim,
             #     geometry=geometry,
@@ -290,5 +302,6 @@ if __name__ == "__main__":
             # )
             print()
 
+    np.savez_compressed("../data/water_freezing/freeze.npz", u=u, sf=sf, w=w)
     # print("Creating animation...")
     # create_gif_from_images(output_filename="exp5", duration=200)
