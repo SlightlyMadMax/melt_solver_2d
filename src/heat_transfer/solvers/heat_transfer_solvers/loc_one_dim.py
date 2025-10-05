@@ -41,9 +41,9 @@ class LocOneDimSolver(ADIHeatSolver):
             dy=dy,
             dt=dt,
             peclet_number=self.cfg.peclet_number,
-            a_y=self._a_y,
-            b_y=self._b_y,
-            c_y=self._c_y,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
             rhs=self._rhs_y,
         )
 
@@ -96,9 +96,9 @@ class LocOneDimSolver(ADIHeatSolver):
         dy: float,
         dt: float,
         peclet_number: float,
-        a_y: NDArray[np.float64],
-        b_y: NDArray[np.float64],
-        c_y: NDArray[np.float64],
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
@@ -113,17 +113,17 @@ class LocOneDimSolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a_y[i, j] = dt * (
+                a[i, j] = dt * (
                     conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
-                b_y[i, j] = 1.0 + dt * (
+                b[i, j] = 1.0 + dt * (
                     conv_y[j, i, 1] + (k_ijp1 + k_ijm1) * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c_y[i, j] = dt * (
+                c[i, j] = dt * (
                     conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2
                 )
 
