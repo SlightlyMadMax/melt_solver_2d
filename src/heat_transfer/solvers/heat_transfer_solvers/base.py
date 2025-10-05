@@ -59,7 +59,7 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._k_eff = np.empty((n_y, n_x))
 
     def _prepare(
-        self, sf: np.ndarray, u: np.ndarray, delta: tuple[float, float] | None = None
+        self, sf: np.ndarray, delta: tuple[float, float] | None = None
     ):
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         self.compute_effective_properties(u=self._iter_u, delta=delta)
@@ -225,7 +225,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         :param time: current physical time.
         :return:
         """
-        self._prepare(sf, u, delta)
+        self._prepare(sf, delta)
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
         dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps
 
