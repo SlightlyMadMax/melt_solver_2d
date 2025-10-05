@@ -160,10 +160,10 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
+        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=1)
+        u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
         # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
-        u = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=2)
-        sf, w = navier_solver.solve(w=w, sf=sf, u=u, delta=0.01, time=t)
+        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
 
         if t == 800.0 or t == 1575:
             print("bruh")

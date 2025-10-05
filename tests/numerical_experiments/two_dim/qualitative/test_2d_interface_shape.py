@@ -161,7 +161,7 @@ for i in range(1, geometry.n_t + 1):
     delta = get_mushy_zone_temperature_range(
         u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
     )
-    u = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=delta)
+    u[:, :] = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=delta)
     if i % 24 == 0:
         print(
             f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(i / 24)} дней, "

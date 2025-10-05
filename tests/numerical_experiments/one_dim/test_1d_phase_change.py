@@ -160,7 +160,7 @@ for n in range(1, geometry.n_t + 1):
     else:
         delta = None
 
-    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
+    u[:, :] = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
 
     if n % cfg.save_interval == 0:
         time_arr.append(t + t_init)
