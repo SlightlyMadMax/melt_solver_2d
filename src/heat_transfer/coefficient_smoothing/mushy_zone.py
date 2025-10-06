@@ -237,6 +237,8 @@ def get_mushy_zone_temperature_range(
     Returns (max_delta_solid, max_delta_liquid), where each value is the
     maximum absolute deviation |u - u_pt| found on the corresponding side
     of interfaces (solid: u - u_pt <= 0, liquid: u - u_pt > 0).
+    n_nodes is the number of nodes per side counted from the interface;
+    n_nodes=1 inspects the immediate neighbors j and j+1 or i and i+1.
     """
     n_y, n_x = u.shape
 
