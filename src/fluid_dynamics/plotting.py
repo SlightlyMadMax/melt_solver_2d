@@ -6,19 +6,23 @@ from typing import Optional
 from numpy.typing import NDArray
 
 from src.core.geometry import DomainGeometry
+from src.heat_transfer.pt_boundary import get_phase_trans_boundary
+from src.parameters.config import ExperimentConfig
 
 
 def plot_velocity_field(
-    v_x: NDArray[np.float64],
-    v_y: NDArray[np.float64],
-    u_dim: NDArray[np.float64],
-    geometry: DomainGeometry,
-    graph_id: int,
-    show_graph: bool = True,
-    directory: str = "../graphs/velocity/",
-    equal_aspect: Optional[bool] = True,
-    stride: int = 8,
+        v_x: NDArray[np.float64],
+        v_y: NDArray[np.float64],
+        u_dim: NDArray[np.float64],
+        cfg: ExperimentConfig,
+        graph_id: int,
+        show_graph: bool = True,
+        plot_boundary: bool = True,
+        directory: str = "../graphs/velocity/",
+        equal_aspect: Optional[bool] = True,
+        stride: int = 8,
 ):
+    geometry: DomainGeometry = cfg.geometry
     X, Y = geometry.mesh_grid
 
     X_sub = X[::stride, ::stride]
@@ -55,6 +59,10 @@ def plot_velocity_field(
     plt.ylabel("Y", fontsize=14)
     # plt.title("Поле скоростей")
 
+    if plot_boundary:
+        X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
+        plt.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
+
     if equal_aspect:
         plt.axis("equal")
 
@@ -70,12 +78,12 @@ def plot_velocity_field(
 
 
 def plot_stream_function(
-    stream_function: NDArray[np.float64],
-    geometry: DomainGeometry,
-    graph_id: int,
-    show_graph: bool = True,
-    directory: str = "../graphs/stream_function/",
-    equal_aspect: Optional[bool] = True,
+        stream_function: NDArray[np.float64],
+        geometry: DomainGeometry,
+        graph_id: int,
+        show_graph: bool = True,
+        directory: str = "../graphs/stream_function/",
+        equal_aspect: Optional[bool] = True,
 ):
     X, Y = geometry.mesh_grid
 
