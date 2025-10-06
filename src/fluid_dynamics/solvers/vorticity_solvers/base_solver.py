@@ -8,7 +8,7 @@ from src.convective_operators import BaseConvectiveOperator, VorticityTransportO
 from src.core.constants import ABS_ZERO
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
-from src.fluid_dynamics.utils import VorticityBCMixin, calculate_penalty_term_coeff
+from src.fluid_dynamics.utils import VorticityBCMixin
 from src.parameters.config import ExperimentConfig
 
 
@@ -41,7 +41,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.py_half: NDArray[np.float64] = np.empty((n_y - 1, n_x))
         self.buoyancy_term: NDArray[np.float64] = np.empty((n_y, n_x))
 
-    def calculate_buoyancy_term(self, u: np.ndarray):
+    def _calculate_buoyancy_term(self, u: np.ndarray):
         dx_scaled, _, _ = self.cfg.scaled_grid_steps
         inv_re2 = 1.0 / self.cfg.reynolds_number**2
         inv_dx = 1.0 / dx_scaled
@@ -52,22 +52,52 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         rho_ref = self.cfg.material_props.density_liquid
         interior = (slice(1, -1), slice(1, -1))
 
-        # u_k = u * delta_u + u_ref
-        # u_c = u_k + ABS_ZERO
-        # drhodu = (
-        #     0.0673268037314653
-        #     - 2 * 0.00894484552601798 * u_c
-        #     + 3 * 8.78462866500416e-5 * u_c**2
-        #     - 4 * 6.62139792627547e-7 * u_c**3
-        # )
+        u_k = u * delta_u + u_ref
+        u_c = u_k + ABS_ZERO
+        drhodu = (
+            0.0673268037314653
+            - 2 * 0.00894484552601798 * u_c
+            + 3 * 8.78462866500416e-5 * u_c**2
+            - 4 * 6.62139792627547e-7 * u_c**3
+        )
+
+        dudx = 0.5 * inv_dx * (u_k[1:-1, 2:] - u_k[1:-1, :-2])
+        drhodx = drhodu[interior] * dudx
+        self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
+
+        # dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
         #
-        # dudx = 0.5 * inv_dx * (u_k[1:-1, 2:] - u_k[1:-1, :-2])
-        # drhodx = drhodu[interior] * dudx
-        # self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
+        # self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
 
-        dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
+    def _calculate_penalty_term_at_faces(self):
+        self.px_half[:, :] = 0.5 * (
+            self.penalty_term[:, :-1] + self.penalty_term[:, 1:]
+        )
+        self.py_half[:, :] = 0.5 * (
+            self.penalty_term[:-1, :] + self.penalty_term[1:, :]
+        )
 
-        self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
+    def _calculate_penalty_term_coeff(self, u: np.ndarray, delta: float) -> None:
+        u_pt = self.cfg.u_pt_nd
+        eps = self.cfg.epsilon
+        inv_eps2 = 1.0 / (eps * eps)
+        diff_u = u - u_pt
+
+        # --- Variant 1: sharp step ----------------------
+        # self.penalty_term[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
+
+        # --- Variant 2: error‐function form -------------------
+        # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
+        # self.penalty_term[:, :] = inv_eps2 * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
+        # self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+
+        # --- Variant 3: hyperbolic‐tangent form ---------------
+        self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - np.tanh(diff_u / delta))
+
+        # --- Variant 4: exponential form (one-sided smoothing) ----------------------
+        # exp_term = np.exp((delta - diff_u) / delta)
+        # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
+        # self.penalty_term[:, :] = np.where(diff_u <= 0, temp, 0.0)
 
     def _prepare(
         self,
@@ -84,18 +114,11 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             assert conv_w is not None
             self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, w=conv_w)
 
-        calculate_penalty_term_coeff(
-            u=u,
-            u_pt=self.cfg.u_pt_nd,
-            eps=self.cfg.epsilon,
-            delta=delta or self.cfg.delta_nd,
-            result=self.penalty_term,
-        )
+        self._calculate_penalty_term_coeff(u=u, delta=delta or self.cfg.delta_nd)
 
-        self.px_half[:, :] = 0.5 * (self.penalty_term[:, :-1] + self.penalty_term[:, 1:])
-        self.py_half[:, :] = 0.5 * (self.penalty_term[:-1, :] + self.penalty_term[1:, :])
+        self._calculate_penalty_term_at_faces()
 
-        self.calculate_buoyancy_term(u=u)
+        self._calculate_buoyancy_term(u=u)
 
         self.calculate_boundary_conditions(
             sf=sf,

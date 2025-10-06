@@ -125,7 +125,6 @@ heat_transfer_solver = HeatTransferSolver(
     solver_name=HeatTransferSolverName.LOC_ONE_DIM,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
-    fixed_delta=fixed_delta,
     max_iters=1,
     tolerance=1e-6,
     urf=1.0,
@@ -161,7 +160,7 @@ for n in range(1, geometry.n_t + 1):
     else:
         delta = None
 
-    u = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
+    u[:, :] = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
 
     if n % cfg.save_interval == 0:
         time_arr.append(t + t_init)
