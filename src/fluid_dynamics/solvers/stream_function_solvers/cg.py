@@ -74,15 +74,16 @@ class ConjugateGradientSolver(BaseSolver):
         time: float,
     ) -> np.ndarray:
         n_y, n_x = self.geometry.n_y, self.geometry.n_x
+        inner_slice = (slice(1, -1), slice(1, -1))
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
-        right = self.bcs.right.get_value(t=time)
-        left = self.bcs.left.get_value(t=time)
-        top = self.bcs.top.get_value(t=time)
-        bottom = self.bcs.bottom.get_value(t=time)
+        self._result[:, 0] = self.bcs.left.get_value(t=time)
+        self._result[:, -1] = self.bcs.right.get_value(t=time)
+        self._result[0, :] = self.bcs.top.get_value(t=time)
+        self._result[-1, :] = self.bcs.bottom.get_value(t=time)
 
         # Initial guess interior flattened
-        x0 = initial_guess[1:-1, 1:-1].flatten()
+        x0 = initial_guess[inner_slice].ravel()
 
         preconditioner = self._get_amg_preconditioner(A)
 
@@ -101,10 +102,6 @@ class ConjugateGradientSolver(BaseSolver):
         elif info < 0:
             raise RuntimeError(f"CG error: {info}")
 
-        self._result[1:-1, 1:-1] = solution_inner_flat.reshape((inner_n_y, inner_n_x))
-        self._result[:, 0] = left
-        self._result[:, -1] = right
-        self._result[0, :] = top
-        self._result[-1, :] = bottom
+        self._result[inner_slice] = solution_inner_flat.reshape((inner_n_y, inner_n_x))
 
         return self._result
