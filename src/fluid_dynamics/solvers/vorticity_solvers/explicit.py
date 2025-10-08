@@ -36,10 +36,8 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         buoyancy_term: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
-        inv_dx = 1.0 / dx
-        inv_dx2 = inv_dx * inv_dx
-        inv_dy = 1.0 / dy
-        inv_dy2 = inv_dy * inv_dy
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
 
         inv_re = 1.0 / reynolds_number
 

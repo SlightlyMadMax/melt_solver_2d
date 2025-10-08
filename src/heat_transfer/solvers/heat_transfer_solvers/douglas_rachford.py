@@ -68,10 +68,8 @@ class DouglasRachfordSolver(ADIHeatSolver):
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
-        inv_dx = 1.0 / dx
-        inv_dx2 = inv_dx * inv_dx
-        inv_dy = 1.0 / dy
-        inv_dy2 = inv_dy * inv_dy
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
         inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
@@ -125,8 +123,7 @@ class DouglasRachfordSolver(ADIHeatSolver):
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u_old.shape
-        inv_dy = 1.0 / dy
-        inv_dy2 = inv_dy * inv_dy
+        inv_dy2 = 1.0 / (dy * dy)
         inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
