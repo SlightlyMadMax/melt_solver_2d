@@ -162,28 +162,42 @@ class BCCorrectionNVSolver:
         px_half: np.ndarray,
         py_half: np.ndarray,
     ) -> np.ndarray:
-        n_y, n_x = sf_old.shape
         dx, dy, tau = self.cfg.scaled_grid_steps
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
 
-        psi = sf_old[1:-1, 1:-1]
+        # interior (i = 1..n_x-2, j = 1..n_y-2)
+        psi = sf_old[1:-1, 1:-1]  # shape (n_y-2, n_x-2)
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
 
-        c = np.empty((n_y, n_x))
+        # X-direction: px_half has shape (n_y, n_x-1)
+        # we need px_half[j, i] and px_half[j, i-1] for i=1..n_x-2, j=1..n_y-2
+        px_i = px_half[1:-1, 1:]  # selects columns 1..(n_x-2) -> shape (n_y-2, n_x-2)
+        px_im1 = px_half[
+            1:-1, :-1
+        ]  # selects columns 0..(n_x-3) -> shape (n_y-2, n_x-2)
 
-        for j in range(1, n_y - 1):
-            for i in range(1, n_x - 1):
-                c[j, i] = -inv_dx2 * (
-                    px_half[j, i] * (sf_old[j, i + 1] - sf_old[j, i])
-                    - px_half[j, i - 1] * (sf_old[j, i] - sf_old[j, i - 1])
-                ) - inv_dy2 * (
-                    py_half[j, i] * (sf_old[j + 1, i] - sf_old[j, i])
-                    - py_half[j - 1, i] * (sf_old[j, i] - sf_old[j - 1, i])
-                )
+        sf_x_fwd = sf_old[1:-1, 2:]  # sf[j, i+1]
+        sf_x = psi  # sf[j, i]
+        sf_x_bak = sf_old[1:-1, 0:-2]  # sf[j, i-1]
 
-        b_int = -w - 0.5 * tau * (c[1:-1, 1:-1] + r * psi / self.cfg.reynolds_number)
+        term_x = px_i * (sf_x_fwd - sf_x) - px_im1 * (sf_x - sf_x_bak)
+
+        # Y-direction: py_half has shape (n_y-1, n_x)
+        # we need py_half[j, i] and py_half[j-1, i] for j=1..n_y-2, i=1..n_x-2
+        py_j = py_half[1:, 1:-1]  # rows 1..(n_y-2), cols 1..(n_x-2) -> (n_y-2, n_x-2)
+        py_jm1 = py_half[:-1, 1:-1]  # rows 0..(n_y-3), cols 1..(n_x-2)
+
+        sf_y_fwd = sf_old[2:, 1:-1]  # sf[j+1, i]
+        sf_y = psi  # sf[j, i]
+        sf_y_bak = sf_old[0:-2, 1:-1]  # sf[j-1, i]
+
+        term_y = py_j * (sf_y_fwd - sf_y) - py_jm1 * (sf_y - sf_y_bak)
+
+        c_inner = -inv_dx2 * term_x - inv_dy2 * term_y
+
+        b_int = -w - 0.5 * tau * (c_inner + r * psi / self.cfg.reynolds_number)
 
         return b_int.ravel()
 
