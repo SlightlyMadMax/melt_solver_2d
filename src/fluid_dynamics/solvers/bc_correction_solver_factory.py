@@ -43,7 +43,7 @@ class BCCorrectionNVSolver:
             solver_name=VorticitySolverName.PEACEMAN_RACHFORD
         )
         stream_function_solver_class = StreamFunctionSolverRegistry.get_solver_class(
-            solver_name=StreamFunctionSolverName.CG
+            solver_name=StreamFunctionSolverName.AMG
         )
 
         self.vorticity_solver = vorticity_solver_class(
