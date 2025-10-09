@@ -37,7 +37,7 @@ def plot_velocity_field(
         Y,
         u_dim,
         25,
-        cmap="viridis",
+        cmap="Blues",
         extend="both",
     )
     cbar = plt.colorbar(contour)

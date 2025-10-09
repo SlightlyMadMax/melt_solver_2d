@@ -103,7 +103,7 @@ def plot_temperature(
         Y,
         disp_u,
         25,
-        cmap="viridis",
+        cmap="Blues",
         extend="both",
     )
     cbar = plt.colorbar(contour)
