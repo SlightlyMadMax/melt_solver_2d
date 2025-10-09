@@ -79,7 +79,7 @@ if __name__ == "__main__":
         ),
     )
 
-    data = np.load("../data/water_freezing/before_freezing.npz")
+    data = np.load("../data/water_freezing/before_freezing_201x201.npz")
     u = data["u"]
     u[:, -1] = (min_temp - u_ref) / delta_u
 
@@ -169,9 +169,7 @@ if __name__ == "__main__":
         # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
         # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
-        sf[:, :], w[:, :] = navier_solver.solve(
-            w=w, sf=sf, u=u, delta=0.005, time=t
-        )
+        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.005, time=t)
 
         # if t == 800.0 or t == 1575:
         #     print("bruh")
@@ -179,7 +177,7 @@ if __name__ == "__main__":
         if t == 2340:
             print("bruh")
             np.savez_compressed(
-                f"../data/water_freezing/after_freezing.npz", u=u, sf=sf, w=w
+                f"../data/water_freezing/after_freezing_201x201.npz", u=u, sf=sf, w=w
             )
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
@@ -302,6 +300,5 @@ if __name__ == "__main__":
             # )
             print()
 
-    np.savez_compressed("../data/water_freezing/freeze.npz", u=u, sf=sf, w=w)
     # print("Creating animation...")
     # create_gif_from_images(output_filename="exp5", duration=200)
