@@ -44,6 +44,7 @@ plot_velocity_field(
     True,
     True,
     stride=8,
+    directory="../../graphs/velocity/"
 )
 # X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
 # ax.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
