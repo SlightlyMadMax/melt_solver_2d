@@ -3,8 +3,8 @@
     "width": 0.038,
     "height": 0.038,
     "end_time": 3600,
-    "n_x": 151,
-    "n_y": 151,
+    "n_x": 201,
+    "n_y": 201,
     "n_t": 7200
   },
   "material_props": {
@@ -25,5 +25,5 @@
   "l": 0.038,
   "delta": null,
   "epsilon": 0.00004,
-  "save_interval": 1200
+  "save_interval": 200
 }
