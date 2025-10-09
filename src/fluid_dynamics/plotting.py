@@ -36,7 +36,7 @@ def plot_velocity_field(
         X,
         Y,
         u_dim,
-        25,
+        100,
         cmap="Blues",
         extend="both",
     )
@@ -61,7 +61,7 @@ def plot_velocity_field(
 
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
-        plt.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
+        plt.plot(X_b, Y_b, linestyle="--", color="k", linewidth=2)
 
     if equal_aspect:
         plt.axis("equal")

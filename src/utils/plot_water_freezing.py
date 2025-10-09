@@ -27,7 +27,7 @@ v = cfg.v
 # fig, ax = plt.subplots()
 # ax.imshow(img, extent=[0, geometry.width, 0, geometry.height])
 
-data = np.load("../../data/water_freezing/after_freezing.npz")
+data = np.load("../../data/water_freezing/after_freezing_151x151.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]

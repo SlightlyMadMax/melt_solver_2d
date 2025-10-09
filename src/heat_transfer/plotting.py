@@ -102,7 +102,7 @@ def plot_temperature(
         X,
         Y,
         disp_u,
-        25,
+        100,
         cmap="Blues",
         extend="both",
     )
@@ -115,7 +115,7 @@ def plot_temperature(
 
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(u=u, cfg=cfg)
-        plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
+        plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="k", label="Граница ф.п.")
         ax.legend()
 
     # ax.set_title(
