@@ -1,6 +1,5 @@
 import numpy as np
 import pyamg
-from scipy.sparse import diags
 from scipy.sparse.linalg import LinearOperator, spilu, cg
 
 from src.core.boundary_conditions import BoundaryConditions
@@ -68,7 +67,7 @@ class ConjugateGradientSolver(BaseSolver):
 
     def solve(
         self,
-        A: diags,
+        A: np.ndarray,
         b_flat: np.ndarray,
         initial_guess: np.ndarray,
         time: float,
