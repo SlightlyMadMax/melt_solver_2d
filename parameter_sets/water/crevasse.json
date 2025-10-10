@@ -20,7 +20,7 @@
     "volumetric_thermal_exp_coeffs": [-6.733353e-05]
   },
   "u_ref": 273.15,
-  "delta_u": 10.0,
+  "delta_u": 4.0,
   "v": 0.016,
   "l": 10.0,
   "delta": null,
