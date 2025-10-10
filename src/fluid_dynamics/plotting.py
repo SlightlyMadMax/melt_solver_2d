@@ -101,7 +101,7 @@ def plot_stream_function(
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig(f"{directory}stream_function_{graph_id}.png")
+    plt.savefig(f"{directory}sf_{graph_id}.png")
 
     if show_graph:
         plt.show()
