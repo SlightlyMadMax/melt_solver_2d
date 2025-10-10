@@ -191,7 +191,7 @@ if __name__ == "__main__":
     )
 
     print((min_temp - u_ref) / delta_u)
-    delta = 0.008, 0.008
+    delta = 0.08, 0.08
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt

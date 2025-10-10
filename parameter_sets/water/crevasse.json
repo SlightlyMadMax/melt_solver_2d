@@ -22,7 +22,7 @@
   "u_ref": 273.15,
   "delta_u": 4.0,
   "v": 0.016,
-  "l": 10.0,
+  "l": 5.0,
   "delta": null,
   "epsilon": 0.0005,
   "save_interval": 3600
