@@ -36,7 +36,7 @@ for i, file_path in enumerate(exp_paths):
     #     display_temp_units=TemperatureUnit.CELSIUS,
     # )
     X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
-    plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="k")
+    plt.scatter(X_b, Y_b, s=1, linewidths=0.2, color="k")
 
 
 ax.set_xlabel("X", fontsize=14)
