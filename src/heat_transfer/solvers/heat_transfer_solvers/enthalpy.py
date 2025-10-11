@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import (
     ADIHeatSolver,
 )
 from src.heat_transfer.solvers.heat_transfer_solvers.registry import (

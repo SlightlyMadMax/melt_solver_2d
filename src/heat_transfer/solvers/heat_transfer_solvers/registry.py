@@ -1,7 +1,7 @@
 import typing
 from enum import Enum
 
-from src.heat_transfer.solvers.heat_transfer_solvers.base import BaseHeatSolver
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import BaseHeatSolver
 
 
 class HeatTransferSolverName(Enum):
