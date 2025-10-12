@@ -48,6 +48,10 @@ def plot_temperature(
     equal_aspect: Optional[bool] = True,
     invert_xaxis: Optional[bool] = False,
     invert_yaxis: Optional[bool] = False,
+    x_min: Optional[float] = None,
+    x_max: Optional[float] = None,
+    y_min: Optional[float] = None,
+    y_max: Optional[float] = None,
 ) -> None:
     """
     Plot and save a temperature field visualization for a 2D domain.
@@ -73,12 +77,40 @@ def plot_temperature(
     :param equal_aspect: Whether to enforce an equal aspect ratio for the plot (default is True).
     :param invert_xaxis: Whether to invert the x-axis (default is False).
     :param invert_yaxis: Whether to invert the y-axis (default is False).
+    :param x_min: Minimum x-coordinate to display (default: full domain).
+    :param x_max: Maximum x-coordinate to display (default: full domain).
+    :param y_min: Minimum y-coordinate to display (default: full domain).
+    :param y_max: Maximum y-coordinate to display (default: full domain).
 
     :return: None. The function saves the plot to the specified directory and optionally
              displays it if `show_graph` is True.
     """
 
     X, Y = cfg.geometry.mesh_grid
+
+    # plotting region
+    x_min_plot = x_min if x_min is not None else 0.0
+    x_max_plot = x_max if x_max is not None else cfg.geometry.width
+    y_min_plot = y_min if y_min is not None else 0.0
+    y_max_plot = y_max if y_max is not None else cfg.geometry.height
+
+    # Ensure bounds are within domain
+    x_min_plot = max(x_min_plot, 0.0)
+    x_max_plot = min(x_max_plot, cfg.geometry.width)
+    y_min_plot = max(y_min_plot, 0.0)
+    y_max_plot = min(y_max_plot, cfg.geometry.height)
+
+    # Find indices corresponding to the subregion
+    x_indices = np.where((X[0, :] >= x_min_plot) & (X[0, :] <= x_max_plot))[0]
+    y_indices = np.where((Y[:, 0] >= y_min_plot) & (Y[:, 0] <= y_max_plot))[0]
+
+    if len(x_indices) == 0 or len(y_indices) == 0:
+        raise ValueError("Specified region is outside the computational domain.")
+
+    # Slice the arrays
+    X_sub = X[np.ix_(y_indices, x_indices)]
+    Y_sub = Y[np.ix_(y_indices, x_indices)]
+    u_sub = u[np.ix_(y_indices, x_indices)]
 
     if not show_graph:
         import matplotlib
@@ -88,50 +120,53 @@ def plot_temperature(
     plt.figure(figsize=(8, 6))
 
     ax = plt.axes(
-        xlim=(0, cfg.geometry.width),
-        ylim=(0, cfg.geometry.height),
+        xlim=(x_min_plot, x_max_plot),
+        ylim=(y_min_plot, y_max_plot),
         xlabel="x, м",
         ylabel="y, м",
     )
 
     if show_grid:
-        plt.plot(X, Y, marker=".", markersize=0.5, color="k", linestyle="none")
+        plt.plot(X_sub, Y_sub, marker=".", markersize=0.5, color="k", linestyle="none")
 
-    disp_u = _convert_temp_in_display_units(u, actual_temp_units, display_temp_units)
+    disp_u = _convert_temp_in_display_units(
+        u_sub, actual_temp_units, display_temp_units
+    )
     contour = plt.contourf(
-        X,
-        Y,
+        X_sub,
+        Y_sub,
         disp_u,
         100,
         cmap="Blues",
         extend="both",
     )
     cbar = plt.colorbar(contour)
-    if not min_temp or not max_temp:
+    if min_temp is None or max_temp is None:
         min_temp = disp_u.min()
         max_temp = disp_u.max()
     cbar.set_ticks(np.linspace(min_temp, max_temp, num=7))
     cbar.set_label("Температура, °С", rotation=270, labelpad=15)
 
     if plot_boundary:
-        X_b, Y_b = get_phase_trans_boundary(u=u, cfg=cfg)
-        plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="k", label="Граница ф.п.")
-        ax.legend()
-
-    # ax.set_title(
-    #     f"t = {time:.1E} с.\n dx = {geometry.dx:.1E} м, "
-    #     f"dy = {geometry.dy:.1E} м, dt = {geometry.dt:.1E} с"
-    # )
+        X_b_list, Y_b_list = get_phase_trans_boundary(u=u, cfg=cfg)
+        X_b_full, Y_b_full = np.asarray(X_b_list), np.asarray(Y_b_list)
+        mask = (
+            (X_b_full >= x_min_plot)
+            & (X_b_full <= x_max_plot)
+            & (Y_b_full >= y_min_plot)
+            & (Y_b_full <= y_max_plot)
+        )
+        X_b = X_b_full[mask]
+        Y_b = Y_b_full[mask]
+        if len(X_b) > 0:
+            plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="k", label="Граница ф.п.")
+            ax.legend()
 
     if invert_xaxis:
-        labels = [item.get_text() for item in ax.get_xticklabels()]
-        ax.set_xticks(ax.get_xticks())
-        ax.set_xticklabels(reversed(labels))
+        ax.invert_xaxis()
 
     if invert_yaxis:
-        labels = [item.get_text() for item in ax.get_yticklabels()]
-        ax.set_yticks(ax.get_yticks())
-        ax.set_yticklabels(reversed(labels))
+        ax.invert_yaxis()
 
     if equal_aspect:
         ax.set_aspect("equal")
