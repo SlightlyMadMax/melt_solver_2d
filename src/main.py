@@ -32,7 +32,7 @@ from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
 )
-from src.heat_transfer.plotting import plot_temperature
+from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
@@ -52,14 +52,14 @@ def t_air(t: float, n: int) -> np.ndarray:
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/crevasse.json"
+        "../parameter_sets/water/icicle/5_6_c.json"
     )
     print(cfg)
     geometry: DomainGeometry = cfg.geometry
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 263.15
-    max_temp = 277.15
+    min_temp = 273.14
+    max_temp = 278.75
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         top=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
+            boundary_type=BoundaryConditionType.NEUMANN,
             n=n_x,
             flux_func=lambda t, n: np.zeros(n),
             value_func=t_air,
@@ -85,7 +85,7 @@ if __name__ == "__main__":
             value_func=lambda t, n: (min_temp - u_ref) / delta_u * np.ones(n),
         ),
         bottom=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
+            boundary_type=BoundaryConditionType.NEUMANN,
             n=n_x,
             flux_func=lambda t, n: np.zeros(n),
             value_func=lambda t, n: (263.15 - u_ref) / delta_u * np.ones(n),
@@ -110,32 +110,40 @@ if __name__ == "__main__":
     #     solid_temp=min_temp,
     #     liquid_temp=max_temp,
     # )
-    # u = init_temperature_icicle(
-    #     cfg, liquid_temp=max_temp, solid_temp=min_temp, rect_width=0.08, location="top"
-    # )
-    f = np.zeros(n_x)
-    f[:] = [geometry.height - 3.0 * math.exp(-((i * dx - 0.25) ** 2) / 0.001) for i in range(n_x)]
-    u = init_temperature_with_interface(
-        cfg=cfg, f=f, liquid_region_height=0.05, liquid_temp=273.25, solid_temp=263.15
+    u = init_temperature_icicle(
+        cfg,
+        liquid_temp=max_temp,
+        solid_temp=min_temp,
+        rect_width=0.08,
+        location="top",
     )
+    # f = np.zeros(n_x)
+    # f[:] = [geometry.height - 3.0 * math.exp(-((i * dx - 0.25) ** 2) / 0.001) for i in range(n_x)]
+    # u = init_temperature_with_interface(
+    #     cfg=cfg, f=f, liquid_region_height=0.05, liquid_temp=273.25, solid_temp=263.15
+    # )
 
     dim_u = u * delta_u + u_ref
     init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
 
     print(f"Initial mushy zone temperature range: {max(init_delta):.2f}")
 
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        time=0.0,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-    )
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     time=0.0,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    #     min_temp=min_temp + ABS_ZERO,
+    #     max_temp=max_temp + ABS_ZERO,
+    #     actual_temp_units=TemperatureUnit.KELVIN,
+    #     display_temp_units=TemperatureUnit.CELSIUS,
+    #     x_min=0.2,
+    #     x_max=0.4,
+    #     y_min=0.0,
+    #     y_max=0.2,
+    # )
 
     # Stream function boundary conditions
     sf_bcs = BoundaryConditions(
@@ -191,12 +199,12 @@ if __name__ == "__main__":
     )
 
     print((min_temp - u_ref) / delta_u)
-    delta = 0.08, 0.08
+    delta = 0.01, 0.01
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.005, time=t)
+        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
 
         # if t == 800.0 or t == 1575:
         #     print("bruh")
@@ -206,8 +214,10 @@ if __name__ == "__main__":
         #     np.savez_compressed(
         #         f"../data/water_freezing/after_freezing_201x201.npz", u=u, sf=sf, w=w
         #     )
+        if t % 60 == 0:
+            np.savez_compressed(f"../data/icicle/5pt6c/u_{n}.npz", u=u)
+
         if n % cfg.save_interval == 0:
-            np.savez_compressed(f"../data/crevasse/convection/at_{n}.npz", u=u, sf=sf)
             u_dim = u * delta_u + u_ref
             # sf_dim = sf * v * l
             # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
@@ -293,6 +303,10 @@ if __name__ == "__main__":
             #     max_temp=max_temp + ABS_ZERO,
             #     actual_temp_units=TemperatureUnit.KELVIN,
             #     display_temp_units=TemperatureUnit.CELSIUS,
+            #     x_min=0.2,
+            #     x_max=0.4,
+            #     y_min=0.0,
+            #     y_max=0.2,
             # )
             # plot_stream_function(
             #     stream_function=sf_dim,
