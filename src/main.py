@@ -52,7 +52,7 @@ def t_air(t: float, n: int) -> np.ndarray:
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/icicle/5_6_c.json"
+        "../parameter_sets/water/icicle/5pt6c.json"
     )
     print(cfg)
     geometry: DomainGeometry = cfg.geometry
