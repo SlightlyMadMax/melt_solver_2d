@@ -11,7 +11,7 @@
     "u_pt": 273.15,
     "specific_heat_liquid": 4212,
     "specific_heat_solid": 2116,
-    "specific_latent_heat": 3.33e5,
+    "specific_latent_heat": 333550,
     "density_liquid": 999.8,
     "density_solid": 916.8,
     "thermal_conductivity_liquid": 0.566,

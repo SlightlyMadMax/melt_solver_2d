@@ -1,17 +1,17 @@
 {
   "geometry": {
-    "width": 0.4,
+    "width": 0.6,
     "height": 0.2,
     "end_time": 7200,
-    "n_x": 401,
-    "n_y": 201,
-    "n_t": 7200
+    "n_x": 1801,
+    "n_y": 601,
+    "n_t": 14400
   },
   "material_props": {
     "u_pt": 273.15,
     "specific_heat_liquid": 4212,
     "specific_heat_solid": 2116,
-    "specific_latent_heat": 3.33e5,
+    "specific_latent_heat": 333550,
     "density_liquid": 999.8,
     "density_solid": 916.8,
     "thermal_conductivity_liquid": 0.566,
@@ -24,5 +24,5 @@
   "v": 0.027,
   "l": 0.2,
   "epsilon": 0.0005,
-  "save_interval": 10
+  "save_interval": 60
 }
