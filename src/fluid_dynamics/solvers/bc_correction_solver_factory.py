@@ -135,13 +135,13 @@ class BCCorrectionNVSolver:
         vorticity: np.ndarray,
         time: float,
     ) -> None:
-        b = self._construct_rhs_for_cg(
+        b = self._construct_rhs(
             vorticity=vorticity,
             sf_old=sf_old,
             px_half=self.vorticity_solver.px_half,
             py_half=self.vorticity_solver.py_half,
         )
-        A = self._construct_matrix_for_cg(
+        A = self._construct_matrix(
             px_half=self.vorticity_solver.px_half,
             py_half=self.vorticity_solver.py_half,
         )
@@ -155,7 +155,7 @@ class BCCorrectionNVSolver:
         # residual = (-A).dot(psi_vec) - (-b).ravel()
         # print("‖residual‖₂:", np.linalg.norm(residual, 2))
 
-    def _construct_rhs_for_cg(
+    def _construct_rhs(
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
@@ -201,7 +201,7 @@ class BCCorrectionNVSolver:
 
         return b_int.ravel()
 
-    def _construct_matrix_for_cg(
+    def _construct_matrix(
         self,
         px_half: np.ndarray,
         py_half: np.ndarray,
