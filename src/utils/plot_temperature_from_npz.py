@@ -12,7 +12,6 @@ from src.parameters.config import ExperimentConfig
 
 def plot_temperature_from_npz(
     cfg: ExperimentConfig,
-    geometry: DomainGeometry,
     min_temp: float,
     max_temp: float,
     files_path_mask: str,
@@ -28,7 +27,7 @@ def plot_temperature_from_npz(
         plot_temperature(
             u=u * cfg.delta_u + cfg.u_ref,
             cfg=cfg,
-            time=n * geometry.dt,
+            time=n * cfg.geometry.dt,
             graph_id=n,
             plot_boundary=True,
             show_graph=False,
