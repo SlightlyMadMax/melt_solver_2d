@@ -13,7 +13,7 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
 from src.parameters.config import ExperimentConfig
 
 
-@register_sf_solver(StreamFunctionSolverName.CG)
+@register_sf_solver(StreamFunctionSolverName.CG_GPU)
 class ConjugateGradientGPUSolver(BaseSolver):
     """
     A solver for elliptic equations using the Conjugate Gradient method with GPU acceleration.
