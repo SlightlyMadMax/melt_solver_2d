@@ -91,7 +91,7 @@ class ConjugateGradientGPUSolver(BaseSolver):
             maxiter=self.max_iters,
             tol=self.stopping_criteria,
         )
-        solution_inner_flat = cp.asnumpy(x_gpu[0])
+        solution_inner_flat = cp.asnumpy(x_gpu)
 
         if info > 0:
             raise RuntimeError(f"CG did not converge after {info} iterations")
