@@ -58,9 +58,9 @@ if __name__ == "__main__":
 
     # Stream function boundary conditions
     sf_bcs = BoundaryConditions(
-        top=const_dirichlet_condition(n_y, value=0.0),
+        top=const_dirichlet_condition(n_x, value=0.0),
         right=const_dirichlet_condition(n_y, value=0.0),
-        bottom=const_dirichlet_condition(n_y, value=0.0),
+        bottom=const_dirichlet_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=0.0),
     )
 
