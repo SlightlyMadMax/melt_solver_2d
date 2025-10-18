@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 from src.fluid_dynamics.plotting import plot_velocity_field
 from src.parameters.config import ExperimentConfig
-from src.utils.convection_benchmark import (
+from src.utils.water_convection_benchmark import (
     calculate_T_profile_X05,
     calculate_T_profile_Y05,
 )

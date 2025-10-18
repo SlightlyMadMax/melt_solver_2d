@@ -4,7 +4,6 @@ import re
 import numpy as np
 
 from src.core.constants import ABS_ZERO
-from src.core.geometry import DomainGeometry
 from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
