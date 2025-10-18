@@ -6,8 +6,6 @@ from numba import njit
 from scipy.special import erf
 from numpy.typing import NDArray
 
-from src.core.constants import ABS_ZERO
-
 
 class VorticityBCMixin:
     @staticmethod
