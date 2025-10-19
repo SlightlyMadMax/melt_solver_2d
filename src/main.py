@@ -1,4 +1,3 @@
-import logging
 import time
 import numpy as np
 
@@ -11,6 +10,7 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
     initialize_velocity,
 )
+from src.fluid_dynamics.plotting import plot_stream_function
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import init_temperature, DomainShape
@@ -26,18 +26,16 @@ from src.utils.boundary_conditions import (
 from src.utils.time_utils import get_remaining_time
 
 
-logger = logging.getLogger(__name__)
-
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/icicle/5pt6c.json"
+        "../parameter_sets/gallium/config.json"
     )
-    logger.info(cfg)
+    print(cfg)
     geometry: DomainGeometry = cfg.geometry
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 273.14
-    max_temp = 278.75
+    min_temp = 301.45
+    max_temp = 311.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -68,7 +66,7 @@ if __name__ == "__main__":
     u = init_temperature(
         cfg=cfg,
         bcs=u_bcs,
-        shape=DomainShape.LINEAR,
+        shape=DomainShape.UNIFORM_SOLID,
         solid_temp=min_temp,
         liquid_temp=max_temp,
     )
@@ -90,10 +88,10 @@ if __name__ == "__main__":
         max_temp=max_temp + ABS_ZERO,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
-        x_min=0.2,
-        x_max=0.4,
-        y_min=0.0,
-        y_max=0.2,
+        # x_min=0.2,
+        # x_max=0.4,
+        # y_min=0.0,
+        # y_max=0.2,
     )
 
     heat_transfer_solver = HeatTransferSolver(
@@ -114,16 +112,22 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        convective_term_form=ConvectiveTermForm.UPWIND,
+        vorticity_bc_order=2,
     )
 
     print((min_temp - u_ref) / delta_u)
-    delta = 0.01, 0.01
+    delta = 0.008, 0.008
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
         sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
+
+        t_min = t / 60
+        if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15, 17, 19}:
+            print("bruh")
+            np.savez_compressed(f"../data/gallium/test/u_{n}.npz", u=u)
 
         # if t == 800.0 or t == 1575:
         #     print("bruh")
@@ -136,7 +140,7 @@ if __name__ == "__main__":
 
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
-            # sf_dim = sf * v * l
+            sf_dim = sf * v * l
             # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
 
             plot_temperature(
@@ -150,10 +154,10 @@ if __name__ == "__main__":
                 max_temp=max_temp + ABS_ZERO,
                 actual_temp_units=TemperatureUnit.KELVIN,
                 display_temp_units=TemperatureUnit.CELSIUS,
-                x_min=0.2,
-                x_max=0.4,
-                y_min=0.0,
-                y_max=0.2,
+                # x_min=0.2,
+                # x_max=0.4,
+                # y_min=0.0,
+                # y_max=0.2,
             )
             # plot_stream_function(
             #     stream_function=sf_dim,
@@ -161,29 +165,30 @@ if __name__ == "__main__":
             #     graph_id=n,
             #     show_graph=False,
             # )
-            logger.info(
+            print(
                 f"Modelling Time: {n * dt:.2f} s, "
                 f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
                 f"Estimated Remaining Time: {get_remaining_time(n=n, n_t=n_t, start_time=start_time) / 60:.2f} min."
             )
-            logger.info(f"Maximum temperature value: {np.max(u_dim + ABS_ZERO):.2f} C")
-            logger.info(f"Minimum temperature value: {np.min(u_dim + ABS_ZERO):.2f} C")
+            print(f"Maximum temperature value: {np.max(u_dim + ABS_ZERO):.2f} C")
+            print(f"Minimum temperature value: {np.min(u_dim + ABS_ZERO):.2f} C")
             # j, i = np.unravel_index(sf_dim.argmax(), sf_dim.shape)
             # y, x = j * dy, i * dx
-            # logger.info(
+            # print(
             #     f"Maximum abs. stream function value: {np.max(np.abs(sf_dim)):.2e}, (x, y) = {x:.3f}, {1.0 - y:.3f}"
             # )
-            # logger.info(f"Minimum abs. stream function value: {np.min(np.abs(sf_dim)):.2e}")
-            # logger.info(
+            # print(f"Minimum abs. stream function value: {np.min(np.abs(sf_dim)):.2e}")
+            # print(
             #     f"Maximum vorticity value: {np.max(w) * v / l:.3f}"
             # )
-            # logger.info(
+            # print(
             #     f"Minimum vorticity value: {np.min(w) * v / l:.3f}"
             # )
-            # logger.info(f"Maximum speed: {np.max(np.sqrt(v_x**2 + v_y**2)):.2e}")
-            # logger.info(
+            # print(f"Maximum speed: {np.max(np.sqrt(v_x**2 + v_y**2)):.2e}")
+            # print(
             #     f"Maximum speed in the solid phase: {max_speed:.2e} at ({speed_ind[0] * dy:.3f}, {speed_ind[1] * dx:.3f})."
             # )
-            # logger.info(
+            # print(
             #     f"Maximum abs. stream function value in the solid phase: {max_sf:.2e} at ({sf_ind[0] * dy:.3f}, {sf_ind[1] * dx:.3f})."
             # )
+            print()

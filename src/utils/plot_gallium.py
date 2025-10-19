@@ -9,7 +9,7 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
 paths = sorted(
-    glob.glob("../../data/gallium/better_courant/u_*.npz"),
+    glob.glob("../../data/gallium/test/u_*.npz"),
     key=lambda f: int(re.search(r"u_(\d+)", f).group(1)),
 )
 img = plt.imread("../../data/gau.png")
