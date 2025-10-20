@@ -1,6 +1,7 @@
 import numpy as np
-import pyamg
-from scipy.sparse.linalg import LinearOperator, spilu, cg
+import cupy as cp
+
+from cupyx.scipy.sparse.linalg import cg, LinearOperator
 
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -12,10 +13,10 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
 from src.parameters.config import ExperimentConfig
 
 
-@register_sf_solver(StreamFunctionSolverName.CG)
-class ConjugateGradientSolver(BaseSolver):
+@register_sf_solver(StreamFunctionSolverName.CG_GPU)
+class ConjugateGradientGPUSolver(BaseSolver):
     """
-    A solver for elliptic equations using the Conjugate Gradient method.
+    A solver for elliptic equations using the Conjugate Gradient method with GPU acceleration.
 
     This class extends the BaseSolver to provide functionality for solving elliptic equations on a
     two-dimensional domain with specified boundary conditions.
@@ -44,11 +45,6 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _get_ilu_preconditioner(self, A) -> LinearOperator:
-        A_csc = A.tocsc()
-        ilu = spilu(A_csc, drop_tol=1e-6, fill_factor=20)
-        return LinearOperator(A.shape, ilu.solve)
-
     def _get_jacobi_preconditioner(self, A) -> LinearOperator:
         diag = A.diagonal()
         if np.any(diag == 0):
@@ -59,11 +55,6 @@ class ConjugateGradientSolver(BaseSolver):
             return inv_diag * x
 
         return LinearOperator(A.shape, matvec=matvec)
-
-    def _get_amg_preconditioner(self, A) -> LinearOperator:
-        ml = pyamg.smoothed_aggregation_solver(A)
-        M = ml.aspreconditioner()
-        return M
 
     def solve(
         self,
@@ -84,17 +75,23 @@ class ConjugateGradientSolver(BaseSolver):
         # Initial guess interior flattened
         x0 = initial_guess[inner_slice].ravel()
 
-        preconditioner = self._get_amg_preconditioner(A)
+        # Convert numpy arrays into cupy arrays
+        A_gpu = cp.sparse.csr_matrix(A)
+        b_gpu = cp.array(b_flat)
+        x0_gpu = cp.array(x0)
+
+        preconditioner = self._get_jacobi_preconditioner(A_gpu)
 
         # Solve A x = b
-        solution_inner_flat, info = cg(
-            A=A,
-            b=b_flat,
-            x0=x0,
+        x_gpu, info = cg(
+            A=A_gpu,
+            b=b_gpu,
+            x0=x0_gpu,
             M=preconditioner,
             maxiter=self.max_iters,
-            rtol=self.stopping_criteria,
+            tol=self.stopping_criteria,
         )
+        solution_inner_flat = cp.asnumpy(x_gpu)
 
         if info > 0:
             raise RuntimeError(f"CG did not converge after {info} iterations")

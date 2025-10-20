@@ -4,7 +4,6 @@ import re
 import numpy as np
 
 from src.core.constants import ABS_ZERO
-from src.core.geometry import DomainGeometry
 from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
@@ -12,7 +11,6 @@ from src.parameters.config import ExperimentConfig
 
 def plot_temperature_from_npz(
     cfg: ExperimentConfig,
-    geometry: DomainGeometry,
     min_temp: float,
     max_temp: float,
     files_path_mask: str,
@@ -28,7 +26,7 @@ def plot_temperature_from_npz(
         plot_temperature(
             u=u * cfg.delta_u + cfg.u_ref,
             cfg=cfg,
-            time=n * geometry.dt,
+            time=n * cfg.geometry.dt,
             graph_id=n,
             plot_boundary=True,
             show_graph=False,

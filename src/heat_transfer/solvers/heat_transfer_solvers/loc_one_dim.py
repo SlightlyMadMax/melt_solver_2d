@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.heat_transfer.solvers.heat_transfer_solvers.base import (
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import (
     ADIHeatSolver,
 )
 from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
@@ -63,8 +63,7 @@ class LocOneDimSolver(ADIHeatSolver):
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
-        inv_dx = 1.0 / dx
-        inv_dx2 = inv_dx * inv_dx
+        inv_dx2 = 1.0 / (dx * dx)
         inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):
@@ -102,8 +101,7 @@ class LocOneDimSolver(ADIHeatSolver):
         rhs: NDArray[np.float64],
     ) -> None:
         n_y, n_x = u.shape
-        inv_dy = 1.0 / dy
-        inv_dy2 = inv_dy * inv_dy
+        inv_dy2 = 1.0 / (dy * dy)
         inv_pe = 1.0 / peclet_number
 
         for j in range(1, n_y - 1):

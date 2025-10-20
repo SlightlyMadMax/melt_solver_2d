@@ -8,6 +8,8 @@ class StreamFunctionSolverName(Enum):
     SOR = "Successive Over-Relaxation"
     MATRIX_SWEEP = "Matrix Sweep (2D Thomas algorithm)"
     CG = "Conjugate Gradient"
+    CG_GPU = "Conjugate Gradient with GPU Acceleration"
+    AMG = "Algebraic Multigrid"
 
 
 def register_sf_solver(solver_name: StreamFunctionSolverName):

@@ -165,14 +165,14 @@ class FlowCorrectionNVSolver:
         self.convective_operator(
             w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
         )
-        b = self._construct_rhs_for_cg(
+        b = self._construct_rhs(
             vorticity=vorticity,
             sf_old=sf_old,
             penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
         )
-        A = self._construct_matrix_for_cg(
+        A = self._construct_matrix(
             penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
@@ -187,7 +187,7 @@ class FlowCorrectionNVSolver:
         # residual = (-A).dot(psi_vec) - (-b).ravel()
         # print("‖residual‖₂:", np.linalg.norm(residual, 2))
 
-    def _construct_rhs_for_cg(
+    def _construct_rhs(
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
@@ -213,7 +213,7 @@ class FlowCorrectionNVSolver:
 
         return b_int.ravel()
 
-    def _construct_matrix_for_cg(
+    def _construct_matrix(
         self,
         penalty_term: np.ndarray,
         conv_x: np.ndarray,

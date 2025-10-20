@@ -11,16 +11,16 @@ from src.parameters.config import ExperimentConfig
 
 
 def plot_velocity_field(
-        v_x: NDArray[np.float64],
-        v_y: NDArray[np.float64],
-        u_dim: NDArray[np.float64],
-        cfg: ExperimentConfig,
-        graph_id: int,
-        show_graph: bool = True,
-        plot_boundary: bool = True,
-        directory: str = "../graphs/velocity/",
-        equal_aspect: Optional[bool] = True,
-        stride: int = 8,
+    v_x: NDArray[np.float64],
+    v_y: NDArray[np.float64],
+    u_dim: NDArray[np.float64],
+    cfg: ExperimentConfig,
+    graph_id: int,
+    show_graph: bool = True,
+    plot_boundary: bool = True,
+    directory: str = "../graphs/velocity/",
+    equal_aspect: Optional[bool] = True,
+    stride: int = 8,
 ):
     geometry: DomainGeometry = cfg.geometry
     X, Y = geometry.mesh_grid
@@ -36,8 +36,8 @@ def plot_velocity_field(
         X,
         Y,
         u_dim,
-        25,
-        cmap="viridis",
+        100,
+        cmap="Blues",
         extend="both",
     )
     cbar = plt.colorbar(contour)
@@ -61,7 +61,7 @@ def plot_velocity_field(
 
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
-        plt.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
+        plt.plot(X_b, Y_b, linestyle="--", color="k", linewidth=2)
 
     if equal_aspect:
         plt.axis("equal")
@@ -78,12 +78,12 @@ def plot_velocity_field(
 
 
 def plot_stream_function(
-        stream_function: NDArray[np.float64],
-        geometry: DomainGeometry,
-        graph_id: int,
-        show_graph: bool = True,
-        directory: str = "../graphs/stream_function/",
-        equal_aspect: Optional[bool] = True,
+    stream_function: NDArray[np.float64],
+    geometry: DomainGeometry,
+    graph_id: int,
+    show_graph: bool = True,
+    directory: str = "../graphs/stream_function/",
+    equal_aspect: Optional[bool] = True,
 ):
     X, Y = geometry.mesh_grid
 
@@ -101,7 +101,7 @@ def plot_stream_function(
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig(f"{directory}stream_function_{graph_id}.png")
+    plt.savefig(f"{directory}sf_{graph_id}.png")
 
     if show_graph:
         plt.show()

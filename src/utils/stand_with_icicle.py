@@ -6,23 +6,6 @@ from src.core.geometry import DomainGeometry
 from src.parameters.config import ExperimentConfig
 
 
-# def bottom_dirichlet_condition(t: float, n: int) -> np.ndarray:
-#     x = np.linspace(0, geometry.width - geometry.dx, n)
-#     stand_half_width = 0.02  # 0.04 m wide total
-#     stand_center = geometry.width / 2
-#
-#     # Logical mask for where the stand is
-#     is_stand = (x >= stand_center - stand_half_width) & (
-#         x <= stand_center + stand_half_width
-#     )
-#
-#     # Allocate full array and assign values
-#     values = np.full(n, (max_temp - thermal_params.u_ref) / thermal_params.delta_u)
-#     values[is_stand] = (min_temp - thermal_params.u_ref) / thermal_params.delta_u
-#
-#     return values
-
-
 def init_temperature_icicle(
     cfg: ExperimentConfig,
     liquid_temp: Optional[float] = None,

@@ -1,6 +1,7 @@
 import numpy as np
 import pyamg
-from scipy.sparse.linalg import LinearOperator, spilu, cg
+from pyamg import MultilevelSolver
+from scipy.sparse import csr_array
 
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -12,13 +13,10 @@ from src.fluid_dynamics.solvers.stream_function_solvers.registry import (
 from src.parameters.config import ExperimentConfig
 
 
-@register_sf_solver(StreamFunctionSolverName.CG)
-class ConjugateGradientSolver(BaseSolver):
+@register_sf_solver(StreamFunctionSolverName.AMG)
+class AlgebraicMultigridSolver(BaseSolver):
     """
-    A solver for elliptic equations using the Conjugate Gradient method.
-
-    This class extends the BaseSolver to provide functionality for solving elliptic equations on a
-    two-dimensional domain with specified boundary conditions.
+    A solver for elliptic equations of the form Δu - c(x,y)u = -f(x,y) using Algebraic Multigrid.
     """
 
     def __init__(
@@ -44,30 +42,9 @@ class ConjugateGradientSolver(BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._result: np.ndarray = np.empty((self.geometry.n_y, self.geometry.n_x))
 
-    def _get_ilu_preconditioner(self, A) -> LinearOperator:
-        A_csc = A.tocsc()
-        ilu = spilu(A_csc, drop_tol=1e-6, fill_factor=20)
-        return LinearOperator(A.shape, ilu.solve)
-
-    def _get_jacobi_preconditioner(self, A) -> LinearOperator:
-        diag = A.diagonal()
-        if np.any(diag == 0):
-            raise ZeroDivisionError("Jacobi preconditioner: zero on diagonal of A")
-        inv_diag = 1.0 / diag
-
-        def matvec(x):
-            return inv_diag * x
-
-        return LinearOperator(A.shape, matvec=matvec)
-
-    def _get_amg_preconditioner(self, A) -> LinearOperator:
-        ml = pyamg.smoothed_aggregation_solver(A)
-        M = ml.aspreconditioner()
-        return M
-
     def solve(
         self,
-        A: np.ndarray,
+        A: csr_array,
         b_flat: np.ndarray,
         initial_guess: np.ndarray,
         time: float,
@@ -84,23 +61,9 @@ class ConjugateGradientSolver(BaseSolver):
         # Initial guess interior flattened
         x0 = initial_guess[inner_slice].ravel()
 
-        preconditioner = self._get_amg_preconditioner(A)
+        ml: MultilevelSolver = pyamg.ruge_stuben_solver(A, strength="symmetric")
+        solution_inner_flat = ml.solve(b_flat, x0=x0, tol=self.stopping_criteria)  # type: ignore
 
-        # Solve A x = b
-        solution_inner_flat, info = cg(
-            A=A,
-            b=b_flat,
-            x0=x0,
-            M=preconditioner,
-            maxiter=self.max_iters,
-            rtol=self.stopping_criteria,
-        )
-
-        if info > 0:
-            raise RuntimeError(f"CG did not converge after {info} iterations")
-        elif info < 0:
-            raise RuntimeError(f"CG error: {info}")
-
-        self._result[inner_slice] = solution_inner_flat.reshape((inner_n_y, inner_n_x))
+        self._result[inner_slice] = solution_inner_flat.reshape((inner_n_y, inner_n_x))  # type: ignore
 
         return self._result

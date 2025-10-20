@@ -1,50 +1,41 @@
 import time
 import numpy as np
 
-from src.core.boundary_conditions import (
-    BoundaryCondition,
-    BoundaryConditionType,
-    BoundaryConditions,
-)
-from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
+from src.core.boundary_conditions import BoundaryConditions
+from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
-from src.fluid_dynamics.plotting import plot_stream_function
-from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.init_values import (
     initialize_stream_function,
     initialize_vorticity,
     initialize_velocity,
 )
-from src.fluid_dynamics.utils import calculate_velocity_from_sf
-from src.heat_transfer.coefficient_smoothing.coefficients import (
-    StepScheme,
-    DeltaScheme,
-)
+from src.fluid_dynamics.plotting import plot_stream_function
+from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
+from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import init_temperature, DomainShape
-from src.heat_transfer.pt_boundary import get_phase_trans_boundary
-from src.heat_transfer.utils import TemperatureUnit
-from src.heat_transfer.coefficient_smoothing.mushy_zone import (
-    get_mushy_zone_temperature_range,
-)
-from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.heat_transfer.utils import TemperatureUnit
+from src.heat_transfer.plotting import plot_temperature
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
-from src.utils.stand_with_icicle import init_temperature_icicle
+from src.utils.boundary_conditions import (
+    const_dirichlet_condition,
+    const_neumann_condition,
+)
 from src.utils.time_utils import get_remaining_time
 
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/freezing.json"
+        "../parameter_sets/gallium/config.json"
     )
     print(cfg)
     geometry: DomainGeometry = cfg.geometry
     dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 263.15
-    max_temp = 283.15
+    min_temp = 301.45
+    max_temp = 311.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -57,45 +48,35 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
-            n=n_x,
-            flux_func=lambda t, n: np.zeros(n),
-        ),
-        right=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: (min_temp - u_ref) / delta_u * np.ones(n),
-        ),
-        bottom=BoundaryCondition(
-            boundary_type=BoundaryConditionType.NEUMANN,
-            n=n_x,
-            flux_func=lambda t, n: np.zeros(n),
-        ),
-        left=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: (max_temp - u_ref) / delta_u * np.ones(n),
-        ),
+        top=const_neumann_condition(n_x, value=0.0),
+        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
+        bottom=const_neumann_condition(n_x, value=0.0),
+        left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
     )
 
-    data = np.load("../data/water_freezing/before_freezing.npz")
-    u = data["u"]
-    u[:, -1] = (min_temp - u_ref) / delta_u
+    # Stream function boundary conditions
+    sf_bcs = BoundaryConditions(
+        top=const_dirichlet_condition(n_x, value=0.0),
+        right=const_dirichlet_condition(n_y, value=0.0),
+        bottom=const_dirichlet_condition(n_x, value=0.0),
+        left=const_dirichlet_condition(n_y, value=0.0),
+    )
 
     # Initial temperature distribution
-    # u = init_temperature(
-    #     cfg=cfg,
-    #     bcs=u_bcs,
-    #     shape=DomainShape.LINEAR,
-    #     solid_temp=min_temp,
-    #     liquid_temp=max_temp,
-    # )
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_SOLID,
+        solid_temp=min_temp,
+        liquid_temp=max_temp,
+    )
+
+    # Initial stream function, vorticity and velocity fields
+    sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geom=geometry)
+    v_x, v_y = initialize_velocity(geom=geometry)
+
     dim_u = u * delta_u + u_ref
-    init_delta = get_mushy_zone_temperature_range(u=dim_u, u_pt=u_pt)
-
-    print(f"Initial mushy zone temperature range: {max(init_delta):.2f}")
-
     plot_temperature(
         u=dim_u,
         cfg=cfg,
@@ -107,39 +88,11 @@ if __name__ == "__main__":
         max_temp=max_temp + ABS_ZERO,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
+        # x_min=0.2,
+        # x_max=0.4,
+        # y_min=0.0,
+        # y_max=0.2,
     )
-
-    # Stream function boundary conditions
-    sf_bcs = BoundaryConditions(
-        top=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_x,
-            value_func=lambda t, n: np.zeros(n),
-        ),
-        right=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: np.zeros(n),
-        ),
-        bottom=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_x,
-            value_func=lambda t, n: np.zeros(n),
-        ),
-        left=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_y,
-            value_func=lambda t, n: np.zeros(n),
-        ),
-    )
-
-    # Initial stream function, vorticity and velocity fields
-    # sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geom=geometry)
-    # v_x, v_y = initialize_velocity(geom=geometry)
-
-    sf = data["sf"]
-    w = data["w"]
 
     heat_transfer_solver = HeatTransferSolver(
         cfg=cfg,
@@ -159,115 +112,53 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        convective_term_form=ConvectiveTermForm.UPWIND,
+        vorticity_bc_order=2,
     )
 
-    delta = 0.025, 0.025
+    print((min_temp - u_ref) / delta_u)
+    delta = 0.008, 0.008
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
-        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        # delta = get_mushy_zone_temperature_range(u=u, u_pt=cfg.u_pt_nd, n_nodes=3)
-        sf[:, :], w[:, :] = navier_solver.solve(
-            w=w, sf=sf, u=u, delta=0.005, time=t
-        )
+        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
+
+        t_min = t / 60
+        if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15, 17, 19}:
+            print("bruh")
+            np.savez_compressed(f"../data/gallium/test/u_{n}.npz", u=u)
 
         # if t == 800.0 or t == 1575:
         #     print("bruh")
         #     np.savez_compressed(f"../data/octodecane/test/u_{n}.npz", u=u)
-        if t == 2340:
-            print("bruh")
-            np.savez_compressed(
-                f"../data/water_freezing/after_freezing.npz", u=u, sf=sf, w=w
-            )
+        # if t == 2340:
+        #     print("bruh")
+        #     np.savez_compressed(
+        #         f"../data/water_freezing/after_freezing_201x201.npz", u=u, sf=sf, w=w
+        #     )
+
         if n % cfg.save_interval == 0:
             u_dim = u * delta_u + u_ref
             sf_dim = sf * v * l
             # calculate_velocity_from_sf(sf_dim, v_x, v_y, dx, dy)
 
-            # from matplotlib import pyplot as plt
-            #
-            # speed = np.sqrt(v_x**2 + v_y**2)
-            #
-            # X, Y = geometry.mesh_grid
-            # plt.figure(figsize=(8, 6))
-            # ax = plt.axes(
-            #     xlim=(0, cfg.geometry.width),
-            #     ylim=(0, cfg.geometry.height),
-            #     xlabel="x, м",
-            #     ylabel="y, м",
-            # )
-            # contour = plt.contourf(
-            #     X,
-            #     Y,
-            #     speed,
-            #     25,
-            #     cmap="viridis",
-            #     extend="both",
-            # )
-            # cbar = plt.colorbar(contour)
-            #
-            # X_b, Y_b = get_phase_trans_boundary(u=u_dim, cfg=cfg)
-            # plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
-            # ax.legend()
-            #
-            # plt.show()
-            #
-            # from matplotlib import pyplot as plt
-            #
-            # diff = u - cfg.u_pt_nd
-
-            # norm_coeff = 2.0 / (np.sqrt(2 * np.pi) * (delta[0] + delta[1]))
-            # latent = np.where(
-            #     diff <= 0,
-            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[0]**2)),
-            #     norm_coeff * np.exp(-(diff**2) / (2 * delta[1]**2)),
-            # )
-            #
-            # latent = np.where(abs(diff) <= min(delta), 0.5 / min(delta), 0.0)
-
-            # print(delta[0], delta[1])
-
-            # latent = np.exp(-(diff ** 2) / (2 * delta[0] ** 2)) / (
-            #     np.sqrt(2 * np.pi) * delta[0]
-            # )
-            # X, Y = geometry.mesh_grid
-            # plt.figure(figsize=(8, 6))
-            # ax = plt.axes(
-            #     xlim=(0, cfg.geometry.width),
-            #     ylim=(0, cfg.geometry.height),
-            #     xlabel="x, м",
-            #     ylabel="y, м",
-            # )
-            # contour = plt.contourf(
-            #     X,
-            #     Y,
-            #     latent,
-            #     25,
-            #     cmap="viridis",
-            #     extend="both",
-            # )
-            # cbar = plt.colorbar(contour)
-            #
-            # X_b, Y_b = get_phase_trans_boundary(u=u_dim, cfg=cfg)
-            # plt.scatter(X_b, Y_b, s=1, linewidths=0.1, color="r", label="Граница ф.п.")
-            # ax.legend()
-            #
-            # plt.show()
-
-            # plot_temperature(
-            #     u=u_dim,
-            #     cfg=cfg,
-            #     time=t,
-            #     graph_id=n,
-            #     plot_boundary=True,
-            #     show_graph=False,
-            #     min_temp=min_temp + ABS_ZERO,
-            #     max_temp=max_temp + ABS_ZERO,
-            #     actual_temp_units=TemperatureUnit.KELVIN,
-            #     display_temp_units=TemperatureUnit.CELSIUS,
-            # )
+            plot_temperature(
+                u=u_dim,
+                cfg=cfg,
+                time=t,
+                graph_id=n,
+                plot_boundary=True,
+                show_graph=False,
+                min_temp=min_temp + ABS_ZERO,
+                max_temp=max_temp + ABS_ZERO,
+                actual_temp_units=TemperatureUnit.KELVIN,
+                display_temp_units=TemperatureUnit.CELSIUS,
+                # x_min=0.2,
+                # x_max=0.4,
+                # y_min=0.0,
+                # y_max=0.2,
+            )
             # plot_stream_function(
             #     stream_function=sf_dim,
             #     geometry=geometry,
@@ -301,7 +192,3 @@ if __name__ == "__main__":
             #     f"Maximum abs. stream function value in the solid phase: {max_sf:.2e} at ({sf_ind[0] * dy:.3f}, {sf_ind[1] * dx:.3f})."
             # )
             print()
-
-    np.savez_compressed("../data/water_freezing/freeze.npz", u=u, sf=sf, w=w)
-    # print("Creating animation...")
-    # create_gif_from_images(output_filename="exp5", duration=200)
