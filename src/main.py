@@ -15,7 +15,6 @@ from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrection
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.heat_transfer.utils import TemperatureUnit
 from src.heat_transfer.plotting import plot_temperature
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
@@ -84,14 +83,6 @@ if __name__ == "__main__":
         graph_id=0,
         plot_boundary=True,
         show_graph=True,
-        min_temp=min_temp + ABS_ZERO,
-        max_temp=max_temp + ABS_ZERO,
-        actual_temp_units=TemperatureUnit.KELVIN,
-        display_temp_units=TemperatureUnit.CELSIUS,
-        # x_min=0.2,
-        # x_max=0.4,
-        # y_min=0.0,
-        # y_max=0.2,
     )
 
     heat_transfer_solver = HeatTransferSolver(
@@ -150,14 +141,6 @@ if __name__ == "__main__":
                 graph_id=n,
                 plot_boundary=True,
                 show_graph=False,
-                min_temp=min_temp + ABS_ZERO,
-                max_temp=max_temp + ABS_ZERO,
-                actual_temp_units=TemperatureUnit.KELVIN,
-                display_temp_units=TemperatureUnit.CELSIUS,
-                # x_min=0.2,
-                # x_max=0.4,
-                # y_min=0.0,
-                # y_max=0.2,
             )
             # plot_stream_function(
             #     stream_function=sf_dim,
