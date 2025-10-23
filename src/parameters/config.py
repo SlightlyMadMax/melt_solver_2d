@@ -26,6 +26,9 @@ class ExperimentConfig(BaseModel, FileIOMixin):
     delta: Optional[float] = Field(
         None, gt=0.0, description="Half of the mushy zone temperature range [K]."
     )
+    delta_flow: Optional[float] = Field(
+        None, gt=0.0, description="Half of the mushy zone temperature range used in the flow computations [K]."
+    )
     epsilon: float = Field(
         ...,
         gt=0.0,
@@ -34,14 +37,6 @@ class ExperimentConfig(BaseModel, FileIOMixin):
 
     # — Material properties —
     material_props: MaterialProperties = Field(..., description="Material properties")
-
-    # — output control —
-    output_dir: Optional[DirectoryPath] = Field(
-        None, description="Where to dump results"
-    )
-    save_interval: Optional[PositiveInt] = Field(
-        None, description="Steps between saves"
-    )
 
     @cached_property
     def scaled_grid_steps(self) -> Tuple[float, float, float]:
@@ -73,6 +68,15 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         if self.delta is not None:
             return self.delta / self.delta_u
+        return None
+
+    @property
+    def delta_flow_nd(self) -> Optional[float]:
+        """
+        1/2 of nondimensional mushy zone temperature range used in flow computations.
+        """
+        if self.delta_flow is not None:
+            return self.delta_flow / self.delta_u
         return None
 
     @cached_property
