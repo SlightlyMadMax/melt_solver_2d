@@ -112,7 +112,6 @@ u = init_temperature_with_interface(
 plot_temperature(
     u=u * cfg.delta_u + cfg.u_ref,
     cfg=cfg,
-    time=0.0,
     graph_id=0,
     plot_boundary=True,
     show_graph=True,
@@ -157,7 +156,6 @@ for i in range(1, geometry.n_t + 1):
         plot_temperature(
             u=u * cfg.delta_u + cfg.u_ref,
             cfg=cfg,
-            time=t,
             graph_id=i,
             plot_boundary=True,
             show_graph=False,

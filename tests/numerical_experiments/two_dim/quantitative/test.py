@@ -80,14 +80,14 @@ u[0, :] = min_temp
 u[:, 0] = min_temp
 u = (u - cfg.u_ref) / cfg.delta_u
 
-
+save_interval = 1440
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
     t = n * geometry.dt
     if not fixed_delta:
         delta = get_mushy_zone_temperature_range(u, u_pt=cfg.u_pt_nd, n_nodes=1)
     u[:, :] = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
-    if n % cfg.save_interval == 0:
+    if n % save_interval == 0:
         print(
             f"Modelling Time: {int(t / 3600)} hours, "
             f"Elapsed Time: {(time.perf_counter() - start_time) / 60:.2f} min., "
@@ -101,7 +101,6 @@ u_dim = u * cfg.delta_u + cfg.u_ref
 plot_temperature(
     u=u_dim,
     cfg=cfg,
-    time=geometry.n_t * geometry.dt,
     graph_id=geometry.n_t,
     plot_boundary=True,
     show_graph=True,

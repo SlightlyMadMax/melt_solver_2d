@@ -91,7 +91,6 @@ cfg = ExperimentConfig(
     l=geometry.max_dimension,
     delta=delta,
     epsilon=1e-6,
-    save_interval=int(60 * 60 / geometry.dt),
 )
 gamma, residual = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
 print(f"Gamma: {gamma}, residual: {residual}.\n")
@@ -134,6 +133,7 @@ else:
 boundary = [s_0]
 time_arr = [t_init]
 i = int(geometry.n_x / 2)
+save_interval = int(60 * 60 / geometry.dt)
 
 start_time = time.perf_counter()
 for n in range(1, geometry.n_t + 1):
@@ -146,9 +146,9 @@ for n in range(1, geometry.n_t + 1):
 
     u[:, :] = heat_transfer_solver.solve(u=u, sf=np.zeros_like(u), time=t, delta=delta)
 
-    if n % cfg.save_interval == 0:
+    if n % save_interval == 0:
         time_arr.append(t + t_init)
-        print(f"ДЕНЬ: {int(n / cfg.save_interval)}")
+        print(f"ДЕНЬ: {int(n / save_interval)}")
         dy = geometry.dy
         u_pt = cfg.u_pt_nd
         s_real = gamma * t**0.5
