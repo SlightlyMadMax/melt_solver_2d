@@ -6,6 +6,8 @@ from numba import njit
 from scipy.special import erf
 from numpy.typing import NDArray
 
+from src.parameters.config import ExperimentConfig
+
 
 class VorticityBCMixin:
     @staticmethod
@@ -70,9 +72,9 @@ def calculate_velocity_from_sf(
     sf: NDArray[np.float64],
     v_x: NDArray[np.float64],
     v_y: NDArray[np.float64],
-    dx: float,
-    dy: float,
+    cfg: ExperimentConfig,
 ):
+    dx, dy, _ = cfg.scaled_grid_steps
     inv_2dx = 1.0 / (2.0 * dx)
     inv_2dy = 1.0 / (2.0 * dy)
 

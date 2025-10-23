@@ -32,13 +32,12 @@ u = data["u"]
 sf = data["sf"]
 w = data["w"]
 u_dim = u * delta_u + u_ref
-sf_dim = sf * v * l
 v_x, v_y = initialize_velocity(geom=geometry)
-calculate_velocity_from_sf(sf_dim, v_x, v_y, geometry.dx, geometry.dy)
+calculate_velocity_from_sf(sf, v_x, v_y, cfg)
 
 plot_velocity_field(
-    v_x,
-    v_y,
+    v_x * v,
+    v_y * v,
     u_dim,
     cfg,
     111025,
