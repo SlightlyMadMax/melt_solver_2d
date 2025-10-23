@@ -79,12 +79,13 @@ def plot_velocity_field(
 
 def plot_stream_function(
     stream_function: NDArray[np.float64],
-    geometry: DomainGeometry,
+    cfg: ExperimentConfig,
     graph_id: int,
     show_graph: bool = True,
     directory: str = "../graphs/stream_function/",
     equal_aspect: Optional[bool] = True,
 ):
+    geometry: DomainGeometry = cfg.geometry
     X, Y = geometry.mesh_grid
 
     plt.figure(figsize=(8, 6))
