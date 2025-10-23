@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.utils.thomas import solve_tridiagonal
+from src.core.solvers.tridiagonal_solver import solve_tridiagonal
 
 if TYPE_CHECKING:
     from src.parameters.config import ExperimentConfig
