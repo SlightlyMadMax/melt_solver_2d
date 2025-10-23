@@ -58,7 +58,7 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
 
-    def _prepare(self, sf: np.ndarray, delta: float | None = None):
+    def _prepare(self, sf: np.ndarray, delta: float):
         self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         self.compute_effective_properties(u=self._iter_u, delta=delta)
 
@@ -67,14 +67,14 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self,
         u: NDArray[np.float64],
         sf: NDArray[np.float64],
-        delta: float | None = None,
+        delta: float,
         time: float = 0.0,
     ) -> None: ...
 
     def compute_effective_properties(
         self,
         u: NDArray[np.float64],
-        delta: Optional[float] = None,
+        delta: float,
     ) -> None:
         step_fn = get_step_fn(self.step_scheme)
         delta_fn = get_delta_fn(self.delta_scheme)
@@ -87,8 +87,6 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         latent_heat_nd = 1.0 / self.cfg.stefan_number
         k_solid_nd = props.thermal_conductivity_solid / k_ref
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
-
-        delta = self.cfg.delta_nd if delta is None else delta
 
         self._compute_effective_properties(
             c_eff=self._c_eff,
@@ -147,8 +145,8 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
     def solve_linear(
         self,
         u: np.ndarray,
-        sf: Optional[np.ndarray] = None,
-        delta: float | None = None,
+        delta: float,
+        sf: np.ndarray,
         time: float = 0.0,
     ) -> None:
         """
