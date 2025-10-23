@@ -35,7 +35,6 @@ def _convert_temp_in_display_units(
 def plot_temperature(
     u: NDArray[np.float64],
     cfg: ExperimentConfig,
-    time: float,
     graph_id: int,
     actual_temp_units: TemperatureUnit = TemperatureUnit.KELVIN,
     display_temp_units: TemperatureUnit = TemperatureUnit.CELSIUS,
@@ -63,7 +62,6 @@ def plot_temperature(
 
     :param u: A 2D numpy array of temperature values across the computational domain.
     :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
-    :param time: The simulation time at which the temperature is being plotted.
     :param graph_id: Unique identifier for the graph, used in the saved file name.
     :param actual_temp_units: The unit of the temperature values in `u` (default is Kelvin).
     :param display_temp_units: The unit to display in the plot (default is Celsius).
