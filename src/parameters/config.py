@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Optional, Tuple
 
 import numpy as np
-from pydantic import BaseModel, Field, PositiveInt, DirectoryPath
+from pydantic import BaseModel, Field
 
 from src.core.constants import G
 from src.core.geometry import DomainGeometry
