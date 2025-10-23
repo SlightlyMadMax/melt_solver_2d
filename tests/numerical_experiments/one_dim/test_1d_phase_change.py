@@ -4,11 +4,7 @@ import numpy as np
 import os
 
 from src.convective_operators import ConvectiveTermForm
-from src.core.boundary_conditions import (
-    BoundaryConditionType,
-    BoundaryConditions,
-    BoundaryCondition,
-)
+from src.core.boundary_conditions import BoundaryConditions
 from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
@@ -18,6 +14,10 @@ from src.heat_transfer.coefficient_smoothing.mushy_zone import (
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
+from src.utils.boundary_conditions import (
+    const_dirichlet_condition,
+    const_neumann_condition,
+)
 from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
     calculate_gamma,
     get_analytical_solution,
@@ -80,6 +80,7 @@ geometry = DomainGeometry(
     n_y=501,
     n_t=6 * 60 * 24,
 )
+n_x, n_y = geometry.n_x, geometry.n_y
 
 cfg = ExperimentConfig(
     geometry=geometry,
@@ -97,26 +98,10 @@ print(f"Gamma: {gamma}, residual: {residual}.\n")
 print(cfg)
 
 bcs = BoundaryConditions(
-    top=BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_x,
-        value_func=lambda t, n: (max_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
-    ),
-    right=BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_y,
-        flux_func=lambda t, n: np.zeros(n),
-    ),
-    bottom=BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
-    ),
-    left=BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_y,
-        flux_func=lambda t, n: np.zeros(n),
-    ),
+    top=const_dirichlet_condition(n_x, value=(max_temp - cfg.u_ref) / cfg.delta_u),
+    right=const_neumann_condition(n_y, value=0.0),
+    bottom=const_dirichlet_condition(n_x, value=(min_temp - cfg.u_ref) / cfg.delta_u),
+    left=const_neumann_condition(n_y, value=0.0),
 )
 
 heat_transfer_solver = HeatTransferSolver(

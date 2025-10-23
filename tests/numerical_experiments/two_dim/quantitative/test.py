@@ -5,11 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from src.convective_operators import ConvectiveTermForm
-from src.core.boundary_conditions import (
-    BoundaryConditions,
-    BoundaryCondition,
-    BoundaryConditionType,
-)
+from src.core.boundary_conditions import BoundaryConditions
 from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
@@ -21,6 +17,10 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
+from src.utils.boundary_conditions import (
+    const_neumann_condition,
+    const_dirichlet_condition,
+)
 from src.utils.time_utils import get_remaining_time
 from tests.numerical_experiments.two_dim.quantitative.analytical_solver import (
     StefanCornerSolver,
@@ -52,30 +52,15 @@ print(cfg)
 
 geometry: DomainGeometry = cfg.geometry
 
-max_temp = 273.151
+n_x, n_y = geometry.n_x, geometry.n_y
+max_temp = 273.2
 min_temp = 268.15
 
 bcs = BoundaryConditions(
-    top=BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_x,
-        flux_func=lambda t, n: np.zeros(n),
-    ),
-    right=BoundaryCondition(
-        boundary_type=BoundaryConditionType.NEUMANN,
-        n=geometry.n_y,
-        flux_func=lambda t, n: np.zeros(n),
-    ),
-    bottom=BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_x,
-        value_func=lambda t, n: (min_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
-    ),
-    left=BoundaryCondition(
-        boundary_type=BoundaryConditionType.DIRICHLET,
-        n=geometry.n_y,
-        value_func=lambda t, n: (min_temp - cfg.u_ref) / cfg.delta_u * np.ones(n),
-    ),
+    top=const_neumann_condition(n_x, value=0.0),
+    right=const_neumann_condition(n_y, value=0.0),
+    bottom=const_dirichlet_condition(n_x, value=(min_temp - cfg.u_ref) / cfg.delta_u),
+    left=const_dirichlet_condition(n_y, value=(min_temp - cfg.u_ref) / cfg.delta_u),
 )
 
 heat_transfer_solver = HeatTransferSolver(
