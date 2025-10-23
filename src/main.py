@@ -108,12 +108,12 @@ if __name__ == "__main__":
     )
 
     print((min_temp - u_ref) / delta_u)
-    delta = 0.008, 0.008
+    delta = 0.008
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t):
         t = n * geometry.dt
         u[:, :] = heat_transfer_solver.solve(u=u, sf=sf, delta=delta, time=t)
-        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=0.008, time=t)
+        sf[:, :], w[:, :] = navier_solver.solve(w=w, sf=sf, u=u, delta=delta, time=t)
 
         t_min = t / 60
         if t_min in {2.0, 3.0, 6.0, 8.0, 10.0, 12.5, 15, 17, 19}:

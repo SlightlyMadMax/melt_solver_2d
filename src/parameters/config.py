@@ -23,11 +23,8 @@ class ExperimentConfig(BaseModel, FileIOMixin):
     l: float = Field(..., gt=0.0, description="Characteristic length [m].")
 
     # — Smoothing parameters —
-    u_solid: Optional[float] = Field(
-        None, gt=0.0, description="Solid phase temperature [K]."
-    )
-    u_liquid: Optional[float] = Field(
-        None, gt=0.0, description="Liquid phase temperature [K]."
+    delta: Optional[float] = Field(
+        None, gt=0.0, description="Half of the mushy zone temperature range [K]."
     )
     epsilon: float = Field(
         ...,
@@ -70,30 +67,12 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return (self.material_props.u_pt - self.u_ref) / self.delta_u
 
     @property
-    def delta_left_nd(self) -> Optional[float]:
-        """
-        Nondimensional mushy zone temperature range in the solid region.
-        """
-        if self.u_solid is not None:
-            return (self.material_props.u_pt - self.u_solid) / self.delta_u
-        return None
-
-    @property
-    def delta_right_nd(self) -> Optional[float]:
-        """
-        Nondimensional mushy zone temperature range in the liquid region.
-        """
-        if self.u_liquid is not None:
-            return (self.u_liquid - self.material_props.u_pt) / self.delta_u
-        return None
-
-    @property
     def delta_nd(self) -> Optional[float]:
         """
-        Nondimensional mushy zone temperature range.
+        1/2 of nondimensional mushy zone temperature range.
         """
-        if self.delta_left_nd is not None and self.delta_right_nd is not None:
-            return 2.0 * max(self.delta_left_nd, self.delta_right_nd)
+        if self.delta is not None:
+            return self.delta / self.delta_u
         return None
 
     @cached_property

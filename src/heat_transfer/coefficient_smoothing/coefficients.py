@@ -13,7 +13,6 @@ class StepScheme(Enum):
 
 
 class DeltaScheme(Enum):
-    GAUSS_ASYM = "gauss_asym"
     GAUSS = "gauss"
     HYPER = "hyper"
     PARABOLIC = "parabolic"
@@ -51,23 +50,6 @@ def step_const(u: float, u0: float, delta: float) -> float:
     elif diff <= -delta:
         return 0.0
     return 0.5
-
-
-@njit
-def delta_gauss_asym(
-    u: float, u0: float, delta_left: float, delta_right: float
-) -> float:
-    diff = u - u0
-    norm_coeff = 2.0 / (math.sqrt(2 * math.pi) * (delta_left + delta_right))
-
-    if diff <= 0:  # Solid side (u <= u0)
-        if delta_left <= 0:
-            return 0.0
-        return norm_coeff * math.exp(-(diff**2) / (2 * delta_left**2))
-    else:  # Liquid side (u > u0)
-        if delta_right <= 0:
-            return 0.0
-        return norm_coeff * math.exp(-(diff**2) / (2 * delta_right**2))
 
 
 @njit
@@ -116,7 +98,6 @@ def get_delta_fn(
     | Callable[[float, float, float, float], float]
 ):
     return {
-        DeltaScheme.GAUSS_ASYM: delta_gauss_asym,
         DeltaScheme.GAUSS: delta_gauss,
         DeltaScheme.HYPER: delta_hyper,
         DeltaScheme.PARABOLIC: delta_parabolic,

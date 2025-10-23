@@ -46,7 +46,6 @@ if delta == "":
     fixed_delta = False
 else:
     delta = float(delta) / cfg.delta_u
-    delta = delta, delta
     fixed_delta = True
 
 print(cfg)
@@ -88,7 +87,7 @@ heat_transfer_solver = HeatTransferSolver(
     tolerance=1e-6,
     urf=1.0,
     step_scheme=StepScheme.CONST,
-    delta_scheme=DeltaScheme.GAUSS_ASYM,
+    delta_scheme=DeltaScheme.GAUSS,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
