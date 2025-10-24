@@ -7,7 +7,7 @@ from src.core.geometry import DomainGeometry
 
 
 def initialize_stream_function(
-    geom: DomainGeometry, bcs: BoundaryConditions
+    geometry: DomainGeometry, bcs: BoundaryConditions
 ) -> np.ndarray:
     """
     Initialize the stream function for the computational domain.
@@ -15,12 +15,12 @@ def initialize_stream_function(
     The stream function is set to zero across the entire grid, which serves as the
     initial condition for solving fluid flow problems.
 
-    :param geom: DomainGeometry object specifying the dimensions of the computational domain.
+    :param geometry: DomainGeometry object specifying the dimensions of the computational domain.
     :param bcs: Boundary conditions.
     :return: A 2D numpy array of shape (n_y, n_x) filled with zeros, representing
              the initial stream function values.
     """
-    sf = np.zeros((geom.n_y, geom.n_x))
+    sf = np.zeros((geometry.n_y, geometry.n_x))
 
     # apply bcs
     if bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
@@ -35,19 +35,19 @@ def initialize_stream_function(
     return sf
 
 
-def initialize_vorticity(geom: DomainGeometry) -> np.ndarray:
+def initialize_vorticity(geometry: DomainGeometry) -> np.ndarray:
     """
     Initialize the vorticity for the computational domain.
 
     The vorticity is set to zero across the entire grid, which serves as the initial
     condition for solving fluid dynamics problems.
 
-    :param geom: DomainGeometry object specifying the dimensions of the computational domain.
+    :param geometry: DomainGeometry object specifying the dimensions of the computational domain.
     :return: A 2D numpy array of shape (n_y, n_x) filled with zeros, representing
              the initial vorticity values.
     """
-    return np.zeros((geom.n_y, geom.n_x))
+    return np.zeros((geometry.n_y, geometry.n_x))
 
 
-def initialize_velocity(geom: DomainGeometry) -> Tuple[np.ndarray, np.ndarray]:
-    return np.zeros((geom.n_y, geom.n_x)), np.zeros((geom.n_y, geom.n_x))
+def initialize_velocity(geometry: DomainGeometry) -> Tuple[np.ndarray, np.ndarray]:
+    return np.zeros((geometry.n_y, geometry.n_x)), np.zeros((geometry.n_y, geometry.n_x))

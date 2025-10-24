@@ -73,9 +73,9 @@ if __name__ == "__main__":
     )
 
     # Initial stream function, vorticity and velocity fields
-    sf = initialize_stream_function(geom=geometry, bcs=sf_bcs)
-    w = initialize_vorticity(geom=geometry)
-    v_x, v_y = initialize_velocity(geom=geometry)
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
 
     dim_u = u * delta_u + u_ref
     plot_temperature(
