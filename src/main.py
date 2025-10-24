@@ -33,23 +33,19 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/gallium/config.json"
+        "../parameter_sets/octadecane/config.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
-    dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
+    dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.45
-    max_temp = 311.15
+    min_temp = 301.2426
+    max_temp = 310.07
 
     material_props: MaterialProperties = cfg.material_props
 
     delta_u = cfg.delta_u
     u_ref = cfg.u_ref
-    u_pt = material_props.u_pt
-    l = cfg.l
-    v = cfg.v
-    dt_scaled = dt * v / l
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
@@ -97,7 +93,7 @@ if __name__ == "__main__":
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         bc_order=1,
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
@@ -108,13 +104,12 @@ if __name__ == "__main__":
         sf_bcs=sf_bcs,
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
-        convective_term_form=ConvectiveTermForm.UPWIND,
+        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.AMG,
         vorticity_bc_order=1,
     )
 
-    logger.info((min_temp - u_ref) / delta_u)
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
     log_and_plot_interval = 60
     log_and_plot_at = set(
@@ -125,19 +120,9 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/gallium/test",
+        checkpoints_dir="../data/octadecane/test",
         logger=logger,
-        save_at={
-            int(2.0 * 60 / dt),
-            int(3.0 * 60 / dt),
-            int(6.0 * 60 / dt),
-            int(8.0 * 60 / dt),
-            int(10.0 * 60 / dt),
-            int(12.5 * 60 / dt),
-            int(15 * 60 / dt),
-            int(17 * 60 / dt),
-            int(19 * 60 / dt),
-        },
+        save_at={int(800 / dt), int(1575 / dt)},
         log_at=log_and_plot_at,
         plot_at=log_and_plot_at,
     )
