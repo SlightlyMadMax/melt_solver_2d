@@ -233,14 +233,14 @@ class BCCorrectionNVSolver:
         sum_neighbors = a_e + a_w + a_n + a_s
 
         lam_main = -2.0 * inv_dx2 - 2.0 * inv_dy2
-        main_diag = np.full(size, lam_main, dtype=float)
+        main_diag = np.full(size, lam_main)
 
         main_diag -= (0.5 * tau * sum_neighbors).ravel()
 
         main_diag -= rho_term_flat
 
-        side_diag = np.zeros(size - 1, dtype=float)
-        up_down_diag = np.zeros(size - inner_n_x, dtype=float)
+        side_diag = np.zeros(size - 1)
+        up_down_diag = np.zeros(size - inner_n_x)
 
         base = 0
         for r in range(inner_n_y):
