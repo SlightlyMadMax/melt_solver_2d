@@ -235,7 +235,7 @@ class BCCorrectionNVSolver:
         lam_main = -2.0 * inv_dx2 - 2.0 * inv_dy2
         main_diag = np.full(size, lam_main)
 
-        main_diag -= (0.5 * tau * sum_neighbors).ravel()
+        main_diag -= (tau_half * sum_neighbors).ravel()
 
         main_diag -= rho_term_flat
 
@@ -246,13 +246,13 @@ class BCCorrectionNVSolver:
         for r in range(inner_n_y):
             if inner_n_x > 1:
                 idx = base + np.arange(inner_n_x - 1)
-                side_diag[idx] = inv_dx2 + 0.5 * tau * a_e[r, :-1]
+                side_diag[idx] = inv_dx2 + tau_half * a_e[r, :-1]
             base += inner_n_x
 
         base = 0
         for r in range(inner_n_y - 1):
             idx = base + np.arange(inner_n_x)
-            up_down_diag[idx] = inv_dy2 + 0.5 * tau * a_n[r, :]
+            up_down_diag[idx] = inv_dy2 + tau_half * a_n[r, :]
             base += inner_n_x
 
         diagonals = [main_diag, side_diag, side_diag, up_down_diag, up_down_diag]
