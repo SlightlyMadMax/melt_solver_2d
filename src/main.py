@@ -10,6 +10,7 @@ from src.fluid_dynamics.init_values import (
     initialize_vorticity,
     initialize_velocity,
 )
+from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import init_temperature, DomainShape
@@ -108,7 +109,9 @@ if __name__ == "__main__":
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.UPWIND,
-        vorticity_bc_order=2,
+        vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
+        stream_function_solver_name=StreamFunctionSolverName.AMG,
+        vorticity_bc_order=1,
     )
 
     logger.info((min_temp - u_ref) / delta_u)

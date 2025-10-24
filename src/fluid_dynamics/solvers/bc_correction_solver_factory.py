@@ -31,6 +31,8 @@ class BCCorrectionNVSolver:
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.DIVERGENT_CENTRAL,
+        vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
+        stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.AMG,
         vorticity_bc_order: int = 1,
     ):
         self.cfg = cfg
@@ -40,10 +42,10 @@ class BCCorrectionNVSolver:
         n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x
 
         vorticity_solver_class = VorticitySolverRegistry.get_solver_class(
-            solver_name=VorticitySolverName.PEACEMAN_RACHFORD
+            solver_name=vorticity_solver_name
         )
         stream_function_solver_class = StreamFunctionSolverRegistry.get_solver_class(
-            solver_name=StreamFunctionSolverName.AMG
+            solver_name=stream_function_solver_name
         )
 
         self.vorticity_solver = vorticity_solver_class(
