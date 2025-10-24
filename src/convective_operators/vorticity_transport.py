@@ -37,8 +37,7 @@ class VorticityTransportOperator(BaseConvectiveOperator):
         sf = parsed.sf
         u = parsed.u
         u_pt = parsed.u_pt
-        dx = self.cfg.geometry.dx / self.cfg.l
-        dy = self.cfg.geometry.dy / self.cfg.l
+        dx, dy, _ = self.cfg.scaled_grid_steps
 
         self.compute_velocity_from_sf(
             sf=sf,
