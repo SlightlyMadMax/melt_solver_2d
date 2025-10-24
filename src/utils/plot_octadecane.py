@@ -9,13 +9,13 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
 paths = sorted(
-    glob.glob("../../data/octodecane/test/u_*.npz"),
+    glob.glob("../../data/octadecane/test/u_*.npz"),
     key=lambda f: int(re.search(r"u_(\d+)", f).group(1)),
 )
 img = plt.imread("../../data/danaila.png")
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/octodecane/config.json"
+    "../../parameter_sets/octadecane/config.json"
 )
 geometry: DomainGeometry = cfg.geometry
 
