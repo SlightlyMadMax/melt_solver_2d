@@ -113,10 +113,7 @@ class FlowCorrectionNVSolver:
             time=time,
         )
         calculate_vorticity_from_sf(
-            sf=self._stream_function,
-            result=self._vorticity,
-            dy=self.cfg.geometry.dy / self.cfg.l,
-            dx=self.cfg.geometry.dx / self.cfg.l,
+            sf=self._stream_function, result=self._vorticity, cfg=self.cfg
         )
         return self._stream_function, self._vorticity
 

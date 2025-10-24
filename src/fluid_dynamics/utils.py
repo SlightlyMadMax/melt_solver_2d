@@ -51,9 +51,9 @@ def calculate_liquid_fraction(
 def calculate_vorticity_from_sf(
     sf: NDArray[np.float64],
     result: NDArray[np.float64],
-    dx: float,
-    dy: float,
+    cfg: ExperimentConfig,
 ):
+    dx, dy, _ = cfg.scaled_grid_steps
     inv_dx2 = 1.0 / dx**2
     inv_dy2 = 1.0 / dy**2
 
