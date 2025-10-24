@@ -9,8 +9,8 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
 paths = sorted(
-    glob.glob("../../data/octadecane/test/u_*.npz"),
-    key=lambda f: int(re.search(r"u_(\d+)", f).group(1)),
+    glob.glob("../../data/octadecane/test/checkpoint_*.npz"),
+    key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 img = plt.imread("../../data/danaila.png")
 
@@ -26,7 +26,7 @@ max_temp = 310.07
 fig, ax = plt.subplots()
 ax.imshow(img, extent=[0, geometry.width, 0, geometry.height])
 for file_path in paths:
-    n = int(re.search(r"u_(\d+)\.npz", file_path).group(1))
+    n = int(re.search(r"checkpoint_(\d+)\.npz", file_path).group(1))
     data = np.load(file_path)
     u = data["u"]
     X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
