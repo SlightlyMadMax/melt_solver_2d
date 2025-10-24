@@ -24,6 +24,6 @@
   "v": 0.016,
   "l": 0.038,
   "delta": null,
-  "epsilon": 0.0005,
-  "save_interval": 1000
+  "delta_flow": null,
+  "epsilon": 0.0005
 }
