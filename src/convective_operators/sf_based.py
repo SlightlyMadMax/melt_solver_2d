@@ -32,7 +32,9 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         try:
             parsed = SFBasedArgs(**kwargs)
         except ValidationError as e:
-            raise ValueError(f"Invalid arguments for StreamFunctionBasedConvectiveOperator: {e}")
+            raise ValueError(
+                f"Invalid arguments for StreamFunctionBasedConvectiveOperator: {e}"
+            )
 
         sf = parsed.sf
         u = parsed.u
@@ -98,7 +100,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
             conv_x[:] = 0.5 * (temp_x + conv_x)
             conv_y[:] = 0.5 * (temp_y + conv_y)
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
         if u is not None and u_pt is not None:
             self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
