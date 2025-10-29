@@ -56,7 +56,6 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         else:
             raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
-
     def compute_velocity_from_sf(self, sf: NDArray[np.float64]) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
