@@ -8,10 +8,11 @@ from src.parameters.config import ExperimentConfig
 
 
 class ConvectiveTermForm(Enum):
-    DIVERGENT_CENTRAL = "Divergent central"
-    NON_DIVERGENT_CENTRAL = "Non-divergent central"
+    DIVERGENT_CENTRAL = "Divergent Central"
+    NON_DIVERGENT_CENTRAL = "Non-Divergent Central"
     SYMMETRIC = "Symmetric"
-    UPWIND = "Upwind"
+    UPWIND_FC = "Upwind Face-Centered"
+    UPWIND_NC = "Upwind Node-Centered"
 
 
 class BaseConvectiveOperator(ABC):

@@ -41,8 +41,10 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
 
         self.compute_velocity_from_sf(sf=sf)
 
-        if self.form == ConvectiveTermForm.UPWIND:
-            self._compute_upwind_components(result_x=conv_x, result_y=conv_y)
+        if self.form == ConvectiveTermForm.UPWIND_FC:
+            self._compute_upwind_components_at_faces(result_x=conv_x, result_y=conv_y)
+        elif self.form == ConvectiveTermForm.UPWIND_NC:
+            self._compute_upwind_components_at_nodes(result_x=conv_x, result_y=conv_y)
         elif self.form == ConvectiveTermForm.DIVERGENT_CENTRAL:
             self._compute_div_components(result_x=conv_x, result_y=conv_y)
         elif self.form == ConvectiveTermForm.NON_DIVERGENT_CENTRAL:
@@ -68,7 +70,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         v_x[1:-1, 1:-1] = inv_2dy * (sf[2:, 1:-1] - sf[:-2, 1:-1])
         v_y[1:-1, 1:-1] = -inv_2dx * (sf[1:-1, 2:] - sf[1:-1, :-2])
 
-    def _compute_upwind_components(
+    def _compute_upwind_components_at_faces(
         self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
     ) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
@@ -99,6 +101,30 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[jm, im, 0] = inv_2dy * (vyp - np.abs(vyp))
         result_y[jm, im, 1] = inv_2dy * ((vyp + np.abs(vyp)) - (vym - np.abs(vym)))
         result_y[jm, im, 2] = -inv_2dy * (vym + np.abs(vym))
+
+    def _compute_upwind_components_at_nodes(
+        self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
+    ) -> None:
+        dx, dy, _ = self.cfg.scaled_grid_steps
+        v_x, v_y = self._v_x, self._v_y
+        inv_2dx = 1.0 / (2.0 * dx)
+        inv_2dy = 1.0 / (2.0 * dy)
+
+        jm, im = slice(1, -1), slice(1, -1)
+        ip, im2 = slice(2, None), slice(None, -2)
+        jp, jm2 = slice(2, None), slice(None, -2)
+
+        result_x[jm, im, 0] = inv_2dx * (v_x[jm, ip] - np.abs(v_x[jm, ip]))
+        result_x[jm, im, 1] = inv_2dx * (
+            (v_x[jm, ip] + np.abs(v_x[jm, ip])) - (v_x[jm, im2] - np.abs(v_x[jm, im2]))
+        )
+        result_x[jm, im, 2] = -inv_2dx * (v_x[jm, im2] + np.abs(v_x[jm, im2]))
+
+        result_y[jm, im, 0] = inv_2dy * (v_y[jp, im] - np.abs(v_y[jp, im]))
+        result_y[jm, im, 1] = inv_2dy * (
+            (v_y[jp, im] + np.abs(v_y[jp, im])) - (v_y[jm2, im] - np.abs(v_y[jm2, im]))
+        )
+        result_y[jm, im, 2] = -inv_2dy * (v_y[jm2, im] + np.abs(v_y[jm2, im]))
 
     def _compute_div_components(
         self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]

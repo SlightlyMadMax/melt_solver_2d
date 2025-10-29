@@ -17,7 +17,7 @@ class HeatTransferSolver:
         cfg: ExperimentConfig,
         bcs: BoundaryConditions,
         solver_name: HeatTransferSolverName = HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND,
+        convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND_FC,
         max_iters: int = 1,
         tolerance: float = 1e-6,
         urf: float = 1.0,
