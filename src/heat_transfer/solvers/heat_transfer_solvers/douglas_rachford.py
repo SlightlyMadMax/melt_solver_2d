@@ -13,9 +13,8 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
 
 @register_solver(HeatTransferSolverName.DOUGLAS_RACHFORD)
 class DouglasRachfordSolver(ADIHeatSolver):
-    def _compute_sweep_x_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_x_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_x_coeffs_jit(
             u=u,
             conv_x=self._conv_x,
@@ -32,9 +31,8 @@ class DouglasRachfordSolver(ADIHeatSolver):
             rhs=self._rhs_x,
         )
 
-    def _compute_sweep_y_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_y_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             u_old=u,
             u_prev=self._new_u,

@@ -35,9 +35,8 @@ class EnthalpySolver(ADIHeatSolver):
             ste * (self._iter_u - delta) + self._liquid_frac_old
         ) / (1.0 + 2.0 * delta * ste)
 
-    def _compute_sweep_x_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_x_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         if np.max(self._liquid_frac_old) <= 0.0:
             print("bruh")
             self._init_liquid_fraction()
@@ -62,9 +61,8 @@ class EnthalpySolver(ADIHeatSolver):
             rhs=self._rhs_x,
         )
 
-    def _compute_sweep_y_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_y_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             u=self._new_u,
             conv_x=self._conv_x,

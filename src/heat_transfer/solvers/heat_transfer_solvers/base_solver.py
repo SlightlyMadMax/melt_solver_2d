@@ -165,9 +165,8 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         """
         self._prepare(sf, delta)
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
-        dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps
 
-        self._compute_sweep_x_coeffs(u=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled)
+        self._compute_sweep_x_coeffs(u=u)
 
         self._new_u[:, :] = u
 
@@ -184,7 +183,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
 
         self.compute_effective_properties(u=self._new_u, delta=delta)
 
-        self._compute_sweep_y_coeffs(u=u, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled)
+        self._compute_sweep_y_coeffs(u=u)
 
         self._apply_boundary_conditions_y(time=time)
 

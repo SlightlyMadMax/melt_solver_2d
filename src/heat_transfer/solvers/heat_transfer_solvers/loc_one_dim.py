@@ -13,9 +13,8 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
 
 @register_solver(HeatTransferSolverName.LOC_ONE_DIM)
 class LocOneDimSolver(ADIHeatSolver):
-    def _compute_sweep_x_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_x_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_x_coeffs_jit(
             u=u,
             conv_x=self._conv_x,
@@ -30,9 +29,8 @@ class LocOneDimSolver(ADIHeatSolver):
             rhs=self._rhs_x,
         )
 
-    def _compute_sweep_y_coeffs(
-        self, u: np.ndarray, dt: float, dx: float, dy: float
-    ) -> None:
+    def _compute_sweep_y_coeffs(self, u: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             u=self._new_u,
             conv_y=self._conv_y,
@@ -111,9 +109,7 @@ class LocOneDimSolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a[i, j] = dt * (
-                    conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2
-                )
+                a[i, j] = dt * (conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2)
 
                 # Coefficient at T_{i, j}^{n + 1}
                 b[i, j] = 1.0 + dt * (
@@ -121,8 +117,6 @@ class LocOneDimSolver(ADIHeatSolver):
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c[i, j] = dt * (
-                    conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2
-                )
+                c[i, j] = dt * (conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2)
 
                 rhs[i, j] = u[j, i]
