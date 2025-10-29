@@ -39,6 +39,9 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         u_pt = parsed.u_pt
         dx, dy, _ = self.cfg.scaled_grid_steps
 
+        conv_x[:] = 0.0
+        conv_y[:] = 0.0
+
         self.compute_velocity_from_sf(
             sf=sf,
             v_x=self._v_x,
@@ -46,6 +49,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
             dx=dx,
             dy=dy,
         )
+
         if self.form == ConvectiveTermForm.UPWIND:
             self._compute_upwind_components(
                 v_x=self._v_x,
