@@ -28,7 +28,9 @@ class VorticityBasedConvectiveOperator(BaseConvectiveOperator):
         try:
             parsed = VorticityBasedArgs(**kwargs)
         except ValidationError as e:
-            raise ValueError(f"Invalid arguments for VorticityBasedConvectiveOperator: {e}")
+            raise ValueError(
+                f"Invalid arguments for VorticityBasedConvectiveOperator: {e}"
+            )
 
         w = parsed.w
         u = parsed.u
@@ -36,33 +38,21 @@ class VorticityBasedConvectiveOperator(BaseConvectiveOperator):
         dx = self.cfg.geometry.dx / self.cfg.l
         dy = self.cfg.geometry.dy / self.cfg.l
 
-        self._compute_vorticity_first_derivatives(
-            w=w, dw_dx=self._dw_dx, dw_dy=self._dw_dy, dx=dx, dy=dy
-        )
-        self._compute_convective_operator(
-            dw_dx=self._dw_dx,
-            dw_dy=self._dw_dy,
-            result_x=conv_x,
-            result_y=conv_y,
-            dx=dx,
-            dy=dy,
-        )
+        self._compute_vorticity_first_derivatives(w=w)
+        self._compute_convective_operator(result_x=conv_x, result_y=conv_y)
 
         if u is not None and u_pt is not None:
             self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
-    @staticmethod
-    def _compute_vorticity_first_derivatives(
-        w: NDArray[np.float64],
-        dw_dx: NDArray[np.float64],
-        dw_dy: NDArray[np.float64],
-        dx: float,
-        dy: float,
-    ) -> None:
+    def _compute_vorticity_first_derivatives(self, w: NDArray[np.float64]) -> None:
         """
         Compute first derivatives of vorticity using second-order accurate central differences in the interior and
         3-point one-sided (forward/backward) differences at the boundaries.
         """
+        dx, dy, _ = self.cfg.scaled_grid_steps
+        dw_dx = self._dw_dx
+        dw_dy = self._dw_dy
+
         inv_2dx = 1.0 / (2.0 * dx)
         inv_2dy = 1.0 / (2.0 * dy)
 
@@ -75,15 +65,14 @@ class VorticityBasedConvectiveOperator(BaseConvectiveOperator):
         dw_dy[0, :] = (-3.0 * w[0, :] + 4.0 * w[1, :] - w[2, :]) * inv_2dy
         dw_dy[-1, :] = (3.0 * w[-1, :] - 4.0 * w[-2, :] + w[-3, :]) * inv_2dy
 
-    @staticmethod
     def _compute_convective_operator(
-        dw_dx: NDArray[np.float64],
-        dw_dy: NDArray[np.float64],
-        dx: float,
-        dy: float,
+        self,
         result_x: NDArray[np.float64],
         result_y: NDArray[np.float64],
     ):
+        dx, dy, _ = self.cfg.scaled_grid_steps
+        dw_dx = self._dw_dx
+        dw_dy = self._dw_dy
         inv_4dx = 1.0 / (4.0 * dx)
         inv_4dy = 1.0 / (4.0 * dy)
 
