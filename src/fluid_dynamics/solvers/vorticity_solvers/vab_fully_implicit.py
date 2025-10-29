@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy.sparse import diags, csr_matrix
 from scipy.sparse.linalg import splu
 
-from src.convective_operators import EffectiveSFTransportOperator
+from src.convective_operators import VorticityBasedConvectiveOperator
 from src.core.geometry import DomainGeometry
 from src.core.solvers.base_solver import BaseSolver
 from src.parameters.config import ExperimentConfig
@@ -21,7 +21,7 @@ class VabFullyImplicitScheme(BaseSolver):
         super().__init__(cfg=cfg)
 
         self.cfg = cfg
-        self.convective_operator = EffectiveSFTransportOperator(cfg=self.cfg)
+        self.convective_operator = VorticityBasedConvectiveOperator(cfg=self.cfg)
 
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         # Pre-allocate some arrays that will be used in the calculations

@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 
 from src.convective_operators import (
     ConvectiveTermForm,
-    VorticityTransportOperator,
+    StreamFunctionBasedConvectiveOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
 from src.fluid_dynamics.solvers.stream_function_solvers import *
@@ -33,7 +33,7 @@ class IterativeNavierStokesSolver:
         self.max_iters = max_iters
         self.tolerance = tolerance
         self.urf = urf
-        convective_operator = VorticityTransportOperator(
+        convective_operator = StreamFunctionBasedConvectiveOperator(
             form=convective_term_form, cfg=cfg
         )
         n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x

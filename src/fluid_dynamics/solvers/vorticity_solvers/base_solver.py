@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from src.convective_operators import BaseConvectiveOperator, VorticityTransportOperator
+from src.convective_operators import BaseConvectiveOperator, StreamFunctionBasedConvectiveOperator
 from src.core.constants import ABS_ZERO
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
@@ -108,7 +108,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
     ):
         dx_scaled, dy_scaled, _ = self.cfg.scaled_grid_steps
 
-        if isinstance(self.convective_operator, VorticityTransportOperator):
+        if isinstance(self.convective_operator, StreamFunctionBasedConvectiveOperator):
             self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
         else:
             assert conv_w is not None

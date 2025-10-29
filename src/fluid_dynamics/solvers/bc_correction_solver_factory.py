@@ -7,7 +7,7 @@ from scipy import sparse
 
 from src.convective_operators import (
     ConvectiveTermForm,
-    VorticityTransportOperator,
+    StreamFunctionBasedConvectiveOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
@@ -36,7 +36,7 @@ class BCCorrectionNVSolver:
         vorticity_bc_order: int = 1,
     ):
         self.cfg = cfg
-        self.convective_operator = VorticityTransportOperator(
+        self.convective_operator = StreamFunctionBasedConvectiveOperator(
             cfg=cfg, form=convective_term_form
         )
         n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x

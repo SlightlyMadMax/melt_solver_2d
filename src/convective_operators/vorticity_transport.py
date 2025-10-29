@@ -11,7 +11,7 @@ from src.convective_operators.base_convective_operator import (
 from src.parameters.config import ExperimentConfig
 
 
-class VorticityTransportArgs(BaseModel):
+class SFBasedArgs(BaseModel):
     sf: np.ndarray
     u: Optional[np.ndarray] = None
     u_pt: Optional[float] = None
@@ -20,7 +20,7 @@ class VorticityTransportArgs(BaseModel):
         arbitrary_types_allowed = True
 
 
-class VorticityTransportOperator(BaseConvectiveOperator):
+class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
     def __init__(self, form: ConvectiveTermForm, cfg: ExperimentConfig):
         super().__init__(cfg=cfg)
         self.form = form
@@ -30,9 +30,9 @@ class VorticityTransportOperator(BaseConvectiveOperator):
 
     def __call__(self, conv_x, conv_y, **kwargs) -> None:
         try:
-            parsed = VorticityTransportArgs(**kwargs)
+            parsed = SFBasedArgs(**kwargs)
         except ValidationError as e:
-            raise ValueError(f"Invalid arguments for VorticityTransportOperator: {e}")
+            raise ValueError(f"Invalid arguments for StreamFunctionBasedConvectiveOperator: {e}")
 
         sf = parsed.sf
         u = parsed.u

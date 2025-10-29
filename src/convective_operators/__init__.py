@@ -1,3 +1,3 @@
 from .base_convective_operator import BaseConvectiveOperator, ConvectiveTermForm
-from .vorticity_transport import VorticityTransportOperator
-from .stream_function_transport import EffectiveSFTransportOperator
+from .vorticity_transport import StreamFunctionBasedConvectiveOperator
+from .stream_function_transport import VorticityBasedConvectiveOperator

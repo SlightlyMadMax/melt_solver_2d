@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 from scipy import sparse
 
 
-from src.convective_operators import EffectiveSFTransportOperator
+from src.convective_operators import VorticityBasedConvectiveOperator
 from src.core.boundary_conditions import BoundaryConditions
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
@@ -22,7 +22,7 @@ class FlowCorrectionNVSolver:
         sf_tolerance: float = 1e-6,
     ):
         self.cfg = cfg
-        self.convective_operator = EffectiveSFTransportOperator(cfg=self.cfg)
+        self.convective_operator = VorticityBasedConvectiveOperator(cfg=self.cfg)
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         nonlinearity_predictor_class = VorticitySolverRegistry.get_solver_class(

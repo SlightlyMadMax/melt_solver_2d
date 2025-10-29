@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 
 from src.convective_operators import (
     ConvectiveTermForm,
-    VorticityTransportOperator,
+    StreamFunctionBasedConvectiveOperator,
 )
 from src.core.boundary_conditions import BoundaryConditions
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
@@ -32,7 +32,7 @@ class HeatTransferSolver:
 
         solver_class = HeatTransferSolverRegistry.get_solver_class(solver_name)
 
-        self.convective_operator = VorticityTransportOperator(
+        self.convective_operator = StreamFunctionBasedConvectiveOperator(
             form=convective_term_form, cfg=cfg
         )
 
