@@ -53,11 +53,11 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         elif self.form == ConvectiveTermForm.NON_DIVERGENT_CENTRAL:
             self._compute_non_div_components(result_x=conv_x, result_y=conv_y)
         elif self.form == ConvectiveTermForm.SYMMETRIC:
-            self._compute_div_components(result_x=conv_x, result_y=conv_y)
-            temp_x, temp_y = np.copy(conv_x), np.copy(conv_y)
+            tmp_x, tmp_y = np.zeros_like(conv_x), np.zeros_like(conv_y)
+            self._compute_div_components(result_x=tmp_x, result_y=tmp_y)
             self._compute_non_div_components(result_x=conv_x, result_y=conv_y)
-            conv_x[:] = 0.5 * (temp_x + conv_x)
-            conv_y[:] = 0.5 * (temp_y + conv_y)
+            conv_x[:] = 0.5 * (tmp_x + conv_x)
+            conv_y[:] = 0.5 * (tmp_y + conv_y)
         else:
             raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
