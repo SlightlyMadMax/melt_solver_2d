@@ -1,6 +1,5 @@
 import numpy as np
 
-from typing import Optional
 from numpy.typing import NDArray
 from pydantic import ValidationError, BaseModel
 
@@ -10,8 +9,6 @@ from src.parameters.config import ExperimentConfig
 
 class VorticityBasedArgs(BaseModel):
     w: np.ndarray
-    u: Optional[np.ndarray] = None
-    u_pt: Optional[float] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -33,16 +30,9 @@ class VorticityBasedConvectiveOperator(BaseConvectiveOperator):
             )
 
         w = parsed.w
-        u = parsed.u
-        u_pt = parsed.u_pt
-        dx = self.cfg.geometry.dx / self.cfg.l
-        dy = self.cfg.geometry.dy / self.cfg.l
 
         self._compute_vorticity_first_derivatives(w=w)
         self._compute_convective_operator(result_x=conv_x, result_y=conv_y)
-
-        if u is not None and u_pt is not None:
-            self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     def _compute_vorticity_first_derivatives(self, w: NDArray[np.float64]) -> None:
         """

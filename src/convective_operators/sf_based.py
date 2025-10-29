@@ -1,6 +1,5 @@
 import numpy as np
 
-from typing import Optional
 from numpy.typing import NDArray
 from pydantic import BaseModel, ValidationError
 
@@ -13,8 +12,6 @@ from src.parameters.config import ExperimentConfig
 
 class SFBasedArgs(BaseModel):
     sf: np.ndarray
-    u: Optional[np.ndarray] = None
-    u_pt: Optional[float] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -37,8 +34,6 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
             )
 
         sf = parsed.sf
-        u = parsed.u
-        u_pt = parsed.u_pt
         dx, dy, _ = self.cfg.scaled_grid_steps
 
         conv_x[:] = 0.0
@@ -61,8 +56,6 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         else:
             raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
-        if u is not None and u_pt is not None:
-            self._restrict(conv_x=conv_x, conv_y=conv_y, u=u, u_pt=u_pt)
 
     def compute_velocity_from_sf(self, sf: NDArray[np.float64]) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
