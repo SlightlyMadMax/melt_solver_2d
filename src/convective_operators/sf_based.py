@@ -91,8 +91,8 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
                 dx=dx,
                 dy=dy,
             )
-            conv_x = 0.5 * (temp_x + conv_x)
-            conv_y = 0.5 * (temp_y + conv_y)
+            conv_x[:] = 0.5 * (temp_x + conv_x)
+            conv_y[:] = 0.5 * (temp_y + conv_y)
         else:
             raise NotImplementedError
 
