@@ -8,7 +8,7 @@ class VorticitySolverName(Enum):
     EXPLICIT = "Explicit"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
-    LOC_ONE_DIM = "Locally one-dimensional"
+    LOC_ONE_DIM = "Locally One-Dimensional"
     VABISHCHEVICH = "Vabishchevich"
 
 

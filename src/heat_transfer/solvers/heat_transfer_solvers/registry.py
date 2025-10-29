@@ -5,7 +5,7 @@ from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import BaseHeat
 
 
 class HeatTransferSolverName(Enum):
-    LOC_ONE_DIM = "Locally one-dimensional"
+    LOC_ONE_DIM = "Locally One-Dimensional"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
     ENTHALPY = "Enthalpy"
