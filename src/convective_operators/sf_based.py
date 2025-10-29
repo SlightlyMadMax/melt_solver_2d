@@ -118,8 +118,8 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
 
         This function calculates the velocity field using the relationship between
         the stream function and velocity components in 2D incompressible flow:
-            v_x = ∂(stream function) / ∂y
-            v_y = -∂(stream function) / ∂x
+            v_x =  d(stream function) / dy
+            v_y = -d(stream function) / dx
 
         The velocity is computed using central differences for interior points.
         At the boundary points, the velocity components are set to zero to enforce the no-slip boundary condition.
