@@ -149,38 +149,13 @@ for n in range(1, geometry.n_t + 1):
         print(f"ДЕНЬ: {int(n / save_interval)}")
         dy = geometry.dy
         u_pt = cfg.u_pt_nd
-        s_real = gamma * t**0.5
         diff = u - u_pt
         j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
-        um1, u0, up1, up2 = (
-            u[j - 1, i],
-            u[j, i],
-            u[j + 1, i],
-            u[j + 2, i],
-        )
-
+        u0, up1 = (u[j, i], u[j + 1, i])
         y0 = j * dy
-        yp1 = (j + 1) * dy
-        yp2 = (j + 2) * dy
-
         s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
 
-        m_left = (u0 - um1) / dy
-        s_left_piece = y0 + (u_pt - u0) / m_left
-
-        m_right = (up2 - up1) / dy
-        s_right_piece = yp1 + (u_pt - up1) / m_right
-        print(
-            f"s_left = {abs(s_left_piece - s_real) * 100 / s_real}, s_right = {abs(s_right_piece - s_real) * 100 / s_real}, s_lin = {abs(s_lin - s_real) * 100 / s_real}"
-        )
-        if (abs(m_left) > abs(m_right)) and (y0 <= s_left_piece <= yp1):
-            s_num = s_left_piece
-        elif y0 <= s_right_piece <= yp1:
-            s_num = s_right_piece
-        else:
-            s_num = s_lin  # fallback
-
-        boundary.append(s_num)
+        boundary.append(s_lin)
 
 print(f"Elapsed Time: {time.perf_counter() - start_time:.2f} s., ")
 
