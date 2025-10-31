@@ -11,7 +11,7 @@ def t_air(t: float, n: int) -> np.ndarray:
         275.15
         + 2.0 * math.sin(2 * math.pi * t / (24.0 * 3600.0) - math.pi / 2)
         - 273.15
-    ) / 10.0
+    ) / 4.0
     return arr
 
 

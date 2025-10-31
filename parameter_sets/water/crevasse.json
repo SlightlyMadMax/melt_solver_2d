@@ -1,11 +1,11 @@
 {
   "geometry": {
-    "width": 0.5,
-    "height": 5.0,
-    "end_time": 864000,
-    "n_x": 101,
-    "n_y": 1001,
-    "n_t": 864000
+    "width": 0.3,
+    "height": 0.3,
+    "end_time": 248400,
+    "n_x": 181,
+    "n_y": 181,
+    "n_t": 248400
   },
   "material_props": {
     "u_pt": 273.15,
@@ -22,8 +22,8 @@
   "u_ref": 273.15,
   "delta_u": 4.0,
   "v": 0.016,
-  "l": 5.0,
-  "delta": null,
-  "delta_flow": null,
+  "l": 0.3,
+  "delta": 0.08,
+  "delta_flow": 0.08,
   "epsilon": 0.0005
 }

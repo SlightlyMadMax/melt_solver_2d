@@ -1,8 +1,14 @@
 import logging
 import sys
 
+import numpy as np
+
 from src.convective_operators import ConvectiveTermForm
-from src.core.boundary_conditions import BoundaryConditions
+from src.core.boundary_conditions import (
+    BoundaryConditions,
+    BoundaryCondition,
+    BoundaryConditionType,
+)
 from src.core.geometry import DomainGeometry
 from src.core.runner import SimulationState, ExperimentRunner
 from src.fluid_dynamics.init_values import (
@@ -13,14 +19,19 @@ from src.fluid_dynamics.init_values import (
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
-from src.heat_transfer.init_values import init_temperature, DomainShape
+from src.heat_transfer.init_values import (
+    init_temperature,
+    DomainShape,
+    init_temperature_with_interface,
+)
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.heat_transfer.plotting import plot_temperature
+from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
+    t_air,
 )
 
 
@@ -33,14 +44,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/octadecane/config.json"
+        "../parameter_sets/water/crevasse.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.2426
-    max_temp = 310.07
+    min_temp = 268.15
+    max_temp = 273.25
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -49,10 +60,14 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=const_neumann_condition(n_x, value=0.0),
-        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
-        bottom=const_neumann_condition(n_x, value=0.0),
-        left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        top=BoundaryCondition(
+            boundary_type=BoundaryConditionType.DIRICHLET,
+            n=n_x,
+            value_func=t_air,
+        ),
+        right=const_neumann_condition(n_y, value=0.0),
+        bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
+        left=const_neumann_condition(n_y, value=0.0),
     )
 
     # Stream function boundary conditions
@@ -64,12 +79,46 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    u = init_temperature(
+    # u = init_temperature(
+    #     cfg=cfg,
+    #     bcs=u_bcs,
+    #     shape=DomainShape.UNIFORM_SOLID,
+    #     solid_temp=min_temp,
+    #     liquid_temp=max_temp,
+    # )
+
+    water_thickness = 0.01
+    crevasse_width = 0.02
+    crevasse_depth = 0.2
+    f = np.empty(n_x)
+
+    angle_rad = np.deg2rad(15.0)
+    tan15 = np.tan(angle_rad)
+    w_half = crevasse_depth * tan15
+
+    for i in range(n_x):
+        x = i * geometry.dx
+        dx = abs(x - geometry.width / 2)
+
+        if dx <= w_half:
+            local_depth = crevasse_depth - dx / tan15
+            f[i] = geometry.height - water_thickness - local_depth
+        else:
+            f[i] = geometry.height - water_thickness
+
+    # for i in range(n_x):
+    #     x = i * geometry.dx
+    #     if abs(x - geometry.width / 2) <= crevasse_width / 2:
+    #         f[i] = geometry.height - water_thickness - crevasse_depth
+    #     else:
+    #         f[i] = geometry.height - water_thickness
+
+    u = init_temperature_with_interface(
         cfg=cfg,
-        bcs=u_bcs,
-        shape=DomainShape.UNIFORM_SOLID,
-        solid_temp=min_temp,
+        f=f,
+        liquid_region_height=water_thickness,
         liquid_temp=max_temp,
+        solid_temp=min_temp,
     )
 
     # Initial stream function, vorticity and velocity fields
@@ -93,7 +142,7 @@ if __name__ == "__main__":
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        convective_term_form=ConvectiveTermForm.UPWIND_FC,
         bc_order=1,
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
@@ -111,18 +160,30 @@ if __name__ == "__main__":
     )
 
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
-    log_and_plot_interval = 60
+    log_and_plot_interval = 1800
     log_and_plot_at = set(
         [n for n in range(1, n_t + 1) if n * dt % log_and_plot_interval == 0]
     )
+    # save_at = {
+    #     int(2.0 * 60 / dt),
+    #     int(3.0 * 60 / dt),
+    #     int(6.0 * 60 / dt),
+    #     int(8.0 * 60 / dt),
+    #     int(10.0 * 60 / dt),
+    #     int(12.5 * 60 / dt),
+    #     int(15.0 * 60 / dt),
+    #     int(17.0 * 60 / dt),
+    #     int(19.0 * 60 / dt),
+    # }
+    # save_at = {int(800 / dt), int(1575 / dt)}
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/octadecane/test",
+        checkpoints_dir="../data/crevasse/convection/heat_upwind",
         logger=logger,
-        save_at={int(800 / dt), int(1575 / dt)},
+        save_at=log_and_plot_at,
         log_at=log_and_plot_at,
         plot_at=log_and_plot_at,
     )
