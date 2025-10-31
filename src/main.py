@@ -127,13 +127,13 @@ if __name__ == "__main__":
     v_x, v_y = initialize_velocity(geometry=geometry)
 
     dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -181,10 +181,10 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/crevasse/convection/heat_upwind",
+        checkpoints_dir="../data/crevasse/convection/up_heat_crevasse",
         logger=logger,
         save_at=log_and_plot_at,
         log_at=log_and_plot_at,
-        plot_at=log_and_plot_at,
+        plot_at=set(),
     )
     runner.run()
