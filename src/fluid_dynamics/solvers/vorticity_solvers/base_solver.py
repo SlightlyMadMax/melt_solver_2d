@@ -154,11 +154,8 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
         self._prepare(sf=sf, u=u, conv_w=conv_w, delta=delta)
 
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
-        dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps
 
-        self._compute_sweep_x_coeffs(
-            w=w, sf=sf, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
-        )
+        self._compute_sweep_x_coeffs(w=w, sf=sf)
 
         self._apply_boundary_conditions_x(time=time)
 
@@ -173,9 +170,7 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
             result=self._new_w,
         )
 
-        self._compute_sweep_y_coeffs(
-            w=w, sf=sf, dx=dx_scaled, dy=dy_scaled, dt=dt_scaled
-        )
+        self._compute_sweep_y_coeffs(w=w, sf=sf)
 
         self._apply_boundary_conditions_y(time=time)
 

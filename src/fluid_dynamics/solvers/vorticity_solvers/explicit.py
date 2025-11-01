@@ -79,11 +79,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         delta: Optional[float] = None,
         time: float = 0.0,
     ) -> NDArray[np.float64]:
-        geometry: DomainGeometry = self.cfg.geometry
-        dx, dy, dt = geometry.dx, geometry.dy, geometry.dt
-        dx_scaled = dx / self.cfg.l
-        dy_scaled = dy / self.cfg.l
-        dt_scaled = dt * self.cfg.v / self.cfg.l
+        dx_scaled, dy_scaled, dt_scaled = self.cfg.scaled_grid_steps
 
         self._prepare(sf=sf, u=u, conv_w=w, delta=delta)
 

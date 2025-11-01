@@ -36,10 +36,7 @@ class VabFullyImplicitScheme(BaseSolver):
 
     def calculate_rho(self):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
-        dy_scaled, dx_scaled = (
-            self.cfg.geometry.dy / self.cfg.l,
-            self.cfg.geometry.dx / self.cfg.l,
-        )
+        dx_scaled, dy_scaled, _ = self.cfg.scaled_grid_steps
 
         rho = np.zeros((n_y, n_x))
 
@@ -60,9 +57,7 @@ class VabFullyImplicitScheme(BaseSolver):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
-        dx = self.cfg.geometry.dx / self.cfg.l
-        dy = self.cfg.geometry.dy / self.cfg.l
-        tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
+        dx, dy, tau = self.cfg.scaled_grid_steps
         inv_re = 1.0 / self.cfg.reynolds_number
 
         main_diag = -2 / dx**2 - 2 / dy**2

@@ -13,14 +13,8 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
 
 @register_solver(VorticitySolverName.DOUGLAS_RACHFORD)
 class DRNavierStokesScheme(ADIVorticitySolver):
-    def _compute_sweep_x_coeffs(
-        self,
-        w: np.ndarray,
-        sf: np.ndarray,
-        dt: float,
-        dx: float,
-        dy: float,
-    ) -> None:
+    def _compute_sweep_x_coeffs(self, w: np.ndarray, sf: np.ndarray) -> None:
+        dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_x_coeffs_jit(
             w=w,
             sf=sf,
@@ -38,14 +32,8 @@ class DRNavierStokesScheme(ADIVorticitySolver):
             rhs=self._rhs_x,
         )
 
-    def _compute_sweep_y_coeffs(
-        self,
-        w: np.ndarray,
-        sf: np.ndarray,
-        dt: float,
-        dx: float,
-        dy: float,
-    ) -> None:
+    def _compute_sweep_y_coeffs(self, w: np.ndarray, sf: np.ndarray) -> None:
+        _, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             w_old=w,
             w_prev=self._new_w,
