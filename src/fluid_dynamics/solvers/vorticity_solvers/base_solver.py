@@ -4,7 +4,10 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from src.convective_operators import BaseConvectiveOperator, StreamFunctionBasedConvectiveOperator
+from src.convective_operators import (
+    BaseConvectiveOperator,
+    StreamFunctionBasedConvectiveOperator,
+)
 from src.core.constants import ABS_ZERO
 from src.core.solvers.base_solver import BaseSolver
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
