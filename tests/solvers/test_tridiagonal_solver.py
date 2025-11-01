@@ -1,11 +1,12 @@
 import numpy as np
+import scipy as sp
 from numpy.testing import assert_almost_equal
 
 from src.core.solvers.tridiagonal_solver import solve_tridiagonal
 
 
 def test_solve_tridiagonal_bc_1():
-    n = 10
+    n = 30000
     a = np.ones(n, dtype=np.float64)
     b = -2 * np.ones(n, dtype=np.float64)
     c = np.ones(n, dtype=np.float64)
@@ -24,7 +25,6 @@ def test_solve_tridiagonal_bc_1():
     f[n - 1] = right_value
 
     result = np.zeros(n)
-
     solve_tridiagonal(a, b, c, f, result)
 
     a = np.ones(n - 3, dtype=np.float64)
@@ -41,7 +41,7 @@ def test_solve_tridiagonal_bc_1():
     f[-1] -= right_value
 
     expected_result = np.zeros(n)
-    expected_result[1:-1] = np.linalg.solve(A, f)
+    expected_result[1:-1] = sp.linalg.solve(A, f, assume_a="tridiagonal")
     expected_result[0] = left_value
     expected_result[-1] = right_value
 
