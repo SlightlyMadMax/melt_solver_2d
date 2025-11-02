@@ -6,7 +6,7 @@ from typing import Optional, Callable
 from numba import njit
 from numpy.typing import NDArray
 
-from src.convective_operators import BaseConvectiveOperator
+from src.convective_operators import BaseConvectiveOperator, ConvectiveTermForm
 from src.core.boundary_conditions import (
     BoundaryConditions,
     BoundaryCondition,
@@ -53,16 +53,12 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         # Pre-allocate some arrays that will be used in the calculations
         self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))
         self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
-        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
-        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
         self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
+        self._correction_x: NDArray[np.float64] = np.zeros((n_y, n_x))
+        self._correction_y: NDArray[np.float64] = np.zeros((n_y, n_x))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
-
-    def _prepare(self, sf: np.ndarray, delta: float):
-        self.convective_operator(conv_x=self._conv_x, conv_y=self._conv_y, sf=sf)
-        self.compute_effective_properties(u=self._iter_u, delta=delta)
 
     @abstractmethod
     def solve_linear(
@@ -165,8 +161,17 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         :param time: current physical time.
         :return:
         """
-        self._prepare(sf, delta)
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
+        self.compute_effective_properties(u=self._iter_u, delta=delta)
+
+        self.convective_operator(
+            conv_x=self._conv_x,
+            conv_y=self._conv_y,
+            correction_x=self._correction_x,
+            correction_y=self._correction_y,
+            convected_quantity=u,
+            sf=sf,
+        )
 
         self._compute_sweep_x_coeffs(u=u)
 
@@ -182,6 +187,17 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             rhs=self._rhs_x,
             result=self._new_u,
         )
+
+        if self.convective_operator.form == ConvectiveTermForm.DEFERRED_CORRECTION:
+            self.convective_operator(
+                conv_x=self._conv_x,
+                conv_y=self._conv_y,
+                correction_x=self._correction_x,
+                correction_y=self._correction_y,
+                convected_quantity=self._new_u,
+                sf=sf,
+                recalculate_velocity=False,
+            )
 
         self.compute_effective_properties(u=self._new_u, delta=delta)
 
