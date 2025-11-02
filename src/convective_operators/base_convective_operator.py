@@ -1,8 +1,5 @@
-import numpy as np
-
 from abc import ABC, abstractmethod
 from enum import Enum
-from numpy.typing import NDArray
 
 from src.parameters.config import ExperimentConfig
 
@@ -23,7 +20,6 @@ class BaseConvectiveOperator(ABC):
     @abstractmethod
     def __call__(
         self,
-        conv_x: NDArray[np.float64],
-        conv_y: NDArray[np.float64],
+        *args,
         **kwargs,
     ): ...

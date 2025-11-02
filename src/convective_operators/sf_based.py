@@ -1,8 +1,5 @@
 import numpy as np
 
-from numpy.typing import NDArray
-from pydantic import BaseModel, ValidationError
-
 from src.convective_operators.base_convective_operator import (
     BaseConvectiveOperator,
     ConvectiveTermForm,
@@ -10,39 +7,24 @@ from src.convective_operators.base_convective_operator import (
 from src.parameters.config import ExperimentConfig
 
 
-class SFBasedArgs(BaseModel):
-    sf: np.ndarray
-    recalculate_velocity: bool = True
-    correction_x: np.ndarray | None = None
-    correction_y: np.ndarray | None = None
-    convected_quantity: np.ndarray | None = None
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
 class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
     def __init__(self, form: ConvectiveTermForm, cfg: ExperimentConfig):
         super().__init__(cfg=cfg)
         self.form = form
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
-        self._v_x: NDArray[np.float64] = np.zeros((n_y, n_x))
-        self._v_y: NDArray[np.float64] = np.zeros((n_y, n_x))
+        self._v_x: np.ndarray = np.zeros((n_y, n_x))
+        self._v_y: np.ndarray = np.zeros((n_y, n_x))
 
-    def __call__(self, conv_x, conv_y, **kwargs) -> None:
-        try:
-            parsed = SFBasedArgs(**kwargs)
-        except ValidationError as e:
-            raise ValueError(
-                f"Invalid arguments for StreamFunctionBasedConvectiveOperator: {e}"
-            )
-
-        sf = parsed.sf
-        convected_quantity = parsed.convected_quantity
-        correction_x = parsed.correction_x
-        correction_y = parsed.correction_y
-        recalculate_velocity = parsed.recalculate_velocity
-
+    def __call__(
+        self,
+        conv_x,
+        conv_y,
+        sf: np.ndarray,
+        recalculate_velocity: bool = True,
+        correction_x: np.ndarray | None = None,
+        correction_y: np.ndarray | None = None,
+        convected_quantity: np.ndarray | None = None,
+    ) -> None:
         if recalculate_velocity:
             self.compute_velocity_from_sf(sf=sf)
 
@@ -70,7 +52,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         else:
             raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
-    def compute_velocity_from_sf(self, sf: NDArray[np.float64]) -> None:
+    def compute_velocity_from_sf(self, sf: np.ndarray) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
         inv_2dx = 1.0 / (2.0 * dx)
@@ -80,7 +62,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         v_y[1:-1, 1:-1] = -inv_2dx * (sf[1:-1, 2:] - sf[1:-1, :-2])
 
     def _compute_upwind_components_at_faces(
-        self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
+        self, result_x: np.ndarray, result_y: np.ndarray
     ) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
@@ -116,7 +98,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[jm, im, 2] = -inv_2dy * (v_y_m + np.abs(v_y_m))
 
     def _compute_upwind_components_at_nodes(
-        self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
+        self, result_x: np.ndarray, result_y: np.ndarray
     ) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
@@ -125,8 +107,8 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
 
         jm, im = slice(1, -1), slice(1, -1)
 
-        v_x_p = 0.5 * (v_x[jm, im] + np.abs(v_x[jm, im]))  # max(v_x, 0)
-        v_x_m = 0.5 * (v_x[jm, im] - np.abs(v_x[jm, im]))  # min(v_x, 0)
+        v_x_p = np.maximum(v_x[jm, im], 0.0)
+        v_x_m = np.minimum(v_x[jm, im], 0.0)
 
         result_x[jm, im, 0] = v_x_m * inv_dx  # phi[i+1]
         result_x[jm, im, 1] = (v_x_p - v_x_m) * inv_dx  # phi[i]
@@ -140,10 +122,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[jm, im, 2] = -v_y_p * inv_dy  # phi[j-1, i]
 
     def _compute_correction(
-        self,
-        result_x: NDArray[np.float64],
-        result_y: NDArray[np.float64],
-        convected_quantity: NDArray[np.float64],
+        self, result_x: np.ndarray, result_y: np.ndarray, convected_quantity: np.ndarray
     ):
         q = convected_quantity
         dx, dy, _ = self.cfg.scaled_grid_steps
@@ -225,7 +204,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[cs_y, cs_x] = corr_y
 
     def _compute_div_components(
-        self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
+        self, result_x: np.ndarray, result_y: np.ndarray
     ) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
@@ -245,7 +224,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[jm, im, 2] = -inv_2dy * v_y[jm2, im]  # -v_y[j-1, i]
 
     def _compute_non_div_components(
-        self, result_x: NDArray[np.float64], result_y: NDArray[np.float64]
+        self, result_x: np.ndarray, result_y: np.ndarray
     ) -> None:
         dx, dy, _ = self.cfg.scaled_grid_steps
         v_x, v_y = self._v_x, self._v_y
