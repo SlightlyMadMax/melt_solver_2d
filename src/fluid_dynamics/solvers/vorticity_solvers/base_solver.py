@@ -2,7 +2,6 @@ from abc import ABC
 from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray
 
 from src.convective_operators import (
     BaseConvectiveOperator,
@@ -32,17 +31,17 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: NDArray[np.float64] = np.empty((n_y, n_x))
-        self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
-        self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
-        self.top_bc: NDArray[np.float64] = np.empty(n_x)
-        self.right_bc: NDArray[np.float64] = np.empty(n_y)
-        self.bottom_bc: NDArray[np.float64] = np.empty(n_x)
-        self.left_bc: NDArray[np.float64] = np.empty(n_y)
-        self.penalty_term: NDArray[np.float64] = np.empty((n_y, n_x))
-        self.px_half: NDArray[np.float64] = np.empty((n_y, n_x - 1))
-        self.py_half: NDArray[np.float64] = np.empty((n_y - 1, n_x))
-        self.buoyancy_term: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._new_w: np.ndarray = np.empty((n_y, n_x))
+        self._conv_x: np.ndarray = np.zeros((n_y, n_x, 3))
+        self._conv_y: np.ndarray = np.zeros((n_y, n_x, 3))
+        self.top_bc: np.ndarray = np.empty(n_x)
+        self.right_bc: np.ndarray = np.empty(n_y)
+        self.bottom_bc: np.ndarray = np.empty(n_x)
+        self.left_bc: np.ndarray = np.empty(n_y)
+        self.penalty_term: np.ndarray = np.empty((n_y, n_x))
+        self.px_half: np.ndarray = np.empty((n_y, n_x - 1))
+        self.py_half: np.ndarray = np.empty((n_y - 1, n_x))
+        self.buoyancy_term: np.ndarray = np.empty((n_y, n_x))
 
     def _calculate_buoyancy_term(self, u: np.ndarray):
         dx_scaled, _, _ = self.cfg.scaled_grid_steps
