@@ -13,6 +13,7 @@ class ConvectiveTermForm(Enum):
     SYMMETRIC = "Symmetric"
     UPWIND_FC = "Upwind Face-Centered"
     UPWIND_NC = "Upwind Node-Centered"
+    DEFERRED_CORRECTION = "Deferred correction"
 
 
 class BaseConvectiveOperator(ABC):

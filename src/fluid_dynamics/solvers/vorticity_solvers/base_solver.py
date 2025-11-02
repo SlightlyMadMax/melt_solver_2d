@@ -33,8 +33,8 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
         # Pre-allocate some arrays that will be used in the calculations
         self._new_w: NDArray[np.float64] = np.empty((n_y, n_x))
-        self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
-        self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self.top_bc: NDArray[np.float64] = np.empty(n_x)
         self.right_bc: NDArray[np.float64] = np.empty(n_y)
         self.bottom_bc: NDArray[np.float64] = np.empty(n_x)

@@ -55,6 +55,8 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
         self._conv_x: NDArray[np.float64] = np.empty((n_y, n_x, 3))
         self._conv_y: NDArray[np.float64] = np.empty((n_y, n_x, 3))
+        self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
+        self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
 
