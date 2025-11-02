@@ -161,7 +161,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         num_x_pos = C - L1
         den_x_pos = R1 - C
         r_x_pos = num_x_pos / (den_x_pos + eps)
-        limiter_x_pos = (r_x_pos + np.abs(r_x_pos)) / (1.0 + np.abs(r_x_pos))
+        limiter_x_pos = np.maximum(0, np.minimum(1, r_x_pos))
         corr_x_pos *= limiter_x_pos
 
         # branch where v_x <= 0  (original code uses else i.e. v_x <=0)
@@ -169,7 +169,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         num_x_neg = R1 - C
         den_x_neg = C - L1
         r_x_neg = num_x_neg / (den_x_neg + eps)
-        limiter_x_neg = (r_x_neg + np.abs(r_x_neg)) / (1.0 + np.abs(r_x_neg))
+        limiter_x_neg = np.maximum(0, np.minimum(1, r_x_neg))
         corr_x_neg *= limiter_x_neg
 
         # pick per-element which branch to use
@@ -187,7 +187,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         num_y_pos = C - U1
         den_y_pos = D1 - C
         r_y_pos = num_y_pos / (den_y_pos + eps)
-        limiter_y_pos = (r_y_pos + np.abs(r_y_pos)) / (1.0 + np.abs(r_y_pos))
+        limiter_y_pos = np.maximum(0, np.minimum(1, r_y_pos))
         corr_y_pos *= limiter_y_pos
 
         # vy <= 0 branch
@@ -195,7 +195,7 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         num_y_neg = D1 - C
         den_y_neg = C - U1
         r_y_neg = num_y_neg / (den_y_neg + eps)
-        limiter_y_neg = (r_y_neg + np.abs(r_y_neg)) / (1.0 + np.abs(r_y_neg))
+        limiter_y_neg = np.maximum(0, np.minimum(1, r_y_neg))
         corr_y_neg *= limiter_y_neg
 
         corr_y = np.where(pos_mask_y, corr_y_pos, corr_y_neg)
