@@ -20,7 +20,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            p=self.penalty_term,
             px_half=self.px_half,
             py_half=self.py_half,
             buoy=self.buoyancy_term,
@@ -41,7 +40,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            p=self.penalty_term,
             px_half=self.px_half,
             py_half=self.py_half,
             buoy=self.buoyancy_term,
@@ -62,7 +60,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        p: NDArray[np.float64],
         px_half: NDArray[np.float64],
         py_half: NDArray[np.float64],
         buoy: NDArray[np.float64],
@@ -97,7 +94,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    # - p[j, i] * sf[j, i]
                     + inv_dx2
                     * (
                         px_half[j, i] * (sf[j, i + 1] - sf[j, i])
@@ -117,7 +113,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        p: NDArray[np.float64],
         px_half: NDArray[np.float64],
         py_half: NDArray[np.float64],
         buoy: NDArray[np.float64],
@@ -152,7 +147,6 @@ class PRNavierStokesScheme(ADIVorticitySolver):
                         + conv_x[j, i, 1] * w[j, i]
                         + conv_x[j, i, 2] * w[j, i - 1]
                     )
-                    # - p[j, i] * sf[j, i]
                     + inv_dx2
                     * (
                         px_half[j, i] * (sf[j, i + 1] - sf[j, i])
