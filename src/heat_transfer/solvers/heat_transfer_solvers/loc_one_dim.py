@@ -18,6 +18,7 @@ class LocOneDimSolver(ADIHeatSolver):
         self._compute_sweep_x_coeffs_jit(
             u=u,
             conv_x=self._conv_x,
+            corr_x=self._correction_x,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             dx=dx,
@@ -34,6 +35,7 @@ class LocOneDimSolver(ADIHeatSolver):
         self._compute_sweep_y_coeffs_jit(
             u=self._new_u,
             conv_y=self._conv_y,
+            corr_y=self._correction_y,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             dy=dy,
@@ -50,6 +52,7 @@ class LocOneDimSolver(ADIHeatSolver):
     def _compute_sweep_x_coeffs_jit(
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
+        corr_x: NDArray[np.float64],
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         dx: float,
@@ -81,13 +84,14 @@ class LocOneDimSolver(ADIHeatSolver):
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
                 c[j, i] = dt * (conv_x[j, i, 2] - k_im1j * inv_pe * inv_c_eff * inv_dx2)
 
-                rhs[j, i] = u[j, i]
+                rhs[j, i] = u[j, i] - dt * corr_x[j, i]
 
     @staticmethod
     @njit
     def _compute_sweep_y_coeffs_jit(
         u: NDArray[np.float64],
         conv_y: NDArray[np.float64],
+        corr_y: NDArray[np.float64],
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         dy: float,
@@ -119,4 +123,4 @@ class LocOneDimSolver(ADIHeatSolver):
                 # Coefficient at T_{i, j - 1}^{n + 1}
                 c[i, j] = dt * (conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2)
 
-                rhs[i, j] = u[j, i]
+                rhs[i, j] = u[j, i] - dt * corr_y[j, i]

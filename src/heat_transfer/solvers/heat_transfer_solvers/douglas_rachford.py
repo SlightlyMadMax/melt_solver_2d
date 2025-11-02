@@ -19,6 +19,8 @@ class DouglasRachfordSolver(ADIHeatSolver):
             u=u,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
+            corr_x=self._correction_x,
+            corr_y=self._correction_y,
             c_eff=self._c_eff,
             k_eff=self._k_eff,
             dx=dx,
@@ -54,6 +56,8 @@ class DouglasRachfordSolver(ADIHeatSolver):
         u: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
+        corr_x: NDArray[np.float64],
+        corr_y: NDArray[np.float64],
         c_eff: NDArray[np.float64],
         k_eff: NDArray[np.float64],
         dx: float,
@@ -102,6 +106,8 @@ class DouglasRachfordSolver(ADIHeatSolver):
                         + conv_y[j, i, 1] * u[j, i]
                         + conv_y[j, i, 2] * u[j - 1, i]
                     )
+                    - corr_x[j, i]
+                    - corr_y[j, i]
                 )
 
     @staticmethod
