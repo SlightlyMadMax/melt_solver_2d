@@ -19,11 +19,11 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             w=w,
             sf=sf,
             conv_x=self._conv_x,
-            penalty_term=self.penalty_term,
-            buoyancy_term=self.buoyancy_term,
+            p=self.penalty_term,
+            buoy=self.buoyancy_term,
             dx=dx,
             dt=dt,
-            reynolds_number=self.cfg.reynolds_number,
+            re=self.cfg.reynolds_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -36,11 +36,11 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             w=self._new_w,
             sf=sf,
             conv_y=self._conv_y,
-            penalty_term=self.penalty_term,
-            buoyancy_term=self.buoyancy_term,
+            p=self.penalty_term,
+            buoy=self.buoyancy_term,
             dy=dy,
             dt=dt,
-            reynolds_number=self.cfg.reynolds_number,
+            re=self.cfg.reynolds_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,
@@ -53,11 +53,11 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
-        penalty_term: NDArray[np.float64],
-        buoyancy_term: NDArray[np.float64],
+        p: NDArray[np.float64],
+        buoy: NDArray[np.float64],
         dx: float,
         dt: float,
-        reynolds_number: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -65,7 +65,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
     ) -> None:
         n_y, n_x = w.shape
         inv_dx2 = 1.0 / (dx * dx)
-        inv_re = 1.0 / reynolds_number
+        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -75,9 +75,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
 
                 c[j, i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
-                rhs[j, i] = w[j, i] + 0.5 * dt * (
-                    buoyancy_term[j, i] - penalty_term[j, i] * sf[j, i]
-                )
+                rhs[j, i] = w[j, i] + 0.5 * dt * (buoy[j, i] - p[j, i] * sf[j, i])
 
     @staticmethod
     @njit
@@ -85,11 +83,11 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         w: NDArray[np.float64],
         sf: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        penalty_term: NDArray[np.float64],
-        buoyancy_term: NDArray[np.float64],
+        p: NDArray[np.float64],
+        buoy: NDArray[np.float64],
         dy: float,
         dt: float,
-        reynolds_number: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -97,7 +95,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
     ) -> None:
         n_y, n_x = w.shape
         inv_dy2 = 1.0 / (dy * dy)
-        inv_re = 1.0 / reynolds_number
+        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -107,6 +105,4 @@ class LODNavierStokesScheme(ADIVorticitySolver):
 
                 c[i, j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
-                rhs[i, j] = w[j, i] + 0.5 * dt * (
-                    buoyancy_term[j, i] - penalty_term[j, i] * sf[j, i]
-                )
+                rhs[i, j] = w[j, i] + 0.5 * dt * (buoy[j, i] - p[j, i] * sf[j, i])
