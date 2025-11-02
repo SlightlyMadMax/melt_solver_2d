@@ -20,12 +20,13 @@ class DRNavierStokesScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            penalty_term=self.penalty_term,
-            buoyancy_term=self.buoyancy_term,
+            px_half=self.px_half,
+            py_half=self.py_half,
+            buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
             dt=dt,
-            reynolds_number=self.cfg.reynolds_number,
+            re=self.cfg.reynolds_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -40,7 +41,7 @@ class DRNavierStokesScheme(ADIVorticitySolver):
             conv_y=self._conv_y,
             dy=dy,
             dt=dt,
-            reynolds_number=self.cfg.reynolds_number,
+            re=self.cfg.reynolds_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,
@@ -54,12 +55,13 @@ class DRNavierStokesScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        penalty_term: NDArray[np.float64],
-        buoyancy_term: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
+        buoy: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
-        reynolds_number: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -68,7 +70,7 @@ class DRNavierStokesScheme(ADIVorticitySolver):
         n_y, n_x = w.shape
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
-        inv_re = 1.0 / reynolds_number
+        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -79,14 +81,23 @@ class DRNavierStokesScheme(ADIVorticitySolver):
                 c[j, i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
 
                 rhs[j, i] = w[j, i] + dt * (
-                    buoyancy_term[j, i]
+                    buoy[j, i]
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_y[j, i, 0] * w[j + 1, i]
                         + conv_y[j, i, 1] * w[j, i]
                         + conv_y[j, i, 2] * w[j - 1, i]
                     )
-                    - penalty_term[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
+                    )
                 )
 
     @staticmethod
@@ -97,7 +108,7 @@ class DRNavierStokesScheme(ADIVorticitySolver):
         conv_y: NDArray[np.float64],
         dy: float,
         dt: float,
-        reynolds_number: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -105,7 +116,7 @@ class DRNavierStokesScheme(ADIVorticitySolver):
     ) -> None:
         n_y, n_x = w_old.shape
         inv_dy2 = 1.0 / (dy * dy)
-        inv_re = 1.0 / reynolds_number
+        inv_re = 1.0 / re
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
