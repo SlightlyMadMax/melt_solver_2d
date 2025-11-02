@@ -130,18 +130,21 @@ def plot_temperature(
     disp_u = _convert_temp_in_display_units(
         u_sub, actual_temp_units, display_temp_units
     )
+
+    if min_temp is None or max_temp is None:
+        min_temp = disp_u.min()
+        max_temp = disp_u.max()
+
+    levels = np.linspace(min_temp, max_temp, 101)
     contour = plt.contourf(
         X_sub,
         Y_sub,
         disp_u,
-        100,
+        levels=levels,
         cmap="Blues",
-        extend="both",
+        # extend="both",
     )
     cbar = plt.colorbar(contour)
-    if min_temp is None or max_temp is None:
-        min_temp = disp_u.min()
-        max_temp = disp_u.max()
     cbar.set_ticks(np.linspace(min_temp, max_temp, num=7))
     cbar.set_label("Температура, °С", rotation=270, labelpad=15)
 
