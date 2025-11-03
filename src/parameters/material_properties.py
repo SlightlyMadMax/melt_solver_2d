@@ -63,7 +63,6 @@ class MaterialProperties(BaseModel):
     def volumetric_latent_heat(self) -> float:
         """
         Calculate the volumetric latent heat of fusion.
-        Assumes the density at phase change to be the average of the densities.
         Formula: volumetric_latent_heat = density * specific_latent_heat
         """
         return self.density_liquid * self.specific_latent_heat
