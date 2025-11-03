@@ -16,14 +16,14 @@
     "density_solid": 800,
     "thermal_conductivity_liquid": 0.2,
     "thermal_conductivity_solid": 0.2,
-    "kinematic_viscosity_coeffs": [1.124e-5],
-    "volumetric_thermal_exp_coeffs": [2.54035e-03]
+    "dynamic_viscosity": 8.992e-3,
+    "volumetric_thermal_exp": 2.54035e-03
   },
   "u_ref": 301.33,
   "delta_u": 8.74,
   "v": 0.06,
   "l": 0.015,
   "delta": 0.08,
-  "delta_flow": 0.08,
+  "delta_flow": 0.06,
   "epsilon": 0.00001
 }

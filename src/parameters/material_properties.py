@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, Field
 
 
@@ -30,17 +28,11 @@ class MaterialProperties(BaseModel):
     thermal_conductivity_solid: float = Field(
         ..., gt=0, description="Thermal conductivity of the solid phase [W/(m⋅K)]."
     )
-    kinematic_viscosity_coeffs: List[float] = Field(
-        ...,
-        min_length=1,
-        description="Polynomial coefficients for kinematic viscosity at reference temperature. "
-        "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
+    dynamic_viscosity: float = Field(
+        ..., gt=0, description="Dynamic viscosity of liquid [kg/(m⋅s)]."
     )
-    volumetric_thermal_exp_coeffs: List[float] = Field(
-        ...,
-        min_length=1,
-        description="Polynomial coefficients for volumetric thermal expansion coefficient at reference temperature. "
-        "The first element is the coefficient for u_ref^0, the second for u_ref^1, etc.",
+    volumetric_thermal_exp: float = Field(
+        ..., gt=0, description="Volumetric thermal expansion coefficient [1/K].",
     )
 
     @property
@@ -63,7 +55,7 @@ class MaterialProperties(BaseModel):
     def volumetric_latent_heat(self) -> float:
         """
         Calculate the volumetric latent heat of fusion.
-        Formula: volumetric_latent_heat = density * specific_latent_heat
+        Formula: volumetric_latent_heat = density_liquid * specific_latent_heat
         """
         return self.density_liquid * self.specific_latent_heat
 
@@ -83,6 +75,14 @@ class MaterialProperties(BaseModel):
         """
         return self.thermal_conductivity_liquid / self.volumetric_heat_capacity_liquid
 
+    @property
+    def kinematic_viscosity(self) -> float:
+        """
+        Calculate the kinematic viscosity of the liquid phase.
+        Formula: kinematic_viscosity = dynamic_viscosity / density_liquid
+        """
+        return self.dynamic_viscosity / self.density_liquid
+
     def __str__(self):
         s = (
             f"Material properties:\n"
@@ -98,5 +98,8 @@ class MaterialProperties(BaseModel):
             f"  Thermal Conductivity (Solid): {self.thermal_conductivity_solid} W/(m⋅K)\n"
             f"  Thermal Diffusivity (Liquid): {self.thermal_diffusivity_liquid:.2E} m^2/s\n"
             f"  Thermal Diffusivity (Solid): {self.thermal_diffusivity_solid:.2E} m^2/s\n"
+            f"  Dynamic Viscosity: {self.dynamic_viscosity:.2E} kg/(m⋅s)\n"
+            f"  Kinematic Viscosity: {self.kinematic_viscosity:.2E} m^2/s\n"
+            f"  Volumetric Thermal Expansion coefficient: {self.volumetric_thermal_exp:.2E} 1/K\n"
         )
         return s
