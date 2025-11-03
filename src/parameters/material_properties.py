@@ -67,9 +67,6 @@ class MaterialProperties(BaseModel):
         Formula: volumetric_latent_heat = density * specific_latent_heat
         """
         return self.density_liquid * self.specific_latent_heat
-        # return (
-        #     0.5 * (self.density_liquid + self.density_solid) * self.specific_latent_heat
-        # )
 
     @property
     def thermal_diffusivity_solid(self) -> float:

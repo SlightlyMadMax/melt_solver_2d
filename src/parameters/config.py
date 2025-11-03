@@ -84,31 +84,14 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Calculate the volumetric heat capacity at the reference temperature.
         """
-        if self.u_ref < self.material_props.u_pt:
-            return self.material_props.volumetric_heat_capacity_solid
-        elif self.u_ref > self.material_props.u_pt:
-            return self.material_props.volumetric_heat_capacity_liquid
-
         return self.material_props.volumetric_heat_capacity_liquid
-        # return 0.5 * (
-        #     self.material_props.volumetric_heat_capacity_solid
-        #     + self.material_props.volumetric_heat_capacity_liquid
-        # )
 
     @cached_property
     def thermal_conductivity_ref(self) -> float:
         """
         Calculate the thermal conductivity at the reference temperature.
         """
-        if self.u_ref < self.material_props.u_pt:
-            return self.material_props.thermal_conductivity_solid
-        elif self.u_ref > self.material_props.u_pt:
-            return self.material_props.thermal_conductivity_liquid
         return self.material_props.thermal_conductivity_liquid
-        # return 0.5 * (
-        #     self.material_props.thermal_conductivity_solid
-        #     + self.material_props.thermal_conductivity_liquid
-        # )
 
     @cached_property
     def thermal_diffusivity_ref(self) -> float:
