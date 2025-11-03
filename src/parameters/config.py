@@ -84,31 +84,14 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         Calculate the volumetric heat capacity at the reference temperature.
         """
-        if self.u_ref < self.material_props.u_pt:
-            return self.material_props.volumetric_heat_capacity_solid
-        elif self.u_ref > self.material_props.u_pt:
-            return self.material_props.volumetric_heat_capacity_liquid
-
         return self.material_props.volumetric_heat_capacity_liquid
-        # return 0.5 * (
-        #     self.material_props.volumetric_heat_capacity_solid
-        #     + self.material_props.volumetric_heat_capacity_liquid
-        # )
 
     @cached_property
     def thermal_conductivity_ref(self) -> float:
         """
         Calculate the thermal conductivity at the reference temperature.
         """
-        if self.u_ref < self.material_props.u_pt:
-            return self.material_props.thermal_conductivity_solid
-        elif self.u_ref > self.material_props.u_pt:
-            return self.material_props.thermal_conductivity_liquid
         return self.material_props.thermal_conductivity_liquid
-        # return 0.5 * (
-        #     self.material_props.thermal_conductivity_solid
-        #     + self.material_props.thermal_conductivity_liquid
-        # )
 
     @cached_property
     def thermal_diffusivity_ref(self) -> float:
@@ -116,24 +99,6 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the thermal diffusivity at the reference temperature.
         """
         return self.thermal_conductivity_ref / self.volumetric_heat_capacity_ref
-
-    @cached_property
-    def kinematic_viscosity_ref(self) -> float:
-        """
-        Calculate the kinematic viscosity coefficient at the reference temperature using polynomial evaluation.
-        """
-        return np.polyval(
-            self.material_props.kinematic_viscosity_coeffs[::-1], self.u_ref
-        )
-
-    @cached_property
-    def thermal_exp_coefficient_ref(self) -> float:
-        """
-        Calculate the volumetric thermal expansion coefficient at the reference temperature using polynomial evaluation.
-        """
-        return np.polyval(
-            self.material_props.volumetric_thermal_exp_coeffs[::-1], self.u_ref
-        )
 
     @cached_property
     def peclet_number(self) -> float:
@@ -166,7 +131,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the Reynolds number at the reference temperature.
         Formula: Re = characteristic_length * flow_velocity / kinematic_viscosity
         """
-        return self.v * self.l / self.kinematic_viscosity_ref
+        return self.v * self.l / self.material_props.kinematic_viscosity
 
     @cached_property
     def grashof_number(self) -> float:
@@ -174,14 +139,16 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the Grashof number at the reference temperature.
         Formula: Gr = g * thermal_expansion_coefficient * delta_u * l^3 / kinematic_viscosity^2
         """
+        beta = abs(self.material_props.volumetric_thermal_exp)
+        kinematic_visc = self.material_props.kinematic_viscosity
         return (
             G
-            * abs(self.thermal_exp_coefficient_ref)
+            * beta
             * self.delta_u
             * self.l
             * self.l
             * self.l
-            / (self.kinematic_viscosity_ref * self.kinematic_viscosity_ref)
+            / (kinematic_visc * kinematic_visc)
         )
 
     @cached_property
@@ -190,7 +157,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         Calculate the Prandtl number at the reference temperature.
         Formula: Pr = kinematic_viscosity / thermal_diffusivity
         """
-        return self.kinematic_viscosity_ref / self.thermal_diffusivity_ref
+        return self.material_props.kinematic_viscosity / self.thermal_diffusivity_ref
 
     @cached_property
     def rayleigh_number(self) -> float:
