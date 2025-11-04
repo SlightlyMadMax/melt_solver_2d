@@ -45,7 +45,6 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
     def _calculate_buoyancy_term(self, u: np.ndarray):
         dx_scaled, _, _ = self.cfg.scaled_grid_steps
-        inv_re2 = 1.0 / self.cfg.reynolds_number**2
         inv_dx = 1.0 / dx_scaled
         pr = self.cfg.prandtl_number
         ra = self.cfg.rayleigh_number
@@ -55,7 +54,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         # beta = self.cfg.thermal_exp_coefficient_ref
         # rho_ref = self.cfg.material_props.density_liquid
         # interior = (slice(1, -1), slice(1, -1))
-
+        #
         # u_k = u * delta_u + u_ref
         # u_c = u_k + ABS_ZERO
         # drhodu = (
@@ -67,11 +66,11 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         #
         # dudx = 0.5 * inv_dx * (u_k[1:-1, 2:] - u_k[1:-1, :-2])
         # drhodx = drhodu[interior] * dudx
-        # self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
+        # self.buoyancy_term[interior] = pr * ra * drhodx / (delta_u * beta * rho_ref)
 
         dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
 
-        self.buoyancy_term[1:-1, 1:-1] = pr * ra * inv_re2 * dudx
+        self.buoyancy_term[1:-1, 1:-1] = pr * ra * dudx
 
     def _calculate_penalty_term_at_faces(self):
         self.px_half[:, :] = 0.5 * (

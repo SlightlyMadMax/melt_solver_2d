@@ -192,7 +192,8 @@ class FlowCorrectionNVSolver:
         conv_x: np.ndarray,
         conv_y: np.ndarray,
     ) -> np.ndarray:
-        tau = self.cfg.geometry.dt * self.cfg.v / self.cfg.l
+        _, _, tau = self.cfg.scaled_grid_steps
+        pr = self.cfg.prandtl_number
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
@@ -206,7 +207,7 @@ class FlowCorrectionNVSolver:
             + conv_y[1:-1, 1:-1, 2] * sf_old[:-2, 1:-1]
         )
 
-        b_int = -w - 0.5 * tau * ((c + r / self.cfg.reynolds_number) * psi + conv)
+        b_int = -w - 0.5 * tau * ((c + pr * r) * psi + conv)
 
         return b_int.ravel()
 
@@ -218,6 +219,7 @@ class FlowCorrectionNVSolver:
     ):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
+        pr = self.cfg.prandtl_number
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
         tau_half = 0.5 * tau
@@ -225,7 +227,7 @@ class FlowCorrectionNVSolver:
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = tau_half * (penalty_term + self.rho / self.cfg.reynolds_number)
+        c = tau_half * (penalty_term + pr * self.rho)
         c_inner_flat = c[1:-1, 1:-1].flatten()
 
         # Extract convective coefficients for inner grid
@@ -244,17 +246,18 @@ class FlowCorrectionNVSolver:
         east_mask = (np.arange(size) % inner_n_x) < (inner_n_x - 1)
         east_valid_indices = np.where(east_mask)[0]
         east_diag = np.zeros(size - 1)
-        east_diag[east_valid_indices] = inv_dx2 - tau_half * conv_x_east_flat[
-            east_valid_indices
-        ]
+        east_diag[east_valid_indices] = (
+            inv_dx2 - tau_half * conv_x_east_flat[east_valid_indices]
+        )
 
         # West diagonal (offset -1)
         west_valid_in_diag = (np.arange(1, size) % inner_n_x) != 0
         west_valid_indices = np.where(west_valid_in_diag)[0]
         west_diag = np.zeros(size - 1)
-        west_diag[west_valid_indices] = inv_dx2 - tau_half * conv_x_west_flat[
-            np.arange(1, size)[west_valid_in_diag]
-        ]
+        west_diag[west_valid_indices] = (
+            inv_dx2
+            - tau_half * conv_x_west_flat[np.arange(1, size)[west_valid_in_diag]]
+        )
 
         # North diagonal (offset +inner_n_x)
         north_diag = inv_dy2 - tau_half * conv_y_north_flat[: (size - inner_n_x)]

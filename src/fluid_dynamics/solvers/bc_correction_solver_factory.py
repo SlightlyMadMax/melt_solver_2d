@@ -162,6 +162,7 @@ class BCCorrectionNVSolver:
         py_half: np.ndarray,
     ) -> np.ndarray:
         dx, dy, tau = self.cfg.scaled_grid_steps
+        pr = self.cfg.prandtl_number
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
 
@@ -196,7 +197,7 @@ class BCCorrectionNVSolver:
 
         c_inner = -inv_dx2 * term_x - inv_dy2 * term_y
 
-        b_int = -w - 0.5 * tau * (c_inner + r * psi / self.cfg.reynolds_number)
+        b_int = -w - 0.5 * tau * (c_inner + pr * r * psi)
 
         return b_int.ravel()
 
@@ -208,7 +209,7 @@ class BCCorrectionNVSolver:
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
-        re = self.cfg.reynolds_number
+        pr = self.cfg.prandtl_number
 
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
@@ -218,7 +219,7 @@ class BCCorrectionNVSolver:
         tau_half = 0.5 * tau
 
         rho_inner = self.rho[1:-1, 1:-1]
-        rho_term_flat = (tau_half * (rho_inner / re)).ravel()
+        rho_term_flat = (tau_half * pr * rho_inner).ravel()
 
         p_e = px_half[1:-1, 1:]
         p_w = px_half[1:-1, :-1]

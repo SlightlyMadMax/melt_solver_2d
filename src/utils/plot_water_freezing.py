@@ -22,7 +22,7 @@ delta_u = cfg.delta_u
 u_ref = cfg.u_ref
 u_pt = cfg.material_props.u_pt
 l = cfg.l
-v = cfg.v
+v = cfg.thermal_diffusivity_ref / l
 
 # fig, ax = plt.subplots()
 # ax.imshow(img, extent=[0, 1.0, 0, 1.0])
@@ -45,7 +45,7 @@ plot_velocity_field(
     True,
     equal_aspect=False,
     stride=8,
-    directory="../../graphs/velocity/"
+    directory="../../graphs/velocity/",
 )
 
 # X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
