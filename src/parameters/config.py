@@ -27,7 +27,9 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         None, gt=0.0, description="Half of the mushy zone temperature range [K]."
     )
     delta_flow: Optional[float] = Field(
-        None, gt=0.0, description="Half of the mushy zone temperature range used in the flow computations [K]."
+        None,
+        gt=0.0,
+        description="Half of the mushy zone temperature range used in the flow computations [K].",
     )
     epsilon: float = Field(
         ...,
@@ -167,6 +169,19 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         """
         return self.grashof_number * self.prandtl_number
 
+    @property
+    def local_fourier_number(self) -> float:
+        """
+        Calculate the local Fourier number.
+        Formula: Fo = diffusivity * dt / h^2
+        """
+        max_diffusivity = max(
+            self.material_props.thermal_diffusivity_solid,
+            self.material_props.thermal_diffusivity_liquid,
+        )
+        min_step = min(self.geometry.dx, self.geometry.dy)
+        return max_diffusivity * self.geometry.dt / min_step**2
+
     model_config = {"populate_by_name": True, "extra": "ignore"}
 
     def __str__(self):
@@ -185,6 +200,7 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             f"  Ste = {self.stefan_number:.3E}\n"
             f"  Pe = {self.peclet_number:.3E}\n"
             f"  Pr = {self.prandtl_number:.3E}\n"
+            f"  Fo (local) = {self.local_fourier_number:.3E}\n"
         )
         return (
             str(self.geometry)
