@@ -32,7 +32,7 @@ class MaterialProperties(BaseModel):
         ..., gt=0, description="Dynamic viscosity of liquid [kg/(m⋅s)]."
     )
     volumetric_thermal_exp: float = Field(
-        ..., gt=0, description="Volumetric thermal expansion coefficient [1/K].",
+        ..., description="Volumetric thermal expansion coefficient [1/K].",
     )
 
     @property
