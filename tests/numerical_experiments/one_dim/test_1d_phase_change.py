@@ -59,13 +59,8 @@ material_props = MaterialProperties(
     density_solid=999.84,
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
-    kinematic_viscosity_coeffs=[
-        0.000108963453,
-        -9.28722151e-07,
-        2.65889022e-09,
-        -2.54761652e-12,
-    ],
-    volumetric_thermal_exp_coeffs=[7.68e-6],
+    dynamic_viscosity=1.7888e-3,
+    volumetric_thermal_exp=7.68e-6,
 )
 
 max_temp = 278.15
