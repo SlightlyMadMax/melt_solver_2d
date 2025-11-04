@@ -35,11 +35,11 @@ try:
 except FileExistsError:
     pass
 
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("test_config_1.json")
+
 delta = input(
     "Enter the smoothing parameter delta or just press 'Enter' to use an adaptive one: "
 )
-
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("test_config_1.json")
 
 if delta == "":
     delta = None
