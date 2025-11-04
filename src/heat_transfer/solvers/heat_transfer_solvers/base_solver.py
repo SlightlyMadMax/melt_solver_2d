@@ -1,6 +1,6 @@
 import numpy as np
 
-from abc import abstractmethod, ABC
+from abc import ABC
 from typing import Optional, Callable
 
 from numba import njit
@@ -13,7 +13,6 @@ from src.core.boundary_conditions import (
     BoundaryConditionType,
 )
 from src.core.solvers.base_solver import BaseSolver
-from src.core.solvers.mixins.iterative_solver import IterativeSolverMixin
 from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
 from src.heat_transfer.coefficient_smoothing.coefficients import (
     StepScheme,
@@ -24,7 +23,7 @@ from src.heat_transfer.coefficient_smoothing.coefficients import (
 from src.parameters.config import ExperimentConfig
 
 
-class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
+class BaseHeatSolver(BaseSolver, ABC):
     def __init__(
         self,
         cfg: ExperimentConfig,
@@ -51,7 +50,6 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._iter_u: NDArray[np.float64] = np.empty((n_y, n_x))
         self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
         self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
@@ -59,15 +57,6 @@ class BaseHeatSolver(IterativeSolverMixin, BaseSolver):
         self._correction_y: NDArray[np.float64] = np.zeros((n_y, n_x))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
-
-    @abstractmethod
-    def solve_linear(
-        self,
-        u: NDArray[np.float64],
-        sf: NDArray[np.float64],
-        delta: float,
-        time: float = 0.0,
-    ) -> None: ...
 
     def compute_effective_properties(
         self,
@@ -140,13 +129,13 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         super().__init__(*args, **kwargs)
         self._initialize_sweep_arrays()
 
-    def solve_linear(
+    def solve(
         self,
         u: np.ndarray,
         delta: float,
         sf: np.ndarray,
         time: float = 0.0,
-    ) -> None:
+    ) -> np.ndarray:
         """
         Advance the solution by one ADI time step.
 
@@ -162,7 +151,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         :return:
         """
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
-        self.compute_effective_properties(u=self._iter_u, delta=delta)
+        self.compute_effective_properties(u=u, delta=delta)
 
         self.convective_operator(
             conv_x=self._conv_x,
@@ -213,6 +202,8 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             rhs=self._rhs_y,
             result=self._new_u,
         )
+
+        return self._new_u
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self._apply_standard_bc(
@@ -282,7 +273,6 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             )
         elif bc.boundary_type == BoundaryConditionType.NEUMANN:
             if self.bc_order == 1:
-                # first-order ghost
                 flux = bc.get_flux(t=time) / (
                     k_eff_slice * self.cfg.thermal_conductivity_ref
                 )
