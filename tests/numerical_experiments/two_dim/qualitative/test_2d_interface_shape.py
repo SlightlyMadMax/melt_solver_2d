@@ -48,13 +48,8 @@ material_props = MaterialProperties(
     density_solid=918.9,
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
-    kinematic_viscosity_coeffs=[
-        0.000108963453,
-        -9.28722151e-07,
-        2.65889022e-09,
-        -2.54761652e-12,
-    ],
-    volumetric_thermal_exp_coeffs=[7.68e-6],
+    dynamic_viscosity=1.7888e-3,
+    volumetric_thermal_exp=-6.733353e-05
 )
 
 cfg = ExperimentConfig(
