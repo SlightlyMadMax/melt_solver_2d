@@ -23,7 +23,7 @@
   "delta_u": 8.74,
   "v": 0.06,
   "l": 0.015,
-  "delta": 0.08,
-  "delta_flow": 0.06,
+  "delta": 0.06,
+  "delta_flow": 0.08,
   "epsilon": 0.00001
 }
