@@ -47,29 +47,31 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         dx_scaled, _, _ = self.cfg.scaled_grid_steps
         inv_re2 = 1.0 / self.cfg.reynolds_number**2
         inv_dx = 1.0 / dx_scaled
-        gr = self.cfg.grashof_number
-        delta_u = self.cfg.delta_u
-        u_ref = self.cfg.u_ref
-        beta = self.cfg.thermal_exp_coefficient_ref
-        rho_ref = self.cfg.material_props.density_liquid
-        interior = (slice(1, -1), slice(1, -1))
+        pr = self.cfg.prandtl_number
+        ra = self.cfg.rayleigh_number
 
-        u_k = u * delta_u + u_ref
-        u_c = u_k + ABS_ZERO
-        drhodu = (
-            0.0673268037314653
-            - 2 * 0.00894484552601798 * u_c
-            + 3 * 8.78462866500416e-5 * u_c**2
-            - 4 * 6.62139792627547e-7 * u_c**3
-        )
+        # delta_u = self.cfg.delta_u
+        # u_ref = self.cfg.u_ref
+        # beta = self.cfg.thermal_exp_coefficient_ref
+        # rho_ref = self.cfg.material_props.density_liquid
+        # interior = (slice(1, -1), slice(1, -1))
 
-        dudx = 0.5 * inv_dx * (u_k[1:-1, 2:] - u_k[1:-1, :-2])
-        drhodx = drhodu[interior] * dudx
-        self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
-
-        # dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
+        # u_k = u * delta_u + u_ref
+        # u_c = u_k + ABS_ZERO
+        # drhodu = (
+        #     0.0673268037314653
+        #     - 2 * 0.00894484552601798 * u_c
+        #     + 3 * 8.78462866500416e-5 * u_c**2
+        #     - 4 * 6.62139792627547e-7 * u_c**3
+        # )
         #
-        # self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
+        # dudx = 0.5 * inv_dx * (u_k[1:-1, 2:] - u_k[1:-1, :-2])
+        # drhodx = drhodu[interior] * dudx
+        # self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
+
+        dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
+
+        self.buoyancy_term[1:-1, 1:-1] = pr * ra * inv_re2 * dudx
 
     def _calculate_penalty_term_at_faces(self):
         self.px_half[:, :] = 0.5 * (

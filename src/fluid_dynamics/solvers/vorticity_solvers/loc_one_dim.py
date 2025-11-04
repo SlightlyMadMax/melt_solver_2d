@@ -23,7 +23,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             buoy=self.buoyancy_term,
             dx=dx,
             dt=dt,
-            re=self.cfg.reynolds_number,
+            pr=self.cfg.prandtl_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -40,7 +40,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             buoy=self.buoyancy_term,
             dy=dy,
             dt=dt,
-            re=self.cfg.reynolds_number,
+            pr=self.cfg.prandtl_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,
@@ -57,7 +57,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         buoy: NDArray[np.float64],
         dx: float,
         dt: float,
-        re: float,
+        pr: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -65,15 +65,14 @@ class LODNavierStokesScheme(ADIVorticitySolver):
     ) -> None:
         n_y, n_x = w.shape
         inv_dx2 = 1.0 / (dx * dx)
-        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                a[j, i] = dt * (conv_x[j, i, 0] - inv_re * inv_dx2)
+                a[j, i] = dt * (conv_x[j, i, 0] - pr * inv_dx2)
 
-                b[j, i] = 1.0 + dt * (conv_x[j, i, 1] + 2.0 * inv_re * inv_dx2)
+                b[j, i] = 1.0 + dt * (conv_x[j, i, 1] + 2.0 * pr * inv_dx2)
 
-                c[j, i] = dt * (conv_x[j, i, 2] - inv_re * inv_dx2)
+                c[j, i] = dt * (conv_x[j, i, 2] - pr * inv_dx2)
 
                 rhs[j, i] = w[j, i] + 0.5 * dt * (buoy[j, i] - p[j, i] * sf[j, i])
 
@@ -87,7 +86,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
         buoy: NDArray[np.float64],
         dy: float,
         dt: float,
-        re: float,
+        pr: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -95,14 +94,13 @@ class LODNavierStokesScheme(ADIVorticitySolver):
     ) -> None:
         n_y, n_x = w.shape
         inv_dy2 = 1.0 / (dy * dy)
-        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                a[i, j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
+                a[i, j] = dt * (conv_y[j, i, 0] - pr * inv_dy2)
 
-                b[i, j] = 1.0 + 2.0 * dt * (conv_y[j, i, 1] + inv_re * inv_dy2)
+                b[i, j] = 1.0 + 2.0 * dt * (conv_y[j, i, 1] + pr * inv_dy2)
 
-                c[i, j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
+                c[i, j] = dt * (conv_y[j, i, 2] - pr * inv_dy2)
 
                 rhs[i, j] = w[j, i] + 0.5 * dt * (buoy[j, i] - p[j, i] * sf[j, i])

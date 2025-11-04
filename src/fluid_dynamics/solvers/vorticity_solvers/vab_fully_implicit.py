@@ -58,15 +58,15 @@ class VabFullyImplicitScheme(BaseSolver):
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
         dx, dy, tau = self.cfg.scaled_grid_steps
-        inv_re = 1.0 / self.cfg.reynolds_number
+        pr = self.cfg.prandtl_number
 
         main_diag = -2 / dx**2 - 2 / dy**2
         off_diag_x = 1 / dx**2
         off_diag_y = 1 / dy**2
 
-        main_diag = np.full(size, inv_re * main_diag)
-        x_off_diag = np.full(size - 1, inv_re * off_diag_x)
-        y_off_diag = np.full(size - inner_n_x, inv_re * off_diag_y)
+        main_diag = np.full(size, pr * main_diag)
+        x_off_diag = np.full(size - 1, pr * off_diag_x)
+        y_off_diag = np.full(size - inner_n_x, pr * off_diag_y)
 
         x_off_diag[np.arange(1, size) % inner_n_x == 0] = 0
 
@@ -110,22 +110,15 @@ class VabFullyImplicitScheme(BaseSolver):
     ) -> NDArray[np.float64]:
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
-        dx = geometry.dx / self.cfg.l
+        dx, dy, tau = self.cfg.scaled_grid_steps
+        pr = self.cfg.prandtl_number
+        ra = self.cfg.rayleigh_number
         inv_dx = 1.0 / dx
-        tau = geometry.dt * self.cfg.v / self.cfg.l
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
-        inv_re = 1.0 / self.cfg.reynolds_number
-        inv_re2 = inv_re * inv_re
 
         self.convective_operator(w=conv_w, conv_x=self._conv_x, conv_y=self._conv_y)
         u_dim = u * self.cfg.delta_u + self.cfg.u_ref
         self._calculate_penalty_term_coeff(u=u_dim, delta=delta or self.cfg.delta_nd)
-
-        gr = np.where(
-            u * self.cfg.delta_u - self.cfg.u_pt_ref < 0.0,
-            0.0,
-            self.cfg.grashof_number,
-        )
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -140,8 +133,8 @@ class VabFullyImplicitScheme(BaseSolver):
                 self._rhs[idx] = (
                     w[j, i] / tau
                     - conv_term
-                    - (inv_re * self.rho[j, i] + self.penalty_term[j, i]) * sf[j, i]
-                    + gr[j, i] * inv_re2 * dudx
+                    - (pr * self.rho[j, i] + self.penalty_term[j, i]) * sf[j, i]
+                    + pr * ra * dudx
                 )
 
         omega_inner_flat = self.lu.solve(self._rhs)
