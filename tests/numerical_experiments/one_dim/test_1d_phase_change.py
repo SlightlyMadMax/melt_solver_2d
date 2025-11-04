@@ -82,7 +82,6 @@ cfg = ExperimentConfig(
     material_props=material_props,
     u_ref=0.5 * (min_temp + max_temp),
     delta_u=0.5 * (max_temp - min_temp),
-    v=0.01,
     l=geometry.max_dimension,
     delta=delta,
     epsilon=1e-6,

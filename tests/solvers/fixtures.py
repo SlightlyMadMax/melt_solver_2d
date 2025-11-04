@@ -29,7 +29,6 @@ def get_cfg() -> ExperimentConfig:
         material_props=material_props,
         u_ref=273.15,
         delta_u=1.0,
-        v=0.1,
         l=1.0,
         delta=None,
         epsilon=1e-6,
