@@ -125,7 +125,7 @@ bcs = BoundaryConditions(
 
 heat_transfer_solver = HeatTransferSolver(
     cfg=cfg,
-    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
+    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
     max_iters=1,
