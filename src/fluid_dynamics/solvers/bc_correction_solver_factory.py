@@ -201,11 +201,7 @@ class BCCorrectionNVSolver:
 
         return b_int.ravel()
 
-    def _construct_matrix(
-        self,
-        px_half: np.ndarray,
-        py_half: np.ndarray,
-    ):
+    def _construct_matrix(self, px_half: np.ndarray, py_half: np.ndarray):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
