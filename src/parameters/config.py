@@ -150,9 +150,9 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         exp_char = (
             f"Characteristic values:\n"
             f"  Reference Temperature: {self.u_ref} K\n"
-            f"  Characteristic Temperature Difference {self.delta_u:.2E} K\n"
-            f"  Characteristic Length {self.l} m\n"
-            f"  Diffusive Time Scale {self.l**2 / self.thermal_diffusivity_ref:.2E} s\n"
+            f"  Characteristic Temperature Difference: {self.delta_u:.2E} K\n"
+            f"  Characteristic Length: {self.l} m\n"
+            f"  Diffusive Time Scale: {self.l**2 / self.thermal_diffusivity_ref:.2E} s\n"
         )
         dim_nums = (
             f"Dimensionless numbers:\n"
