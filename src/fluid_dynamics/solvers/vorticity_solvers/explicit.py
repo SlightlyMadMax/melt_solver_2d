@@ -48,14 +48,14 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 convection_x = (
-                    conv_x[j][i][0] * sf[j, i + 1]
-                    + conv_x[j][i][1] * sf[j, i]
-                    + conv_x[j][i][2] * sf[j, i - 1]
+                    conv_x[j, i, 0] * sf[j, i + 1]
+                    + conv_x[j, i, 1] * sf[j, i]
+                    + conv_x[j, i, 2] * sf[j, i - 1]
                 )
                 convection_y = (
-                    conv_y[j][i][0] * sf[j + 1, i]
-                    + conv_y[j][i][1] * sf[j, i]
-                    + conv_y[j][i][2] * sf[j - 1, i]
+                    conv_y[j, i, 0] * sf[j + 1, i]
+                    + conv_y[j, i, 1] * sf[j, i]
+                    + conv_y[j, i, 2] * sf[j - 1, i]
                 )
 
                 convection = convection_x + convection_y
