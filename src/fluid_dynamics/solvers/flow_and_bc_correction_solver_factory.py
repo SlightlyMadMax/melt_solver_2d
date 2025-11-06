@@ -156,7 +156,6 @@ class FlowCorrectionNVSolver:
         conv_vorticity: np.ndarray,
         time: float,
     ) -> None:
-        penalty_term = self.vorticity_solver.penalty_term
         self.convective_operator(
             w=conv_vorticity, conv_x=self._conv_x, conv_y=self._conv_y
         )
