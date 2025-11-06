@@ -7,6 +7,7 @@ from scipy import sparse
 
 from src.convective_operators import VorticityBasedConvectiveOperator
 from src.core.boundary_conditions import BoundaryConditions
+from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
@@ -162,14 +163,16 @@ class FlowCorrectionNVSolver:
         b = self._construct_rhs(
             vorticity=vorticity,
             sf_old=sf_old,
-            penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
+            px_half=self.vorticity_solver.px_half,
+            py_half=self.vorticity_solver.py_half,
         )
         A = self._construct_matrix(
-            penalty_term=penalty_term,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
+            px_half=self.vorticity_solver.px_half,
+            py_half=self.vorticity_solver.py_half,
         )
         self._stream_function[:, :] = self.stream_function_solver.solve(
             initial_guess=sf_old,
@@ -185,17 +188,46 @@ class FlowCorrectionNVSolver:
         self,
         vorticity: np.ndarray,
         sf_old: np.ndarray,
-        penalty_term: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
+        px_half: np.ndarray,
+        py_half: np.ndarray,
     ) -> np.ndarray:
-        _, _, tau = self.cfg.scaled_grid_steps
+        dx, dy, tau = self.cfg.scaled_grid_steps
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
         inv_re = 1.0 / self.cfg.reynolds_number
 
-        psi = sf_old[1:-1, 1:-1]
+        # interior (i = 1..n_x-2, j = 1..n_y-2)
+        psi = sf_old[1:-1, 1:-1]  # shape (n_y-2, n_x-2)
         w = vorticity[1:-1, 1:-1]
         r = self.rho[1:-1, 1:-1]
-        c = penalty_term[1:-1, 1:-1]
+
+        # X-direction: px_half has shape (n_y, n_x-1)
+        # we need px_half[j, i] and px_half[j, i-1] for i=1..n_x-2, j=1..n_y-2
+        px_i = px_half[1:-1, 1:]  # selects columns 1..(n_x-2) -> shape (n_y-2, n_x-2)
+        px_im1 = px_half[
+            1:-1, :-1
+        ]  # selects columns 0..(n_x-3) -> shape (n_y-2, n_x-2)
+
+        sf_x_fwd = sf_old[1:-1, 2:]  # sf[j, i+1]
+        sf_x = psi  # sf[j, i]
+        sf_x_bak = sf_old[1:-1, 0:-2]  # sf[j, i-1]
+
+        term_x = px_i * (sf_x_fwd - sf_x) - px_im1 * (sf_x - sf_x_bak)
+
+        # Y-direction: py_half has shape (n_y-1, n_x)
+        # we need py_half[j, i] and py_half[j-1, i] for j=1..n_y-2, i=1..n_x-2
+        py_j = py_half[1:, 1:-1]  # rows 1..(n_y-2), cols 1..(n_x-2) -> (n_y-2, n_x-2)
+        py_jm1 = py_half[:-1, 1:-1]  # rows 0..(n_y-3), cols 1..(n_x-2)
+
+        sf_y_fwd = sf_old[2:, 1:-1]  # sf[j+1, i]
+        sf_y = psi  # sf[j, i]
+        sf_y_bak = sf_old[0:-2, 1:-1]  # sf[j-1, i]
+
+        term_y = py_j * (sf_y_fwd - sf_y) - py_jm1 * (sf_y - sf_y_bak)
+
+        c_inner = -inv_dx2 * term_x - inv_dy2 * term_y
 
         conv = (
             conv_x[1:-1, 1:-1, 0] * sf_old[1:-1, 2:]
@@ -204,67 +236,104 @@ class FlowCorrectionNVSolver:
             + conv_y[1:-1, 1:-1, 2] * sf_old[:-2, 1:-1]
         )
 
-        b_int = -w - 0.5 * tau * ((c + inv_re * r) * psi + conv)
+        b_int = -w - 0.5 * tau * (c_inner + inv_re * r * psi + conv)
 
         return b_int.ravel()
 
     def _construct_matrix(
         self,
-        penalty_term: np.ndarray,
         conv_x: np.ndarray,
         conv_y: np.ndarray,
+        px_half: np.ndarray,
+        py_half: np.ndarray,
     ):
-        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
+        geometry: DomainGeometry = self.cfg.geometry
+        n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
-        inv_dx2 = 1.0 / (dx * dx)
-        inv_dy2 = 1.0 / (dy * dy)
-        tau_half = 0.5 * tau
         inv_re = 1.0 / self.cfg.reynolds_number
 
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = tau_half * (penalty_term + inv_re * self.rho)
-        c_inner_flat = c[1:-1, 1:-1].flatten()
+        inv_dx2 = 1.0 / (dx * dx)
+        inv_dy2 = 1.0 / (dy * dy)
+        tau_half = 0.5 * tau
 
-        # Extract convective coefficients for inner grid
+        p_e = px_half[1:-1, 1:]  # east half-link for inner points
+        p_w = px_half[1:-1, :-1]  # west half-link
+        p_n = py_half[1:, 1:-1]  # north half-link
+        p_s = py_half[:-1, 1:-1]  # south half-link
+
+        a_e = p_e * inv_dx2
+        a_w = p_w * inv_dx2
+        a_n = p_n * inv_dy2
+        a_s = p_s * inv_dy2
+
+        sum_neighbors = a_e + a_w + a_n + a_s  # shape (inner_n_y, inner_n_x)
+
+        rho_inner = self.rho[1:-1, 1:-1]
+        rho_term_flat = (tau_half * inv_re * rho_inner).ravel()
+
         conv_x_inner = conv_x[1:-1, 1:-1, :]
         conv_y_inner = conv_y[1:-1, 1:-1, :]
 
         conv_x_east_flat = conv_x_inner[:, :, 0].flatten()
-        conv_x_west_flat = conv_x_inner[:, :, 2].flatten()
-        conv_y_north_flat = conv_y_inner[:, :, 0].flatten()
-        conv_y_south_flat = conv_y_inner[:, :, 2].flatten()
+        conv_x_west_flat = conv_x_inner[:, :, 2].flatten()  # conv at west face
+        conv_y_north_flat = conv_y_inner[:, :, 0].flatten()  # conv at north face
+        conv_y_south_flat = conv_y_inner[:, :, 2].flatten()  # conv at south face
 
-        # Main diagonal: Δψ - c ψ
-        main_diag = -2.0 * inv_dx2 - 2.0 * inv_dy2 - c_inner_flat
+        lam_main = -2.0 * inv_dx2 - 2.0 * inv_dy2
+        main_diag = np.full(size, lam_main)
 
-        # East diagonal (offset +1)
+        main_diag -= (tau_half * sum_neighbors).ravel()
+
+        main_diag -= rho_term_flat
+
+        side_diag_east = np.zeros(size - 1)  # +1 offset
+        side_diag_west = np.zeros(size - 1)  # -1 offset
+
         east_mask = (np.arange(size) % inner_n_x) < (inner_n_x - 1)
-        east_valid_indices = np.where(east_mask)[0]
-        east_diag = np.zeros(size - 1)
-        east_diag[east_valid_indices] = (
-            inv_dx2 - tau_half * conv_x_east_flat[east_valid_indices]
+        east_idx = np.where(east_mask)[0]
+        a_e_flat = a_e.flatten()
+        a_w_flat = a_w.flatten()
+
+        side_diag_east[east_idx] = (inv_dx2 + tau_half * a_e_flat[east_idx]) - (
+            tau_half * conv_x_east_flat[east_idx]
         )
 
-        # West diagonal (offset -1)
         west_valid_in_diag = (np.arange(1, size) % inner_n_x) != 0
         west_valid_indices = np.where(west_valid_in_diag)[0]
-        west_diag = np.zeros(size - 1)
-        west_diag[west_valid_indices] = (
-            inv_dx2
-            - tau_half * conv_x_west_flat[np.arange(1, size)[west_valid_in_diag]]
-        )
 
-        # North diagonal (offset +inner_n_x)
-        north_diag = inv_dy2 - tau_half * conv_y_north_flat[: (size - inner_n_x)]
+        side_diag_west[west_valid_indices] = (
+            inv_dx2 + tau_half * a_w_flat[np.arange(1, size)[west_valid_in_diag]]
+        ) - (tau_half * conv_x_west_flat[np.arange(1, size)[west_valid_in_diag]])
 
-        # South diagonal (offset -inner_n_x)
-        south_diag = inv_dy2 - tau_half * conv_y_south_flat[inner_n_x:]
+        up_down_len = size - inner_n_x
+        up_down_diag_north = np.zeros(up_down_len)  # +inner_n_x offset (north)
+        up_down_diag_south = np.zeros(up_down_len)  # -inner_n_x offset (south)
 
-        diagonals = [main_diag, west_diag, east_diag, north_diag, south_diag]
-        offsets = [0, -1, 1, inner_n_x, -inner_n_x]
+        if inner_n_y > 1:
+            base = 0
+            pos = 0
+            for r in range(inner_n_y - 1):
+                idx = base + np.arange(inner_n_x)
+                up_down_diag_north[pos : pos + inner_n_x] = (
+                    inv_dy2 + tau_half * a_n[r, :]
+                ) - (tau_half * conv_y_north_flat[idx])
+                up_down_diag_south[pos : pos + inner_n_x] = (
+                    inv_dy2 + tau_half * a_s[r, :]
+                ) - (tau_half * conv_y_south_flat[idx + inner_n_x])
+                base += inner_n_x
+                pos += inner_n_x
+
+        diagonals = [
+            main_diag,
+            side_diag_west,
+            side_diag_east,
+            up_down_diag_south,
+            up_down_diag_north,
+        ]
+        offsets = [0, -1, 1, -inner_n_x, inner_n_x]
 
         m = sparse.diags(diagonals, offsets, shape=(size, size), format="csr")
-
         return m
