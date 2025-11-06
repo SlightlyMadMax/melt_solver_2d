@@ -61,10 +61,7 @@ class FlowCorrectionNVSolver:
 
     def calculate_rho(self):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
-        dy_scaled, dx_scaled = (
-            self.cfg.geometry.dy / self.cfg.l,
-            self.cfg.geometry.dx / self.cfg.l,
-        )
+        dx_scaled, dy_scaled, _ = self.cfg.scaled_grid_steps
 
         rho = np.zeros((n_y, n_x))
 
