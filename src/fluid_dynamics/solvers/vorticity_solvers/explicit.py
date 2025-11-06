@@ -31,7 +31,8 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
         dy: float,
         dt: float,
         re: float,
-        p: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
         buoy: NDArray[np.float64],
     ) -> NDArray[np.float64]:
         n_y, n_x = w.shape
@@ -64,7 +65,16 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - convection
-                    - p[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
+                    )
                 )
 
         return result
@@ -88,6 +98,8 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
+            px_half=self.px_half,
+            py_half=self.py_half,
             left_bc=self.left_bc,
             right_bc=self.right_bc,
             top_bc=self.top_bc,
@@ -97,7 +109,6 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             dy=dy_scaled,
             dt=dt_scaled,
             re=self.cfg.reynolds_number,
-            pe=self.penalty_term,
             buoy=self.buoyancy_term,
         )
 

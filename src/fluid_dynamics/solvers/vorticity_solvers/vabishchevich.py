@@ -20,7 +20,9 @@ class VabishchevichScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            penalty_term=self.penalty_term,
+            px_half=self.px_half,
+            py_half=self.py_half,
+            buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -38,7 +40,9 @@ class VabishchevichScheme(ADIVorticitySolver):
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
-            penalty_term=self.penalty_term,
+            px_half=self.px_half,
+            py_half=self.py_half,
+            buoy=self.buoyancy_term,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -56,8 +60,9 @@ class VabishchevichScheme(ADIVorticitySolver):
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
         sf: NDArray[np.float64],
-        penalty_term: NDArray[np.float64],
-        buoyancy_term: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
+        buoy: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -82,7 +87,7 @@ class VabishchevichScheme(ADIVorticitySolver):
                 c[j, i] = -dt_half * inv_re * inv_dx2
 
                 rhs[j, i] = w[j, i] + dt_half * (
-                    buoyancy_term[j, i]
+                    buoy[j, i]
                     + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_x[j, i, 0] * sf[j, i + 1]
@@ -94,7 +99,16 @@ class VabishchevichScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
                     )
-                    - penalty_term[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
+                    )
                 )
 
     @staticmethod
@@ -104,8 +118,9 @@ class VabishchevichScheme(ADIVorticitySolver):
         sf: NDArray[np.float64],
         conv_x: NDArray[np.float64],
         conv_y: NDArray[np.float64],
-        penalty_term: NDArray[np.float64],
-        buoyancy_term: NDArray[np.float64],
+        px_half: NDArray[np.float64],
+        py_half: NDArray[np.float64],
+        buoy: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -130,7 +145,7 @@ class VabishchevichScheme(ADIVorticitySolver):
                 c[i, j] = -dt_half * inv_re * inv_dy2
 
                 rhs[i, j] = w[j, i] + dt_half * (
-                    buoyancy_term[j, i]
+                    buoy[j, i]
                     + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
                         conv_x[j, i, 0] * sf[j, i + 1]
@@ -142,5 +157,14 @@ class VabishchevichScheme(ADIVorticitySolver):
                         + conv_y[j, i, 1] * sf[j, i]
                         + conv_y[j, i, 2] * sf[j - 1, i]
                     )
-                    - penalty_term[j, i] * sf[j, i]
+                    + inv_dx2
+                    * (
+                        px_half[j, i] * (sf[j, i + 1] - sf[j, i])
+                        - px_half[j, i - 1] * (sf[j, i] - sf[j, i - 1])
+                    )
+                    + inv_dy2
+                    * (
+                        py_half[j, i] * (sf[j + 1, i] - sf[j, i])
+                        - py_half[j - 1, i] * (sf[j, i] - sf[j - 1, i])
+                    )
                 )
