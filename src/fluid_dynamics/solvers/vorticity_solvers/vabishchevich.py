@@ -24,7 +24,7 @@ class VabishchevichScheme(ADIVorticitySolver):
             dx=dx,
             dy=dy,
             dt=dt,
-            pr=self.cfg.prandtl_number,
+            re=self.cfg.reynolds_number,
             a=self._a_x,
             b=self._b_x,
             c=self._c_x,
@@ -42,7 +42,7 @@ class VabishchevichScheme(ADIVorticitySolver):
             dx=dx,
             dy=dy,
             dt=dt,
-            pr=self.cfg.prandtl_number,
+            re=self.cfg.reynolds_number,
             a=self._a_y,
             b=self._b_y,
             c=self._c_y,
@@ -61,7 +61,7 @@ class VabishchevichScheme(ADIVorticitySolver):
         dx: float,
         dy: float,
         dt: float,
-        pr: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -71,18 +71,19 @@ class VabishchevichScheme(ADIVorticitySolver):
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
         dt_half = 0.5 * dt
+        inv_re = 1.0 / re
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
-                a[j, i] = -dt_half * pr * inv_dx2
+                a[j, i] = -dt_half * inv_re * inv_dx2
 
-                b[j, i] = 1.0 + dt * pr * inv_dx2
+                b[j, i] = 1.0 + dt * inv_re * inv_dx2
 
-                c[j, i] = -dt_half * pr * inv_dx2
+                c[j, i] = -dt_half * inv_re * inv_dx2
 
                 rhs[j, i] = w[j, i] + dt_half * (
                     buoyancy_term[j, i]
-                    + pr * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
+                    + inv_re * inv_dy2 * (w[j + 1, i] - 2.0 * w[j, i] + w[j - 1, i])
                     - (
                         conv_x[j, i, 0] * sf[j, i + 1]
                         + conv_x[j, i, 1] * sf[j, i]
@@ -108,7 +109,7 @@ class VabishchevichScheme(ADIVorticitySolver):
         dx: float,
         dy: float,
         dt: float,
-        pr: float,
+        re: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
@@ -118,18 +119,19 @@ class VabishchevichScheme(ADIVorticitySolver):
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
         dt_half = 0.5 * dt
+        inv_re = 1.0 / re
 
         for i in range(1, n_x - 1):
             for j in range(1, n_y - 1):
-                a[i, j] = -dt_half * pr * inv_dy2
+                a[i, j] = -dt_half * inv_re * inv_dy2
 
-                b[i, j] = 1.0 + dt * pr * inv_dy2
+                b[i, j] = 1.0 + dt * inv_re * inv_dy2
 
-                c[i, j] = -dt_half * pr * inv_dy2
+                c[i, j] = -dt_half * inv_re * inv_dy2
 
                 rhs[i, j] = w[j, i] + dt_half * (
                     buoyancy_term[j, i]
-                    + pr * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
+                    + inv_re * inv_dx2 * (w[j, i + 1] - 2.0 * w[j, i] + w[j, i - 1])
                     - (
                         conv_x[j, i, 0] * sf[j, i + 1]
                         + conv_x[j, i, 1] * sf[j, i]

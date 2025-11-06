@@ -193,7 +193,7 @@ class FlowCorrectionNVSolver:
         conv_y: np.ndarray,
     ) -> np.ndarray:
         _, _, tau = self.cfg.scaled_grid_steps
-        pr = self.cfg.prandtl_number
+        inv_re = 1.0 / self.cfg.reynolds_number
 
         psi = sf_old[1:-1, 1:-1]
         w = vorticity[1:-1, 1:-1]
@@ -207,7 +207,7 @@ class FlowCorrectionNVSolver:
             + conv_y[1:-1, 1:-1, 2] * sf_old[:-2, 1:-1]
         )
 
-        b_int = -w - 0.5 * tau * ((c + pr * r) * psi + conv)
+        b_int = -w - 0.5 * tau * ((c + inv_re * r) * psi + conv)
 
         return b_int.ravel()
 
@@ -219,15 +219,15 @@ class FlowCorrectionNVSolver:
     ):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
-        pr = self.cfg.prandtl_number
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
         tau_half = 0.5 * tau
+        inv_re = 1.0 / self.cfg.reynolds_number
 
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
 
-        c = tau_half * (penalty_term + pr * self.rho)
+        c = tau_half * (penalty_term + inv_re * self.rho)
         c_inner_flat = c[1:-1, 1:-1].flatten()
 
         # Extract convective coefficients for inner grid

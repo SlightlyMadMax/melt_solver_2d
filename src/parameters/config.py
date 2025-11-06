@@ -1,3 +1,4 @@
+import math
 from functools import cached_property
 from typing import Optional, Tuple
 
@@ -45,7 +46,16 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         :return: dx_scaled, dy_scaled, dt_scaled
         """
         dx, dy, dt = self.geometry.dx, self.geometry.dy, self.geometry.dt
-        return dx / self.l, dy / self.l, dt * self.thermal_diffusivity_ref / self.l**2
+        return dx / self.l, dy / self.l, dt * self.v / self.l
+
+    @cached_property
+    def v(self) -> float:
+        """
+        Calculate the characteristic velocity scale for buoyancy-driven inertial flow.
+        """
+        return math.sqrt(
+            G * self.l * abs(self.material_props.volumetric_thermal_exp) * self.delta_u
+        )
 
     @property
     def u_pt_ref(self) -> float:
@@ -101,6 +111,37 @@ class ExperimentConfig(BaseModel, FileIOMixin):
         return self.thermal_conductivity_ref / self.volumetric_heat_capacity_ref
 
     @cached_property
+    def peclet_number(self) -> float:
+        """
+        Calculate the Péclet number at the reference temperature.
+        Formula: Pe = characteristic_length * flow_velocity *  volumetric_heat_capacity / thermal_conductivity
+        """
+        return (
+            self.v
+            * self.l
+            * self.volumetric_heat_capacity_ref
+            / self.thermal_conductivity_ref
+        )
+
+    @cached_property
+    def reynolds_number(self) -> float:
+        """
+        Calculate the Reynolds number at the reference temperature.
+        Formula: Re = characteristic_length * flow_velocity / kinematic_viscosity
+        """
+        return self.v * self.l / self.material_props.kinematic_viscosity
+
+    @cached_property
+    def grashof_number(self) -> float:
+        """
+        Calculate the Grashof number at the reference temperature.
+        Formula: Gr = g * thermal_expansion_coefficient * delta_u * l^3 / kinematic_viscosity^2
+        """
+        beta = abs(self.material_props.volumetric_thermal_exp)
+        kinematic_visc = self.material_props.kinematic_viscosity
+        return G * beta * self.delta_u * self.l**3 / (kinematic_visc * kinematic_visc)
+
+    @cached_property
     def stefan_number(self) -> float:
         """
         Calculate the Stefan number for liquid phase.
@@ -152,12 +193,16 @@ class ExperimentConfig(BaseModel, FileIOMixin):
             f"  Reference Temperature: {self.u_ref} K\n"
             f"  Characteristic Temperature Difference: {self.delta_u:.2E} K\n"
             f"  Characteristic Length: {self.l} m\n"
+            f"  Characteristic Velocity: {self.v:.2E} m/s\n"
             f"  Diffusive Time Scale: {self.l**2 / self.thermal_diffusivity_ref:.2E} s\n"
         )
         dim_nums = (
             f"Dimensionless numbers:\n"
+            f"  Re = {self.reynolds_number:.3E}\n"
+            f"  Gr = {self.grashof_number:.3E}\n"
             f"  Ra = {self.rayleigh_number:.3E}\n"
             f"  Pr = {self.prandtl_number:.3E}\n"
+            f"  Pe = {self.peclet_number:.3E}\n"
             f"  Ste = {self.stefan_number:.3E}\n"
             f"  Fo (local) = {self.local_fourier_number:.3E}\n"
         )

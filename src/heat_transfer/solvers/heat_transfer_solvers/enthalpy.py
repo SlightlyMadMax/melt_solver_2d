@@ -51,7 +51,8 @@ class EnthalpySolver(ADIHeatSolver):
             dx=dx,
             dy=dy,
             dt=dt,
-            stefan_number=self.cfg.stefan_number,
+            pe=self.cfg.peclet_number,
+            ste=self.cfg.stefan_number,
             l_f_n=self._liquid_frac_old,
             l_f_np1=self._liquid_frac_new,
             a=self._a_x,
@@ -71,7 +72,8 @@ class EnthalpySolver(ADIHeatSolver):
             dx=dx,
             dy=dy,
             dt=dt,
-            stefan_number=self.cfg.stefan_number,
+            pe=self.cfg.peclet_number,
+            ste=self.cfg.stefan_number,
             l_f_n=self._liquid_frac_old,
             l_f_np1=self._liquid_frac_new,
             a=self._a_y,
@@ -91,8 +93,8 @@ class EnthalpySolver(ADIHeatSolver):
         dx: float,
         dy: float,
         dt: float,
-        peclet_number: float,
-        stefan_number: float,
+        pe: float,
+        ste: float,
         l_f_n: NDArray[np.float64],
         l_f_np1: NDArray[np.float64],
         a: NDArray[np.float64],
@@ -103,8 +105,9 @@ class EnthalpySolver(ADIHeatSolver):
         n_y, n_x = u.shape
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
-        inv_ste = 1.0 / stefan_number
         dt_half = 0.5 * dt
+        inv_ste = 1.0 / ste
+        inv_pe = 1.0 / pe
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -115,19 +118,24 @@ class EnthalpySolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
-                a[j, i] = dt_half * (conv_x[j, i, 0] - k_ip1j * inv_c_eff * inv_dx2)
+                a[j, i] = dt_half * (
+                    conv_x[j, i, 0] - k_ip1j * inv_pe * inv_c_eff * inv_dx2
+                )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
                 b[j, i] = 1.0 + dt_half * (
-                    conv_x[j, i, 1] + (k_ip1j + k_im1j) * inv_c_eff * inv_dx2
+                    conv_x[j, i, 1] + (k_ip1j + k_im1j) * inv_pe * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
-                c[j, i] = dt_half * (conv_x[j, i, 2] - k_im1j * inv_c_eff * inv_dx2)
+                c[j, i] = dt_half * (
+                    conv_x[j, i, 2] - k_im1j * inv_pe * inv_c_eff * inv_dx2
+                )
 
                 # Right-hand side of the equation
                 rhs[j, i] = u[j, i] + dt_half * (
                     inv_dy2
+                    * inv_pe
                     * inv_c_eff
                     * (
                         k_ijp1 * (u[j + 1, i] - u[j, i])
@@ -152,7 +160,8 @@ class EnthalpySolver(ADIHeatSolver):
         dx: float,
         dy: float,
         dt: float,
-        stefan_number: float,
+        pe: float,
+        ste: float,
         l_f_n: NDArray[np.float64],
         l_f_np1: NDArray[np.float64],
         a: NDArray[np.float64],
@@ -163,8 +172,9 @@ class EnthalpySolver(ADIHeatSolver):
         n_y, n_x = u.shape
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
-        inv_ste = 1.0 / stefan_number
         dt_half = 0.5 * dt
+        inv_ste = 1.0 / ste
+        inv_pe = 1.0 / pe
 
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
@@ -175,19 +185,24 @@ class EnthalpySolver(ADIHeatSolver):
                 k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
-                a[i, j] = dt_half * (conv_y[j, i, 0] - k_ijp1 * inv_c_eff * inv_dy2)
+                a[i, j] = dt_half * (
+                    conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2
+                )
 
                 # Coefficient at T_{i, j}^{n + 1}
                 b[i, j] = 1.0 + dt_half * (
-                    conv_y[j, i, 1] + (k_ijp1 + k_ijm1) * inv_c_eff * inv_dy2
+                    conv_y[j, i, 1] + (k_ijp1 + k_ijm1) * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
-                c[i, j] = dt_half * (conv_y[j, i, 2] - k_ijm1 * inv_c_eff * inv_dy2)
+                c[i, j] = dt_half * (
+                    conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2
+                )
 
                 # Right-hand side of the equation
                 rhs[i, j] = u[j, i] + dt_half * (
                     inv_dx2
+                    * inv_pe
                     * inv_c_eff
                     * (
                         k_ip1j * (u[j, i + 1] - u[j, i])

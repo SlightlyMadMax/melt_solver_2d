@@ -22,7 +22,7 @@ delta_u = cfg.delta_u
 u_ref = cfg.u_ref
 u_pt = cfg.material_props.u_pt
 l = cfg.l
-v = cfg.thermal_diffusivity_ref / l
+v = cfg.v
 
 # fig, ax = plt.subplots()
 # ax.imshow(img, extent=[0, 1.0, 0, 1.0])

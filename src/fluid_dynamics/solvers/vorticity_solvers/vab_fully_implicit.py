@@ -58,15 +58,15 @@ class VabFullyImplicitScheme(BaseSolver):
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
         size = inner_n_x * inner_n_y
         dx, dy, tau = self.cfg.scaled_grid_steps
-        pr = self.cfg.prandtl_number
+        inv_re = 1.0 / self.cfg.reynolds_number
 
         main_diag = -2 / dx**2 - 2 / dy**2
         off_diag_x = 1 / dx**2
         off_diag_y = 1 / dy**2
 
-        main_diag = np.full(size, pr * main_diag)
-        x_off_diag = np.full(size - 1, pr * off_diag_x)
-        y_off_diag = np.full(size - inner_n_x, pr * off_diag_y)
+        main_diag = np.full(size, inv_re * main_diag)
+        x_off_diag = np.full(size - 1, inv_re * off_diag_x)
+        y_off_diag = np.full(size - inner_n_x, inv_re * off_diag_y)
 
         x_off_diag[np.arange(1, size) % inner_n_x == 0] = 0
 
@@ -111,8 +111,9 @@ class VabFullyImplicitScheme(BaseSolver):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, tau = self.cfg.scaled_grid_steps
-        pr = self.cfg.prandtl_number
-        ra = self.cfg.rayleigh_number
+        inv_re = 1.0 / self.cfg.reynolds_number
+        gr = self.cfg.grashof_number
+
         inv_dx = 1.0 / dx
         inner_n_y, inner_n_x = n_y - 2, n_x - 2
 
@@ -133,8 +134,8 @@ class VabFullyImplicitScheme(BaseSolver):
                 self._rhs[idx] = (
                     w[j, i] / tau
                     - conv_term
-                    - (pr * self.rho[j, i] + self.penalty_term[j, i]) * sf[j, i]
-                    + pr * ra * dudx
+                    - (inv_re * self.rho[j, i] + self.penalty_term[j, i]) * sf[j, i]
+                    + gr * inv_re**2 * dudx
                 )
 
         omega_inner_flat = self.lu.solve(self._rhs)
