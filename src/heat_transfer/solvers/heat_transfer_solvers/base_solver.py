@@ -273,8 +273,14 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             )
         elif bc.boundary_type == BoundaryConditionType.NEUMANN:
             if self.bc_order == 1:
-                flux = bc.get_flux(t=time) / (
-                    k_eff_slice * self.cfg.thermal_conductivity_ref
+                flux = (
+                    bc.get_flux(t=time)
+                    * self.cfg.l
+                    / (
+                        k_eff_slice
+                        * self.cfg.thermal_conductivity_ref
+                        * self.cfg.delta_u
+                    )
                 )
                 self.apply_neumann_first_order(
                     a=a, b=b, c=c, rhs=rhs, flux=flux, side=side
