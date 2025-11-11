@@ -4,11 +4,7 @@ import sys
 import numpy as np
 
 from src.convective_operators import ConvectiveTermForm
-from src.core.boundary_conditions import (
-    BoundaryConditions,
-    BoundaryCondition,
-    BoundaryConditionType,
-)
+from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
 from src.core.runner import SimulationState, ExperimentRunner
 from src.fluid_dynamics.init_values import (
@@ -25,13 +21,12 @@ from src.heat_transfer.init_values import (
     init_temperature_with_interface,
 )
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
+from src.heat_transfer.plotting import plot_temperature
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
-    t_air,
 )
 
 
@@ -60,11 +55,6 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        # top=BoundaryCondition(
-        #     boundary_type=BoundaryConditionType.DIRICHLET,
-        #     n=n_x,
-        #     value_func=t_air,
-        # ),
         top=const_dirichlet_condition(n_x, value=(278.15 - u_ref) / delta_u),
         right=const_neumann_condition(n_y, value=0.0),
         bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
@@ -132,13 +122,13 @@ if __name__ == "__main__":
     v_x, v_y = initialize_velocity(geometry=geometry)
 
     dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -186,10 +176,10 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/crevasse/convection/small_domain_dc",
+        checkpoints_dir="../data/wavy_surface/5x15",
         logger=logger,
         save_at=log_at,
         log_at=log_at,
-        plot_at=plot_at,
+        plot_at=set(),
     )
     runner.run()
