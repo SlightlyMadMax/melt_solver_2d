@@ -60,11 +60,12 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=BoundaryCondition(
-            boundary_type=BoundaryConditionType.DIRICHLET,
-            n=n_x,
-            value_func=t_air,
-        ),
+        # top=BoundaryCondition(
+        #     boundary_type=BoundaryConditionType.DIRICHLET,
+        #     n=n_x,
+        #     value_func=t_air,
+        # ),
+        top=const_dirichlet_condition(n_x, value=(278.15 - u_ref) / delta_u),
         right=const_neumann_condition(n_y, value=0.0),
         bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
         left=const_neumann_condition(n_y, value=0.0),
@@ -92,19 +93,19 @@ if __name__ == "__main__":
     crevasse_depth = 0.2
     f = np.empty(n_x)
 
-    angle_rad = np.deg2rad(15.0)
-    tan15 = np.tan(angle_rad)
-    w_half = crevasse_depth * tan15
-
-    for i in range(n_x):
-        x = i * geometry.dx
-        dx = abs(x - geometry.width / 2)
-
-        if dx <= w_half:
-            local_depth = crevasse_depth - dx / tan15
-            f[i] = geometry.height - water_thickness - local_depth
-        else:
-            f[i] = geometry.height - water_thickness
+    # angle_rad = np.deg2rad(15.0)
+    # tan15 = np.tan(angle_rad)
+    # w_half = crevasse_depth * tan15
+    #
+    # for i in range(n_x):
+    #     x = i * geometry.dx
+    #     dx = abs(x - geometry.width / 2)
+    #
+    #     if dx <= w_half:
+    #         local_depth = crevasse_depth - dx / tan15
+    #         f[i] = geometry.height - water_thickness - local_depth
+    #     else:
+    #         f[i] = geometry.height - water_thickness
 
     # for i in range(n_x):
     #     x = i * geometry.dx
@@ -112,6 +113,10 @@ if __name__ == "__main__":
     #         f[i] = geometry.height - water_thickness - crevasse_depth
     #     else:
     #         f[i] = geometry.height - water_thickness
+
+    for i in range(n_x):
+        x = i * geometry.dx
+        f[i] = geometry.height - water_thickness
 
     u = init_temperature_with_interface(
         cfg=cfg,
@@ -142,7 +147,7 @@ if __name__ == "__main__":
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.UPWIND_FC,
+        convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         bc_order=1,
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
@@ -160,10 +165,10 @@ if __name__ == "__main__":
     )
 
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
-    log_and_plot_interval = 1800
-    log_and_plot_at = set(
-        [n for n in range(1, n_t + 1) if n * dt % log_and_plot_interval == 0]
-    )
+    log_interval = 900
+    plot_interval = 900
+    log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
+    plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     # save_at = {
     #     int(2.0 * 60 / dt),
     #     int(3.0 * 60 / dt),
@@ -181,10 +186,10 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/crevasse/convection/up_heat_wedge",
+        checkpoints_dir="../data/crevasse/convection/small_domain_dc",
         logger=logger,
-        save_at=log_and_plot_at,
-        log_at=log_and_plot_at,
-        plot_at=log_and_plot_at,
+        save_at=log_at,
+        log_at=log_at,
+        plot_at=plot_at,
     )
     runner.run()

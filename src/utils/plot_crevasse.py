@@ -5,12 +5,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from src.core.geometry import DomainGeometry
-from src.heat_transfer.plotting import plot_temperature
-from src.heat_transfer.pt_boundary import get_phase_trans_boundary
+from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
 
-crevasse_dir = "../../data/crevasse/no_convection/wedge/checkpoint_*.npz"
+crevasse_dir = "../../data/crevasse/convection/small_domain_dc/checkpoint_*.npz"
 cfg: ExperimentConfig = ExperimentConfig.load_from_file(
     "../../parameter_sets/water/crevasse.json"
 )
@@ -34,13 +33,14 @@ for i, file_path in enumerate(exp_paths):
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
         min_temp=-5.0,
-        max_temp=4.0,
+        max_temp=5.0,
+        directory="../../graphs/small_domain_dc/",
     )
-    # X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
-    # plt.scatter(X_b, Y_b, s=1, linewidths=0.2, color="k")
 
 
-# ax.set_xlabel("X", fontsize=14)
-# ax.set_ylabel("Y", fontsize=14)
-# plt.tight_layout()
-# plt.show()
+create_gif_from_images(
+    output_filename="small_domain_dc",
+    source_directory="../../graphs/small_domain_dc/",
+    output_directory="../../graphs/animations/",
+    duration=200,
+)
