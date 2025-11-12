@@ -121,7 +121,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    dim_u = u * delta_u + u_ref
+    # dim_u = u * delta_u + u_ref
     # plot_temperature(
     #     u=dim_u,
     #     cfg=cfg,
@@ -153,8 +153,10 @@ if __name__ == "__main__":
         stream_function_solver_name=StreamFunctionSolverName.AMG,
         vorticity_bc_order=1,
     )
-
+    data = np.load("../data/wavy_surface/5x15/checkpoint_7200.npz")
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
+    state.restore(data=data)
+
     log_interval = 900
     plot_interval = 900
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
