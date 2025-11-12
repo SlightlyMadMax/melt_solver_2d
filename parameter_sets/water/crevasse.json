@@ -1,11 +1,11 @@
 {
   "geometry": {
-    "width": 0.2,
-    "height": 0.05,
+    "width": 0.24,
+    "height": 0.24,
     "end_time": 248400,
-    "n_x": 401,
-    "n_y": 101,
-    "n_t": 248400
+    "n_x": 301,
+    "n_y": 301,
+    "n_t": 2484000
   },
   "material_props": {
     "u_pt": 273.15,
@@ -20,8 +20,8 @@
     "volumetric_thermal_exp": -6.733353e-05
   },
   "u_ref": 273.15,
-  "delta_u": 4.0,
-  "l": 0.05,
+  "delta_u": 10.0,
+  "l": 0.24,
   "delta": 0.08,
   "delta_flow": 0.08,
   "epsilon": 0.0005

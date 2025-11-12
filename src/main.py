@@ -45,8 +45,8 @@ if __name__ == "__main__":
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 268.15
-    max_temp = 273.25
+    min_temp = 263.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -55,9 +55,9 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=const_dirichlet_condition(n_x, value=(278.15 - u_ref) / delta_u),
+        top=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
         right=const_neumann_condition(n_y, value=0.0),
-        bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
+        bottom=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
         left=const_neumann_condition(n_y, value=0.0),
     )
 
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     #     liquid_temp=max_temp,
     # )
 
-    water_thickness = 0.04
+    water_thickness = 0.01
     crevasse_width = 0.02
     crevasse_depth = 0.2
     f = np.empty(n_x)
@@ -112,8 +112,8 @@ if __name__ == "__main__":
         cfg=cfg,
         f=f,
         liquid_region_height=water_thickness,
-        liquid_temp=max_temp,
-        solid_temp=min_temp,
+        liquid_temp=min_temp,
+        solid_temp=max_temp,
     )
 
     # Initial stream function, vorticity and velocity fields
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/5x15_0pt04",
+        checkpoints_dir="../data/wavy_surface/24x24",
         logger=logger,
         save_at=log_at,
         log_at=log_at,
