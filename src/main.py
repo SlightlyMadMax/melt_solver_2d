@@ -78,7 +78,7 @@ if __name__ == "__main__":
     #     liquid_temp=max_temp,
     # )
 
-    water_thickness = 0.01
+    water_thickness = 0.04
     crevasse_width = 0.02
     crevasse_depth = 0.2
     f = np.empty(n_x)
@@ -153,9 +153,8 @@ if __name__ == "__main__":
         stream_function_solver_name=StreamFunctionSolverName.AMG,
         vorticity_bc_order=1,
     )
-    data = np.load("../data/wavy_surface/5x15/checkpoint_7200.npz")
+
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
-    state.restore(data=data)
 
     log_interval = 900
     plot_interval = 900
@@ -178,7 +177,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/5x15",
+        checkpoints_dir="../data/wavy_surface/5x15_0pt04",
         logger=logger,
         save_at=log_at,
         log_at=log_at,
