@@ -9,7 +9,7 @@ from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
 
-crevasse_dir = "../../data/crevasse/convection/small_domain_dc/checkpoint_*.npz"
+crevasse_dir = "../../data/wavy_surface/5x15/checkpoint_*.npz"
 cfg: ExperimentConfig = ExperimentConfig.load_from_file(
     "../../parameter_sets/water/crevasse.json"
 )
@@ -34,13 +34,13 @@ for i, file_path in enumerate(exp_paths):
         display_temp_units=TemperatureUnit.CELSIUS,
         min_temp=-5.0,
         max_temp=5.0,
-        directory="../../graphs/small_domain_dc/",
+        directory="../../graphs/5x15/",
     )
 
 
 create_gif_from_images(
-    output_filename="small_domain_dc",
-    source_directory="../../graphs/small_domain_dc/",
+    output_filename="5x15",
+    source_directory="../../graphs/5x15/",
     output_directory="../../graphs/animations/",
     duration=200,
 )
