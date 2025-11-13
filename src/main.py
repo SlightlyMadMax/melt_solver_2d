@@ -156,8 +156,8 @@ if __name__ == "__main__":
 
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
-    log_interval = 900
-    plot_interval = 900
+    log_interval = 1800
+    plot_interval = 1800
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     # save_at = {
@@ -181,6 +181,6 @@ if __name__ == "__main__":
         logger=logger,
         save_at=log_at,
         log_at=log_at,
-        plot_at=set(),
+        plot_at=log_at,
     )
     runner.run()
