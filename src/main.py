@@ -46,7 +46,7 @@ if __name__ == "__main__":
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
     min_temp = 263.15
-    max_temp = 283.15
+    max_temp = 278.65
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -121,14 +121,14 @@ if __name__ == "__main__":
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    # dim_u = u * delta_u + u_ref
-    # plot_temperature(
-    #     u=dim_u,
-    #     cfg=cfg,
-    #     graph_id=0,
-    #     plot_boundary=True,
-    #     show_graph=True,
-    # )
+    dim_u = u * delta_u + u_ref
+    plot_temperature(
+        u=dim_u,
+        cfg=cfg,
+        graph_id=0,
+        plot_boundary=True,
+        show_graph=True,
+    )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/24x24",
+        checkpoints_dir="../data/wavy_surface/24x24_5pt5",
         logger=logger,
         save_at=log_at,
         log_at=log_at,
