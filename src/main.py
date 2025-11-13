@@ -121,14 +121,14 @@ if __name__ == "__main__":
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # dim_u = u * delta_u + u_ref
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
