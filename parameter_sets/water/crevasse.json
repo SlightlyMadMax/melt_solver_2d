@@ -2,10 +2,10 @@
   "geometry": {
     "width": 0.24,
     "height": 0.24,
-    "end_time": 248400,
+    "end_time": 496800,
     "n_x": 201,
     "n_y": 201,
-    "n_t": 248400
+    "n_t": 496800
   },
   "material_props": {
     "u_pt": 273.15,
