@@ -154,12 +154,12 @@ if __name__ == "__main__":
         vorticity_bc_order=1,
     )
 
-    data = np.load("../data/wavy_surface/24x24_5pt5/checkpoint_248400.npz")
+    data = np.load("../data/wavy_surface/24x24_5pt5/checkpoint_496800.npz")
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
     state.restore(data)
 
-    log_interval = 1800
-    plot_interval = 1800
+    log_interval = 3600
+    plot_interval = 3600
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     # save_at = {
