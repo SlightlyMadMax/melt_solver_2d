@@ -154,7 +154,7 @@ if __name__ == "__main__":
         vorticity_bc_order=1,
     )
 
-    data = np.load("../data/wavy_surface/24x24_5pt5/checkpoint_496800.npz")
+    data = np.load("../data/wavy_surface/24x24_5pt5/checkpoint_745200.npz")
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
     state.restore(data)
 
