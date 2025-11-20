@@ -9,8 +9,8 @@
   },
   "material_props": {
     "u_pt": 273.15,
-    "specific_heat_liquid": 4212,
-    "specific_heat_solid": 4212,
+    "specific_heat_liquid": 4212.0,
+    "specific_heat_solid": 4212.0,
     "specific_latent_heat": 1e-6,
     "density_liquid": 999.8,
     "density_solid": 999.8,
