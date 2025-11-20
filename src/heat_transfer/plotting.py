@@ -175,7 +175,7 @@ def plot_temperature(
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig(f"{directory}T_{graph_id}.png")
+    plt.savefig(f"{directory}T_{graph_id}.jpg", dpi=300)
 
     if show_graph:
         plt.show()
@@ -201,7 +201,7 @@ def create_gif_from_images(
     """
     # Sort files by the numeric part of the filename (e.g., T_1.png -> 1)
     image_files = sorted(
-        [file for file in os.listdir(source_directory) if file.endswith(".png")],
+        [file for file in os.listdir(source_directory) if file.endswith(".jpg")],
         key=lambda x: int(
             x.split("_")[1].split(".")[0]
         ),  # Extract the number after 'T_' and before '.png'
