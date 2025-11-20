@@ -29,7 +29,7 @@
   "u_ref": 273.15,
   "delta_u": 10.0,
   "l": 0.038,
-  "delta": null,
-  "delta_flow": null,
-  "epsilon": 0.00004
+  "delta": 1.0,
+  "delta_flow": 1.0,
+  "epsilon": 1.0
 }
