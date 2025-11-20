@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -33,6 +35,11 @@ class MaterialProperties(BaseModel):
     )
     volumetric_thermal_exp: float = Field(
         ..., description="Volumetric thermal expansion coefficient [1/K].",
+    )
+    density_poly_coeffs: List[float] | None = Field(
+        None,
+        min_length=3,
+        description="Polynomial coefficients for density thermal variation near the reference temperature."
     )
 
     @property
