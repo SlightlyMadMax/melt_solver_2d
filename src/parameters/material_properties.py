@@ -34,12 +34,13 @@ class MaterialProperties(BaseModel):
         ..., gt=0, description="Dynamic viscosity of liquid [kg/(m⋅s)]."
     )
     volumetric_thermal_exp: float = Field(
-        ..., description="Volumetric thermal expansion coefficient [1/K].",
+        ...,
+        description="Volumetric thermal expansion coefficient [1/K].",
     )
     density_poly_coeffs: List[float] | None = Field(
         None,
         min_length=3,
-        description="Polynomial coefficients for density thermal variation near the reference temperature."
+        description="Polynomial coefficients for density thermal variation near the reference temperature.",
     )
 
     @property

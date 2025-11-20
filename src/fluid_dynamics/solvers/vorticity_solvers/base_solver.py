@@ -57,18 +57,18 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
         dudx = 0.5 * inv_dx * (u[1:-1, 2:] - u[1:-1, :-2])
 
-        p = self.cfg.material_props.density_poly
-        if not p: # use linear Boussinesq
+        p = self.cfg.material_props.density_poly_coeffs
+        if not p:  # use linear Boussinesq
             self.buoyancy_term[1:-1, 1:-1] = gr * inv_re2 * dudx
-        else: # use user-defined polynomial for thermal density variation near u_ref
+        else:  # use user-defined polynomial for thermal density variation near u_ref
             u_c = u * delta_u + u_ref + ABS_ZERO
             exponents = np.arange(len(p) - 1, 0, -1)
             drhodu_coeffs = exponents * p[:-1]
             drhodu = np.polyval(drhodu_coeffs, u_c)
             drhodx = drhodu[interior] * dudx
-            self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
-
-
+            self.buoyancy_term[interior] = (
+                gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
+            )
 
     def _calculate_penalty_term_at_faces(self):
         self.px_half[:, :] = 0.5 * (
