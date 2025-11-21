@@ -66,9 +66,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             drhodu_coeffs = exponents * p[:-1]
             drhodu = np.polyval(drhodu_coeffs, u_c)
             drhodx = drhodu[interior] * dudx
-            self.buoyancy_term[interior] = (
-                gr * inv_re2 * drhodx / (delta_u * beta * rho_ref)
-            )
+            self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (beta * rho_ref)
 
     def _calculate_penalty_term_at_faces(self):
         self.px_half[:, :] = 0.5 * (
