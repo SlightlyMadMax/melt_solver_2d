@@ -36,6 +36,7 @@ class BCCorrectionNVSolver:
         vorticity_bc_order: int = 1,
     ):
         self.cfg = cfg
+        self.vorticity_bc_order = vorticity_bc_order
         self.convective_operator = StreamFunctionBasedConvectiveOperator(
             cfg=cfg, form=convective_term_form
         )
@@ -62,9 +63,9 @@ class BCCorrectionNVSolver:
 
         self._vorticity: NDArray[np.float64] = np.empty((n_y, n_x))
         self._stream_function: NDArray[np.float64] = np.empty((n_y, n_x))
-        self.rho = self.calculate_rho()
+        self.rho = self.calculate_rho_first_order()
 
-    def calculate_rho(self):
+    def calculate_rho_first_order(self):
         geometry: DomainGeometry = self.cfg.geometry
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, _ = self.cfg.scaled_grid_steps
@@ -83,6 +84,73 @@ class BCCorrectionNVSolver:
         rho[n_y - 2, n_x - 2] = 2 * (dx**-4 + dy**-4)
 
         return rho
+
+    def apply_rho_to_psi_second_order(self, psi: np.ndarray) -> np.ndarray:
+        geometry: DomainGeometry = self.cfg.geometry
+        n_y, n_x = geometry.n_y, geometry.n_x
+        dx, dy, _ = self.cfg.scaled_grid_steps
+
+        res = np.zeros_like(psi)
+
+        j_slice = slice(2, n_y - 2)
+        i_left = 1
+        res[j_slice, i_left] = 4.0 * psi[j_slice, i_left] / dx**4 - psi[
+            j_slice, i_left + 1
+        ] / (2.0 * dx**4)
+
+        # right side: i = n_x - 2, neighbor is n_x - 3
+        i_right = n_x - 2
+        res[j_slice, i_right] = 4.0 * psi[j_slice, i_right] / dx**4 - psi[
+            j_slice, i_right - 1
+        ] / (2.0 * dx**4)
+
+        # top side: j = 1, i = 2 .. n_x-3
+        i_slice = slice(2, n_x - 2)
+        j_top = 1
+        res[j_top, i_slice] = 4.0 * psi[j_top, i_slice] / dy**4 - psi[
+            j_top + 1, i_slice
+        ] / (2.0 * dy**4)
+
+        # bottom side: j = n_y - 2, neighbor is n_y - 3
+        j_bot = n_y - 2
+        res[j_bot, i_slice] = 4.0 * psi[j_bot, i_slice] / dy**4 - psi[
+            j_bot - 1, i_slice
+        ] / (2.0 * dy**4)
+
+        # corners: combine x- and y- contributions
+        # top-left (j=1, i=1)
+        res[j_top, i_left] = (
+            4.0 * psi[j_top, i_left] / dx**4
+            - psi[j_top, i_left + 1] / (2.0 * dx**4)
+            + 4.0 * psi[j_top, i_left] / dy**4
+            - psi[j_top + 1, i_left] / (2.0 * dy**4)
+        )
+
+        # top-right (j=1, i=n_x-2)
+        res[j_top, i_right] = (
+            4.0 * psi[j_top, i_right] / dx**4
+            - psi[j_top, i_right - 1] / (2.0 * dx**4)
+            + 4.0 * psi[j_top, i_right] / dy**4
+            - psi[j_top + 1, i_right] / (2.0 * dy**4)
+        )
+
+        # bottom-left (j=n_y-2, i=1)
+        res[j_bot, i_left] = (
+            4.0 * psi[j_bot, i_left] / dx**4
+            - psi[j_bot, i_left + 1] / (2.0 * dx**4)
+            + 4.0 * psi[j_bot, i_left] / dy**4
+            - psi[j_bot - 1, i_left] / (2.0 * dy**4)
+        )
+
+        # bottom-right (j=n_y-2, i=n_x-2)
+        res[j_bot, i_right] = (
+            4.0 * psi[j_bot, i_right] / dx**4
+            - psi[j_bot, i_right - 1] / (2.0 * dx**4)
+            + 4.0 * psi[j_bot, i_right] / dy**4
+            - psi[j_bot - 1, i_right] / (2.0 * dy**4)
+        )
+
+        return res
 
     def solve(
         self,
@@ -169,7 +237,10 @@ class BCCorrectionNVSolver:
         # interior (i = 1..n_x-2, j = 1..n_y-2)
         psi = sf_old[1:-1, 1:-1]  # shape (n_y-2, n_x-2)
         w = vorticity[1:-1, 1:-1]
-        r = self.rho[1:-1, 1:-1]
+        if self.vorticity_bc_order == 1:
+            r = self.rho[1:-1, 1:-1] * psi
+        else:  # second order bc
+            r = self.apply_rho_to_psi_second_order(sf_old)[1:-1, 1:-1]
 
         # X-direction: px_half has shape (n_y, n_x-1)
         # we need px_half[j, i] and px_half[j, i-1] for i=1..n_x-2, j=1..n_y-2
@@ -197,7 +268,7 @@ class BCCorrectionNVSolver:
 
         c_inner = -inv_dx2 * term_x - inv_dy2 * term_y
 
-        b_int = -w - 0.5 * tau * (c_inner + inv_re * r * psi)
+        b_int = -w - 0.5 * tau * (c_inner + inv_re * r)
 
         return b_int.ravel()
 
@@ -236,23 +307,75 @@ class BCCorrectionNVSolver:
 
         main_diag -= rho_term_flat
 
-        side_diag = np.zeros(size - 1)
-        up_down_diag = np.zeros(size - inner_n_x)
+        base_side = np.zeros(size - 1)
+        base_updown = np.zeros(size - inner_n_x)
 
         base = 0
         for r in range(inner_n_y):
             if inner_n_x > 1:
                 idx = base + np.arange(inner_n_x - 1)
-                side_diag[idx] = inv_dx2 + tau_half * a_e[r, :-1]
+                base_side[idx] = inv_dx2 + tau_half * a_e[r, :-1]
             base += inner_n_x
 
         base = 0
         for r in range(inner_n_y - 1):
             idx = base + np.arange(inner_n_x)
-            up_down_diag[idx] = inv_dy2 + tau_half * a_n[r, :]
+            base_updown[idx] = inv_dy2 + tau_half * a_n[r, :]
             base += inner_n_x
 
-        diagonals = [main_diag, side_diag, side_diag, up_down_diag, up_down_diag]
+        if self.vorticity_bc_order == 1:
+            diagonals = [main_diag, base_side, base_side, base_updown, base_updown]
+        else:  # second order bc
+            lower_side = base_side.copy()  # offset -1
+            upper_side = base_side.copy()  # offset +1
+            lower_ud = base_updown.copy()  # offset -inner_n_x
+            upper_ud = base_updown.copy()  # offset +inner_n_x
+
+            delta_diag_x = tau_half * inv_re * (2.0 / (dx**4))
+            delta_off_x = tau_half * inv_re * (1.0 / (2.0 * dx**4))
+
+            delta_diag_y = tau_half * inv_re * (2.0 / (dy**4))
+            delta_off_y = tau_half * inv_re * (1.0 / (2.0 * dy**4))
+
+            def idx_from_rc(r, c):
+                return r * inner_n_x + c
+
+            # Left boundary (inner c == 0): change diag and add coupling to east (c==1)
+            if inner_n_x >= 2:
+                for r in range(0, inner_n_y):
+                    center = idx_from_rc(r, 0)
+                    main_diag[center] -= delta_diag_x
+                    upper_side[center] += delta_off_x
+
+            # Right boundary (inner c == inner_n_x-1): coupling to west
+            if inner_n_x >= 2:
+                for r in range(0, inner_n_y):
+                    center = idx_from_rc(r, inner_n_x - 1)
+                    main_diag[center] -= delta_diag_x
+                    # coupling center -> west is stored in lower_side at index (center-1)
+                    if center - 1 >= 0:
+                        lower_side[center - 1] += delta_off_x
+
+            # Top boundary (inner r == 0): change diag and add coupling to south (r==1)
+            if inner_n_y >= 2:
+                for c in range(0, inner_n_x):
+                    center = idx_from_rc(0, c)
+                    main_diag[center] -= delta_diag_y
+                    # coupling center -> south is an *upper* updown entry at position `center`
+                    upper_ud[center] += delta_off_y
+
+            # Bottom boundary (inner r == inner_n_y-1): coupling to north
+            if inner_n_y >= 2:
+                for c in range(0, inner_n_x):
+                    center = idx_from_rc(inner_n_y - 1, c)
+                    main_diag[center] -= delta_diag_y
+                    # coupling center -> north is stored in lower_ud at index (center - inner_n_x)
+                    pos = center - inner_n_x
+                    if pos >= 0:
+                        lower_ud[pos] += delta_off_y
+
+            diagonals = [main_diag, lower_side, upper_side, lower_ud, upper_ud]
+
         offsets = [0, -1, 1, -inner_n_x, inner_n_x]
 
         m = sparse.diags(diagonals, offsets, shape=(size, size), format="csr")
