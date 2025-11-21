@@ -341,38 +341,34 @@ class BCCorrectionNVSolver:
                 return r * inner_n_x + c
 
             # Left boundary (inner c == 0): change diag and add coupling to east (c==1)
-            if inner_n_x >= 2:
-                for r in range(0, inner_n_y):
-                    center = idx_from_rc(r, 0)
-                    main_diag[center] -= delta_diag_x
-                    upper_side[center] += delta_off_x
+            for r in range(0, inner_n_y):
+                center = idx_from_rc(r, 0)
+                main_diag[center] -= delta_diag_x
+                upper_side[center] += delta_off_x
 
             # Right boundary (inner c == inner_n_x-1): coupling to west
-            if inner_n_x >= 2:
-                for r in range(0, inner_n_y):
-                    center = idx_from_rc(r, inner_n_x - 1)
-                    main_diag[center] -= delta_diag_x
-                    # coupling center -> west is stored in lower_side at index (center-1)
-                    if center - 1 >= 0:
-                        lower_side[center - 1] += delta_off_x
+            for r in range(0, inner_n_y):
+                center = idx_from_rc(r, inner_n_x - 1)
+                main_diag[center] -= delta_diag_x
+                # coupling center -> west is stored in lower_side at index (center-1)
+                if center - 1 >= 0:
+                    lower_side[center - 1] += delta_off_x
 
             # Top boundary (inner r == 0): change diag and add coupling to south (r==1)
-            if inner_n_y >= 2:
-                for c in range(0, inner_n_x):
-                    center = idx_from_rc(0, c)
-                    main_diag[center] -= delta_diag_y
-                    # coupling center -> south is an *upper* updown entry at position `center`
-                    upper_ud[center] += delta_off_y
+            for c in range(0, inner_n_x):
+                center = idx_from_rc(0, c)
+                main_diag[center] -= delta_diag_y
+                # coupling center -> south is an *upper* updown entry at position `center`
+                upper_ud[center] += delta_off_y
 
             # Bottom boundary (inner r == inner_n_y-1): coupling to north
-            if inner_n_y >= 2:
-                for c in range(0, inner_n_x):
-                    center = idx_from_rc(inner_n_y - 1, c)
-                    main_diag[center] -= delta_diag_y
-                    # coupling center -> north is stored in lower_ud at index (center - inner_n_x)
-                    pos = center - inner_n_x
-                    if pos >= 0:
-                        lower_ud[pos] += delta_off_y
+            for c in range(0, inner_n_x):
+                center = idx_from_rc(inner_n_y - 1, c)
+                main_diag[center] -= delta_diag_y
+                # coupling center -> north is stored in lower_ud at index (center - inner_n_x)
+                pos = center - inner_n_x
+                if pos >= 0:
+                    lower_ud[pos] += delta_off_y
 
             diagonals = [main_diag, lower_side, upper_side, lower_ud, upper_ud]
 
