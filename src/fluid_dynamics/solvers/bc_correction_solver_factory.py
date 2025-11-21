@@ -70,18 +70,20 @@ class BCCorrectionNVSolver:
         n_y, n_x = geometry.n_y, geometry.n_x
         dx, dy, _ = self.cfg.scaled_grid_steps
 
+        inv_dx4 = dx**-4
+        inv_dy4 = dy**-4
+
         rho = np.zeros((n_y, n_x))
 
-        rho[2 : n_y - 2, 1] = 2 * dx**-4
-        rho[2 : n_y - 2, n_x - 2] = 2 * dx**-4
+        # edges (excluding corners)
+        rho[2 : n_y - 2, 1] = 2.0 * inv_dx4
+        rho[2 : n_y - 2, n_x - 2] = 2.0 * inv_dx4
+        rho[1, 2 : n_x - 2] = 2.0 * inv_dy4
+        rho[n_y - 2, 2 : n_x - 2] = 2.0 * inv_dy4
 
-        rho[1, 2 : n_x - 2] = 2 * dy**-4
-        rho[n_y - 2, 2 : n_x - 2] = 2 * dy**-4
-
-        rho[1, 1] = 2 * (dx**-4 + dy**-4)
-        rho[1, n_x - 2] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, 1] = 2 * (dx**-4 + dy**-4)
-        rho[n_y - 2, n_x - 2] = 2 * (dx**-4 + dy**-4)
+        # corners
+        val = 2.0 * (inv_dx4 + inv_dy4)
+        rho[1, 1] = rho[1, n_x - 2] = rho[n_y - 2, 1] = rho[n_y - 2, n_x - 2] = val
 
         return rho
 
