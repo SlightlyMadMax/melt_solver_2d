@@ -220,9 +220,6 @@ class BCCorrectionNVSolver:
             b_flat=b,
             time=time,
         )
-        # psi_vec = self._stream_function[1:-1, 1:-1].ravel()
-        # residual = (-A).dot(psi_vec) - (-b).ravel()
-        # print("‖residual‖₂:", np.linalg.norm(residual, 2))
 
     def _construct_rhs(
         self,
