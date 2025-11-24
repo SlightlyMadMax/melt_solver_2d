@@ -96,7 +96,7 @@ class LocOneDimSolver(ADIHeatSolver):
         k_eff: NDArray[np.float64],
         dy: float,
         dt: float,
-            pe: float,
+        pe: float,
         a: NDArray[np.float64],
         b: NDArray[np.float64],
         c: NDArray[np.float64],
