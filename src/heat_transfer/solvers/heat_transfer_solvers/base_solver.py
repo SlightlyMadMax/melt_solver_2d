@@ -188,8 +188,6 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
                 recalculate_velocity=False,
             )
 
-        self.compute_effective_properties(u=self._new_u, delta=delta)
-
         self._compute_sweep_y_coeffs(u=u)
 
         self._apply_boundary_conditions_y(time=time)
