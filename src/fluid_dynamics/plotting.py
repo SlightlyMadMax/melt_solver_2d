@@ -19,7 +19,7 @@ def plot_velocity_field(
     show_graph: bool = True,
     plot_boundary: bool = True,
     directory: str = "../graphs/velocity/",
-    equal_aspect: Optional[bool] = True,
+    equal_aspect: Optional[bool] = False,
     stride: int = 8,
 ):
     geometry: DomainGeometry = cfg.geometry
@@ -31,6 +31,12 @@ def plot_velocity_field(
     v_y_sub = v_y[::stride, ::stride]
 
     plt.figure(figsize=(8, 6))
+    ax = plt.axes(
+        xlim=(0, geometry.width),
+        ylim=(0, geometry.height),
+        xlabel="x, м",
+        ylabel="y, м",
+    )
 
     contour = plt.contourf(
         X,
@@ -42,7 +48,7 @@ def plot_velocity_field(
     )
     cbar = plt.colorbar(contour)
     cbar.set_ticks(np.linspace(np.min(u_dim), np.max(u_dim), num=6))
-    cbar.set_label("Температура", rotation=270, labelpad=15, fontsize=14)
+    cbar.set_label("Температура, °С", rotation=270, labelpad=15, fontsize=14)
 
     plt.quiver(
         X_sub,
@@ -51,17 +57,14 @@ def plot_velocity_field(
         v_y_sub,
         angles="xy",
         scale_units="xy",
-        scale=0.2,
+        # scale=0.2,
         color="black",
-        width=0.003,
+        # width=0.003,
     )
-    plt.xlabel("X", fontsize=14)
-    plt.ylabel("Y", fontsize=14)
-    # plt.title("Поле скоростей")
 
     if plot_boundary:
         X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
-        plt.plot(X_b, Y_b, linestyle="--", color="k", linewidth=2)
+        plt.plot(X_b, Y_b, linestyle="--", color="k", linewidth=1.5)
 
     if equal_aspect:
         plt.axis("equal")
@@ -69,7 +72,7 @@ def plot_velocity_field(
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    plt.savefig(f"{directory}v_{graph_id}.png")
+    plt.savefig(f"{directory}v_{graph_id}.jpg", dpi=300)
 
     if show_graph:
         plt.show()
