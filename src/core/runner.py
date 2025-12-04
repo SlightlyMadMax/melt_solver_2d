@@ -122,6 +122,34 @@ class PlotManager:
             show_graph=show_graph,
         )
 
+    def plot_velocity(
+        self,
+        *,
+        v_x: np.ndarray,
+        v_y: np.ndarray,
+        u: np.ndarray,
+        graph_id: int,
+        show_graph: bool = False,
+    ) -> None:
+        try:
+            from src.fluid_dynamics.plotting import (
+                plot_velocity_field as _plot_velocity_field,
+            )
+        except Exception:
+            logging.getLogger(__name__).warning(
+                "plot_velocity_field not found; skipping plot"
+            )
+            return
+
+        _plot_velocity_field(
+            v_x=v_x,
+            v_y=v_y,
+            u_dim=u,
+            cfg=self.cfg,
+            graph_id=graph_id,
+            show_graph=show_graph,
+        )
+
 
 class ExperimentRunner:
     def __init__(
@@ -178,14 +206,27 @@ class ExperimentRunner:
 
                 if self.state.n in self.plot_at:
                     try:
+                        u_dim = self.state.u * self.cfg.delta_u + self.cfg.u_ref
                         self.plot_manager.plot_temperature(
-                            u=self.state.u * self.cfg.delta_u + self.cfg.u_ref,
+                            u=u_dim,
                             graph_id=self.state.n,
                             show_graph=False,
                         )
                         self.plot_manager.plot_stream_function(
                             sf=self.state.sf, graph_id=self.state.n, show_graph=False
                         )
+                        if (
+                            self.calculate_velocity
+                            and self.state.v_x is not None
+                            and self.state.v_y is not None
+                        ):
+                            self.plot_manager.plot_velocity(
+                                v_x=self.state.v_x,
+                                v_y=self.state.v_y,
+                                u=u_dim,
+                                graph_id=self.state.n,
+                                show_graph=False,
+                            )
                         self._call_event("on_plot")
                     except Exception:
                         self.logger.exception("Plotting failed; continuing")
