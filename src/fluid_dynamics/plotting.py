@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from typing import Optional
 from numpy.typing import NDArray
 
+from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
@@ -19,7 +20,7 @@ def plot_velocity_field(
     show_graph: bool = True,
     plot_boundary: bool = True,
     directory: str = "../graphs/velocity/",
-    equal_aspect: Optional[bool] = False,
+    equal_aspect: Optional[bool] = True,
     stride: int = 8,
 ):
     geometry: DomainGeometry = cfg.geometry
@@ -38,16 +39,17 @@ def plot_velocity_field(
         ylabel="y, м",
     )
 
+    disp_u = u_dim + ABS_ZERO
     contour = plt.contourf(
         X,
         Y,
-        u_dim,
-        100,
+        disp_u,
+        levels=100,
         cmap="Blues",
         extend="both",
     )
     cbar = plt.colorbar(contour)
-    cbar.set_ticks(np.linspace(np.min(u_dim), np.max(u_dim), num=6))
+    cbar.set_ticks(np.linspace(np.min(disp_u), np.max(disp_u), num=6))
     cbar.set_label("Температура, °С", rotation=270, labelpad=15, fontsize=14)
 
     plt.quiver(
