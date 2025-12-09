@@ -52,15 +52,22 @@ def calculate_vorticity_from_sf(
     sf: NDArray[np.float64],
     result: NDArray[np.float64],
     cfg: ExperimentConfig,
+    bc_order: int = 1,
 ):
     dx, dy, _ = cfg.scaled_grid_steps
     inv_dx2 = 1.0 / dx**2
     inv_dy2 = 1.0 / dy**2
 
-    result[0, :] = -2.0 * inv_dy2 * sf[1, :]
-    result[-1, :] = -2.0 * inv_dy2 * sf[-2, :]
-    result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
-    result[:, -1] = -2.0 * inv_dx2 * sf[:, -2]
+    if bc_order == 1:
+        result[0, :] = -2.0 * inv_dy2 * sf[1, :]
+        result[-1, :] = -2.0 * inv_dy2 * sf[-2, :]
+        result[:, 0] = -2.0 * inv_dx2 * sf[:, 1]
+        result[:, -1] = -2.0 * inv_dx2 * sf[:, -2]
+    else: # bc_order == 2
+        result[0, :] = -0.5 * inv_dy2 * (8.0 * sf[1, :] - sf[2, :])
+        result[-1, :] = -0.5 * inv_dy2 * (8.0 * sf[-2, :] - sf[-3, :])
+        result[:, 0] = -0.5 * inv_dx2 * (8.0 * sf[:, 1] - sf[:, 2])
+        result[:, -1] = -0.5 * inv_dx2 * (8.0 * sf[:, -2] - sf[:, -3])
 
     result[1:-1, 1:-1] = -(
         (sf[2:, 1:-1] - 2 * sf[1:-1, 1:-1] + sf[:-2, 1:-1]) * inv_dy2

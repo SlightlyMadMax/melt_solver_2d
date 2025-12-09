@@ -178,7 +178,10 @@ class BCCorrectionNVSolver:
         )
 
         calculate_vorticity_from_sf(
-            sf=self._stream_function, result=self._vorticity, cfg=self.cfg
+            sf=self._stream_function,
+            result=self._vorticity,
+            cfg=self.cfg,
+            bc_order=self.vorticity_bc_order,
         )
         return self._stream_function, self._vorticity
 
