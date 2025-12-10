@@ -79,24 +79,19 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
     def _calculate_penalty_term_coeff(self, u: np.ndarray, delta: float) -> None:
         u_pt = self.cfg.u_pt_nd
         eps = self.cfg.epsilon
-        inv_eps2 = 1.0 / (eps * eps)
+        c = self.cfg.l / (eps * eps * self.cfg.v)
         diff_u = u - u_pt
 
         # --- Variant 1: sharp step ----------------------
-        # self.penalty_term[:, :] = np.where(u <= u_pt, inv_eps2, 0.0)
+        # self.penalty_term[:, :] = np.where(u <= u_pt, c, 0.0)
 
         # --- Variant 2: error‐function form -------------------
         # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
-        # self.penalty_term[:, :] = inv_eps2 * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
-        # self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+        # self.penalty_term[:, :] = c * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
+        # self.penalty_term[:, :] = c * 0.5 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
 
         # --- Variant 3: hyperbolic‐tangent form ---------------
-        self.penalty_term[:, :] = 0.5 * inv_eps2 * (1.0 - np.tanh(diff_u / delta))
-
-        # --- Variant 4: exponential form (one-sided smoothing) ----------------------
-        # exp_term = np.exp((delta - diff_u) / delta)
-        # temp = inv_eps2 * 0.5 * (2.0 + exp_term / (0.5 - exp_term))
-        # self.penalty_term[:, :] = np.where(diff_u <= 0, temp, 0.0)
+        self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
 
     def _prepare(
         self,
