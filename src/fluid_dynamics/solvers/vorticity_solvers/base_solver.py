@@ -86,12 +86,14 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         # self.penalty_term[:, :] = np.where(u <= u_pt, c, 0.0)
 
         # --- Variant 2: error‐function form -------------------
-        # f_l = 0.5 * (1.0 + erf(diff_u / (np.sqrt(2.0) * delta)))
-        # self.penalty_term[:, :] = c * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
         # self.penalty_term[:, :] = c * 0.5 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
 
         # --- Variant 3: hyperbolic‐tangent form ---------------
         self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
+
+        # --- Variant 4: Kozeny-Carman form ---------------
+        # f_l = 0.5 * (1.0 + np.tanh(diff_u / delta))
+        # self.penalty_term[:, :] = c * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
 
     def _prepare(
         self,
