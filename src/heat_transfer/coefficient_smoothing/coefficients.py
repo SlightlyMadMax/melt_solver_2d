@@ -10,6 +10,7 @@ class StepScheme(Enum):
     HYPER = "hyper"
     LINEAR = "linear"
     CONST = "const"
+    JUMP = "jump"
 
 
 class DeltaScheme(Enum):
@@ -40,6 +41,13 @@ def step_linear(u: float, u0: float, delta: float) -> float:
     elif diff <= -delta:
         return 0.0
     return (diff + delta) / (2.0 * delta)
+
+
+@njit
+def step_jump(u: float, u0: float, delta: float) -> float:
+    if u - u0 > 0.0:
+        return 1.0
+    return 0.0
 
 
 @njit
@@ -88,6 +96,7 @@ def get_step_fn(scheme: StepScheme) -> Callable[[float, float, float], float]:
         StepScheme.HYPER: step_hyper,
         StepScheme.LINEAR: step_linear,
         StepScheme.CONST: step_const,
+        StepScheme.JUMP: step_jump,
     }[scheme]
 
 
