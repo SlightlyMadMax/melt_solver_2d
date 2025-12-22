@@ -28,7 +28,7 @@ from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
 )
-
+from src.utils.stand_with_icicle import init_temperature_icicle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,14 +39,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/crevasse.json"
+        "../parameter_sets/water/icicle/5pt6c.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 263.15
-    max_temp = 278.65
+    min_temp = 273.15
+    max_temp = 278.75
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -55,10 +55,12 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
-        right=const_neumann_condition(n_y, value=0.0),
-        bottom=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
-        left=const_neumann_condition(n_y, value=0.0),
+        top=const_neumann_condition(n_x, value=0.0),
+        right=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        # right=const_neumann_condition(n_y, value=0.0),
+        bottom=const_neumann_condition(n_x, value=0.0),
+        left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        # left=const_neumann_condition(n_y, value=0.0),
     )
 
     # Stream function boundary conditions
@@ -74,14 +76,22 @@ if __name__ == "__main__":
     #     cfg=cfg,
     #     bcs=u_bcs,
     #     shape=DomainShape.UNIFORM_SOLID,
-    #     solid_temp=min_temp,
-    #     liquid_temp=max_temp,
+    #     solid_temp=max_temp,
+    #     liquid_temp=min_temp,
     # )
+    u = init_temperature_icicle(
+        cfg=cfg,
+        liquid_temp=max_temp,
+        solid_temp=min_temp,
+        rect_width=0.08,
+        rect_height=0.12,
+        location="top",
+    )
 
-    water_thickness = 0.01
-    crevasse_width = 0.02
-    crevasse_depth = 0.2
-    f = np.empty(n_x)
+    # water_thickness = 0.01
+    # crevasse_width = 0.02
+    # crevasse_depth = 0.2
+    # f = np.empty(n_x)
 
     # angle_rad = np.deg2rad(15.0)
     # tan15 = np.tan(angle_rad)
@@ -104,31 +114,31 @@ if __name__ == "__main__":
     #     else:
     #         f[i] = geometry.height - water_thickness
 
-    for i in range(n_x):
-        x = i * geometry.dx
-        f[i] = geometry.height - water_thickness
-
-    u = init_temperature_with_interface(
-        cfg=cfg,
-        f=f,
-        liquid_region_height=water_thickness,
-        liquid_temp=min_temp,
-        solid_temp=max_temp,
-    )
+    # for i in range(n_x):
+    #     x = i * geometry.dx
+    #     f[i] = geometry.height - water_thickness
+    #
+    # u = init_temperature_with_interface(
+    #     cfg=cfg,
+    #     f=f,
+    #     liquid_region_height=water_thickness,
+    #     liquid_temp=min_temp,
+    #     solid_temp=max_temp,
+    # )
 
     # Initial stream function, vorticity and velocity fields
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    # dim_u = u * delta_u + u_ref
-    # plot_temperature(
-    #     u=dim_u,
-    #     cfg=cfg,
-    #     graph_id=0,
-    #     plot_boundary=True,
-    #     show_graph=True,
-    # )
+    dim_u = u * delta_u + u_ref
+    plot_temperature(
+        u=dim_u,
+        cfg=cfg,
+        graph_id=0,
+        plot_boundary=True,
+        show_graph=True,
+    )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -138,9 +148,8 @@ if __name__ == "__main__":
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
-        bc_order=1,
-        step_scheme=StepScheme.ERF,
-        delta_scheme=DeltaScheme.GAUSS,
+        step_scheme=StepScheme.JUMP,
+        delta_scheme=DeltaScheme.BOX,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -150,18 +159,18 @@ if __name__ == "__main__":
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.AMG,
-        vorticity_bc_order=1,
+        stream_function_solver_name=StreamFunctionSolverName.CG_GPU,
+        vorticity_bc_order=2,
     )
-
-    data = np.load("../data/wavy_surface/24x24_5pt5/checkpoint_745200.npz")
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
-    state.restore(data)
 
-    log_interval = 3600
-    plot_interval = 3600
+    log_interval = 60
+    plot_interval = 60
+    save_interval = 30
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
+    save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
+
     # save_at = {
     #     int(2.0 * 60 / dt),
     #     int(3.0 * 60 / dt),
@@ -174,15 +183,26 @@ if __name__ == "__main__":
     #     int(19.0 * 60 / dt),
     # }
     # save_at = {int(800 / dt), int(1575 / dt)}
+    def on_plot(s):
+        base = s.u[-2, :]
+        signs = np.sign(base)
+        mask = (signs[:-1] * signs[1:]) < 0
+        abs_diffs = np.abs(base[:-1] - base[1:])
+        result = abs_diffs[mask]
+        print(f"\nmid: {base[int(n_x // 2)] * cfg.delta_u}")
+        print(f"diff: {result}")
+
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/24x24_5pt5",
+        checkpoints_dir="../data/icicle/5pt6c",
         logger=logger,
-        save_at=log_at,
+        save_at=set(),
         log_at=log_at,
-        plot_at=set(),
+        plot_at=plot_at,
+        calculate_velocity=False,
     )
+    # runner.register_callback(event="on_plot", fn=on_plot)
     runner.run()
