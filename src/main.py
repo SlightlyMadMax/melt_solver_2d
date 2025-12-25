@@ -14,6 +14,7 @@ from src.fluid_dynamics.init_values import (
 )
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import (
     init_temperature,
@@ -22,6 +23,7 @@ from src.heat_transfer.init_values import (
 )
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.plotting import plot_temperature
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
@@ -148,8 +150,9 @@ if __name__ == "__main__":
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
-        step_scheme=StepScheme.JUMP,
-        delta_scheme=DeltaScheme.BOX,
+        step_scheme=StepScheme.ERF,
+        delta_scheme=DeltaScheme.GAUSS,
+        k_face_method=KFaceMethod.FROM_TEMP,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -158,6 +161,7 @@ if __name__ == "__main__":
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.CG_GPU,
         vorticity_bc_order=2,
