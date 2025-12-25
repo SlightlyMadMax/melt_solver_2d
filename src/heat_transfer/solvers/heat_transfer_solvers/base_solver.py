@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 import numpy as np
 
 from abc import ABC
@@ -23,6 +25,12 @@ from src.heat_transfer.coefficient_smoothing.coefficients import (
 from src.parameters.config import ExperimentConfig
 
 
+class KFaceMethod(IntEnum):
+    ARITHMETIC = 0
+    HARMONIC = 1
+    FROM_TEMP = 2
+
+
 class BaseHeatSolver(BaseSolver, ABC):
     def __init__(
         self,
@@ -35,6 +43,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         bc_order: int = 1,
         step_scheme: StepScheme = StepScheme.ERF,
         delta_scheme: DeltaScheme = DeltaScheme.GAUSS,
+        k_face_method: KFaceMethod = KFaceMethod.ARITHMETIC,
         *args,
         **kwargs,
     ):
@@ -47,6 +56,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         self.bc_order = bc_order
         self.step_scheme = step_scheme
         self.delta_scheme = delta_scheme
+        self.k_face_method = k_face_method
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
@@ -57,6 +67,10 @@ class BaseHeatSolver(BaseSolver, ABC):
         self._correction_y: NDArray[np.float64] = np.zeros((n_y, n_x))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
+
+        # Effective conductivity at faces
+        self._k_x = np.empty((n_y, n_x + 1))  # i = -1/2 ... n_x-1/2
+        self._k_y = np.empty((n_y + 1, n_x))  # j = -1/2 ... n_y-1/2
 
     def compute_effective_properties(
         self,
@@ -90,6 +104,19 @@ class BaseHeatSolver(BaseSolver, ABC):
             delta_fn=delta_fn,
         )
 
+        self._compute_face_conductivities(
+            u=u,
+            k_eff=self._k_eff,
+            k_x=self._k_x,
+            k_y=self._k_y,
+            u_0=self.cfg.u_pt_nd,
+            k_solid=k_solid_nd,
+            k_liquid=k_liquid_nd,
+            delta=delta,
+            step_fn=step_fn,
+            method=self.k_face_method.value,
+        )
+
     @staticmethod
     @njit
     def _compute_effective_properties(
@@ -110,18 +137,91 @@ class BaseHeatSolver(BaseSolver, ABC):
         c_diff = c_liquid - c_solid
         k_diff = k_liquid - k_solid
 
-        for j in range(n_y):
-            for i in range(n_x):
-                if delta <= 0:
+        if delta > 0:
+            for j in range(n_y):
+                for i in range(n_x):
+                    step_val = step_fn(u[j, i], u_0, delta)
+                    delta_val = delta_fn(u[j, i], u_0, delta)
+
+                    c_eff[j, i] = c_solid + c_diff * step_val + l_solid * delta_val
+                    k_eff[j, i] = k_solid + k_diff * step_val
+        else:
+            for j in range(n_y):
+                for i in range(n_x):
                     c_eff[j, i] = c_solid if u[j, i] <= u_0 else c_liquid
                     k_eff[j, i] = k_solid if u[j, i] <= u_0 else k_liquid
-                    continue
 
-                step_val = step_fn(u[j, i], u_0, delta)
-                delta_val = delta_fn(u[j, i], u_0, delta)
+    @staticmethod
+    @njit
+    def _compute_face_conductivities(
+        u: NDArray[np.float64],
+        k_eff: NDArray[np.float64],
+        k_x: NDArray[np.float64],
+        k_y: NDArray[np.float64],
+        u_0: float,
+        k_solid: float,
+        k_liquid: float,
+        delta: float,
+        step_fn: Callable,
+        method: int,
+    ) -> None:
+        n_y, n_x = k_eff.shape
 
-                c_eff[j, i] = c_solid + c_diff * step_val + l_solid * delta_val
-                k_eff[j, i] = k_solid + k_diff * step_val
+        for j in range(n_y):
+            # left boundary: i = -1/2
+            k_x[j, 0] = k_eff[j, 0]
+
+            for i in range(1, n_x):
+                if method == 0:  # arithmetic
+                    k_x[j, i] = 0.5 * (k_eff[j, i - 1] + k_eff[j, i])
+
+                elif method == 1:  # harmonic
+                    a = k_eff[j, i - 1]
+                    b = k_eff[j, i]
+                    s = a + b
+                    if s == 0.0:
+                        k_x[j, i] = 0.0
+                    else:
+                        k_x[j, i] = 2.0 * a * b / s
+
+                else:  # from temperature
+                    u_face = 0.5 * (u[j, i - 1] + u[j, i])
+                    if delta <= 0:
+                        k_x[j, i] = k_solid if u_face <= u_0 else k_liquid
+                    else:
+                        s = step_fn(u_face, u_0, delta)
+                        k_x[j, i] = k_solid + (k_liquid - k_solid) * s
+
+            # right boundary: i = n_x - 1/2
+            k_x[j, n_x] = k_eff[j, n_x - 1]
+
+        for i in range(n_x):
+            # bottom boundary: j = -1/2
+            k_y[0, i] = k_eff[0, i]
+
+            for j in range(1, n_y):
+                if method == 0:
+                    k_y[j, i] = 0.5 * (k_eff[j - 1, i] + k_eff[j, i])
+
+                elif method == 1:
+                    a = k_eff[j - 1, i]
+                    b = k_eff[j, i]
+                    s = a + b
+                    if s == 0.0:
+                        k_y[j, i] = 0.0
+                    else:
+                        k_y[j, i] = 2.0 * a * b / s
+
+                else:
+                    u_face = 0.5 * (u[j - 1, i] + u[j, i])
+                    if delta <= 0:
+                        k_y[j, i] = k_solid if u_face <= u_0 else k_liquid
+                    else:
+                        s = step_fn(u_face, u_0, delta)
+                        k_y[j, i] = k_solid + (k_liquid - k_solid) * s
+
+            # top boundary: j = n_y - 1/2
+            k_y[n_y, i] = k_eff[n_y - 1, i]
 
 
 class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):

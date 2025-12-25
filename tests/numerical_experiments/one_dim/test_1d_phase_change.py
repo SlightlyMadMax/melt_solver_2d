@@ -12,6 +12,7 @@ from src.heat_transfer.coefficient_smoothing.mushy_zone import (
     get_mushy_zone_temperature_range,
 )
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
@@ -107,6 +108,7 @@ heat_transfer_solver = HeatTransferSolver(
     urf=1.0,
     step_scheme=StepScheme.ERF,
     delta_scheme=DeltaScheme.GAUSS,
+    k_face_method=KFaceMethod.FROM_TEMP,
 )
 
 if s_0 == 0.0:

@@ -14,25 +14,6 @@ from src.heat_transfer.solvers.heat_transfer_solvers.registry import (
 
 @register_solver(HeatTransferSolverName.FULLY_IMPLICIT)
 class FullyImplicitSolver(BaseHeatSolver):
-    def compute_face_conductivity(self, face: str = "x") -> np.ndarray:
-        n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
-        k = self._k_eff
-        if face == "x":
-            # x-direction faces (i+1/2)
-            k_faces = np.zeros((n_y, n_x + 1))
-            k_faces[:, 1:-1] = 0.5 * (k[:, :-1] + k[:, 1:])
-            # Boundary faces (use one-sided values)
-            k_faces[:, 0] = k[:, 0]
-            k_faces[:, -1] = k[:, -1]
-            return k_faces
-        else:  # face == 'y'
-            # y-direction faces (j+1/2)
-            k_faces = np.zeros((n_y + 1, n_x))
-            k_faces[1:-1, :] = 0.5 * (k[:-1, :] + k[1:, :])
-            # Boundary faces
-            k_faces[0, :] = k[0, :]
-            k_faces[-1, :] = k[-1, :]
-            return k_faces
 
     def build_system(
         self, u_old: np.ndarray, time: float
@@ -44,10 +25,6 @@ class FullyImplicitSolver(BaseHeatSolver):
         inv_dx2 = 1.0 / (dx * dx)
         inv_dy2 = 1.0 / (dy * dy)
         inv_pe = 1.0 / self.cfg.peclet_number
-
-        # Compute face conductivities
-        k_x_faces = self.compute_face_conductivity(face="x")
-        k_y_faces = self.compute_face_conductivity(face="y")
 
         # Initialize sparse matrix (using LIL for efficient construction)
         A = lil_matrix((total_points, total_points))
@@ -68,14 +45,14 @@ class FullyImplicitSolver(BaseHeatSolver):
                 )
 
                 # Coefficients from diffusion in x-direction
-                k_x_plus = k_x_faces[j, i + 1]  # k_{j, i+1/2}
-                k_x_minus = k_x_faces[j, i]  # k_{j, i-1/2}
+                k_x_plus = self._k_x[j, i + 1]  # k_{j, i+1/2}
+                k_x_minus = self._k_x[j, i]  # k_{j, i-1/2}
 
                 coeff_center += inv_pe * inv_dx2 * (k_x_plus + k_x_minus)
 
                 # Coefficients from diffusion in y-direction
-                k_y_plus = k_y_faces[j + 1, i]  # k_{j+1/2, i}
-                k_y_minus = k_y_faces[j, i]  # k_{j-1/2, i}
+                k_y_plus = self._k_y[j + 1, i]  # k_{j+1/2, i}
+                k_y_minus = self._k_y[j, i]  # k_{j-1/2, i}
 
                 coeff_center += inv_pe * inv_dy2 * (k_y_plus + k_y_minus)
 
@@ -122,7 +99,7 @@ class FullyImplicitSolver(BaseHeatSolver):
                 b[idx] = self._c_eff[j, i] * inv_tau * u_old[j, i]
 
         # Apply boundary conditions
-        self._apply_boundary_conditions(A, b, self._k_eff, k_x_faces, k_y_faces, time)
+        self._apply_boundary_conditions(A, b, self._k_eff, self._k_x, self._k_y, time)
 
         # Convert to CSR format for efficient solving
         return A.tocsr(), b

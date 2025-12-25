@@ -8,6 +8,7 @@ from src.convective_operators import (
 from src.core.boundary_conditions import BoundaryConditions
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.solvers.heat_transfer_solvers import *
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.parameters.config import ExperimentConfig
 
 
@@ -24,6 +25,7 @@ class HeatTransferSolver:
         bc_order: int = 1,
         step_scheme: StepScheme = StepScheme.ERF,
         delta_scheme: DeltaScheme = DeltaScheme.GAUSS,
+        k_face_method: KFaceMethod = KFaceMethod.ARITHMETIC,
     ):
         if bc_order not in (1, 2):
             raise NotImplementedError(
@@ -46,6 +48,7 @@ class HeatTransferSolver:
             bc_order=bc_order,
             step_scheme=step_scheme,
             delta_scheme=delta_scheme,
+            k_face_method=k_face_method,
         )
 
     def solve(

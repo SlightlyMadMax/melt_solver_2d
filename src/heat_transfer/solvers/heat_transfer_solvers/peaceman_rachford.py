@@ -22,7 +22,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
             corr_x=self._correction_x,
             corr_y=self._correction_y,
             c_eff=self._c_eff,
-            k_eff=self._k_eff,
+            k_x=self._k_x,
+            k_y=self._k_y,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -42,7 +43,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
             corr_x=self._correction_x,
             corr_y=self._correction_y,
             c_eff=self._c_eff,
-            k_eff=self._k_eff,
+            k_x=self._k_x,
+            k_y=self._k_y,
             dx=dx,
             dy=dy,
             dt=dt,
@@ -62,7 +64,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
         corr_x: NDArray[np.float64],
         corr_y: NDArray[np.float64],
         c_eff: NDArray[np.float64],
-        k_eff: NDArray[np.float64],
+        k_x: NDArray[np.float64],
+        k_y: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -81,24 +84,21 @@ class PeacemanRachfordSolver(ADIHeatSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
-                k_ip1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
-                k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
-                k_ijp1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
-                k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i + 1, j}^{n + 1/2}
                 a[j, i] = dt_half * (
-                    conv_x[j, i, 0] - k_ip1j * inv_pe * inv_c_eff * inv_dx2
+                    conv_x[j, i, 0] - k_x[j, i + 1] * inv_pe * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1/2}
                 b[j, i] = 1.0 + dt_half * (
-                    conv_x[j, i, 1] + (k_ip1j + k_im1j) * inv_pe * inv_c_eff * inv_dx2
+                    conv_x[j, i, 1]
+                    + (k_x[j, i + 1] + k_x[j, i]) * inv_pe * inv_c_eff * inv_dx2
                 )
 
                 # Coefficient at T_{i - 1, j}^{n + 1/2}
                 c[j, i] = dt_half * (
-                    conv_x[j, i, 2] - k_im1j * inv_pe * inv_c_eff * inv_dx2
+                    conv_x[j, i, 2] - k_x[j, i] * inv_pe * inv_c_eff * inv_dx2
                 )
 
                 # Right-hand side of the equation
@@ -107,8 +107,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
                     * inv_c_eff
                     * inv_pe
                     * (
-                        k_ijp1 * (u[j + 1, i] - u[j, i])
-                        - k_ijm1 * (u[j, i] - u[j - 1, i])
+                        k_y[j + 1, i] * (u[j + 1, i] - u[j, i])
+                        - k_y[j, i] * (u[j, i] - u[j - 1, i])
                     )
                     - (
                         conv_y[j, i, 0] * u[j + 1, i]
@@ -128,7 +128,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
         corr_x: NDArray[np.float64],
         corr_y: NDArray[np.float64],
         c_eff: NDArray[np.float64],
-        k_eff: NDArray[np.float64],
+        k_x: NDArray[np.float64],
+        k_y: NDArray[np.float64],
         dx: float,
         dy: float,
         dt: float,
@@ -147,24 +148,21 @@ class PeacemanRachfordSolver(ADIHeatSolver):
         for j in range(1, n_y - 1):
             for i in range(1, n_x - 1):
                 inv_c_eff = 1.0 / c_eff[j, i]
-                k_ip1j = 0.5 * (k_eff[j, i] + k_eff[j, i + 1])
-                k_im1j = 0.5 * (k_eff[j, i] + k_eff[j, i - 1])
-                k_ijp1 = 0.5 * (k_eff[j, i] + k_eff[j + 1, i])
-                k_ijm1 = 0.5 * (k_eff[j, i] + k_eff[j - 1, i])
 
                 # Coefficient at T_{i, j + 1}^{n + 1}
                 a[i, j] = dt_half * (
-                    conv_y[j, i, 0] - k_ijp1 * inv_pe * inv_c_eff * inv_dy2
+                    conv_y[j, i, 0] - k_y[j + 1, i] * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j}^{n + 1}
                 b[i, j] = 1.0 + dt_half * (
-                    conv_y[j, i, 1] + (k_ijp1 + k_ijm1) * inv_pe * inv_c_eff * inv_dy2
+                    conv_y[j, i, 1]
+                    + (k_y[j + 1, i] + k_y[j, i]) * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Coefficient at T_{i, j - 1}^{n + 1}
                 c[i, j] = dt_half * (
-                    conv_y[j, i, 2] - k_ijm1 * inv_pe * inv_c_eff * inv_dy2
+                    conv_y[j, i, 2] - k_y[j, i] * inv_pe * inv_c_eff * inv_dy2
                 )
 
                 # Right-hand side of the equation
@@ -173,8 +171,8 @@ class PeacemanRachfordSolver(ADIHeatSolver):
                     * inv_c_eff
                     * inv_pe
                     * (
-                        k_ip1j * (u[j, i + 1] - u[j, i])
-                        - k_im1j * (u[j, i] - u[j, i - 1])
+                        k_x[j, i + 1] * (u[j, i + 1] - u[j, i])
+                        - k_x[j, i] * (u[j, i] - u[j, i - 1])
                     )
                     - (
                         conv_x[j, i, 0] * u[j, i + 1]
