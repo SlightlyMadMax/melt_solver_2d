@@ -1,7 +1,9 @@
 from abc import ABC
+from enum import IntEnum
 from typing import Optional
 
 import numpy as np
+from scipy.special import erf
 
 from src.convective_operators import (
     BaseConvectiveOperator,
@@ -14,12 +16,20 @@ from src.fluid_dynamics.utils import VorticityBCMixin
 from src.parameters.config import ExperimentConfig
 
 
+class PenaltyTermForm(IntEnum):
+    JUMP = 0
+    ERF = 1
+    TANH = 2
+    KOZENY_CARMAN = 3
+
+
 class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
     def __init__(
         self,
         cfg: ExperimentConfig,
         convective_operator: BaseConvectiveOperator,
         bc_order: int,
+        penalty_term_form: PenaltyTermForm,
         *args,
         **kwargs,
     ):
@@ -27,6 +37,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
         self.convective_operator = convective_operator
         self.bc_order = bc_order
+        self.penalty_term_form = penalty_term_form
 
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
@@ -68,6 +79,27 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
             drhodx = drhodu[interior] * dudx
             self.buoyancy_term[interior] = gr * inv_re2 * drhodx / (beta * rho_ref)
 
+    def _calculate_penalty_term_coeff(self, u: np.ndarray, delta: float) -> None:
+        u_pt = self.cfg.u_pt_nd
+        eps = self.cfg.epsilon
+        c = self.cfg.l / (eps * eps * self.cfg.v)
+        diff_u = u - u_pt
+
+        if self.penalty_term_form == PenaltyTermForm.JUMP:
+            self.penalty_term[:, :] = np.where(u <= u_pt, c, 0.0)
+
+        elif self.penalty_term_form == PenaltyTermForm.ERF:
+            self.penalty_term[:, :] = (
+                c * 0.5 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
+            )
+
+        elif self.penalty_term_form == PenaltyTermForm.TANH:
+            self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
+
+        elif self.penalty_term_form == PenaltyTermForm.KOZENY_CARMAN:
+            f_l = 0.5 * (1.0 + np.tanh(diff_u / delta))
+            self.penalty_term[:, :] = c * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
+
     def _calculate_penalty_term_at_faces(self):
         self.px_half[:, :] = 0.5 * (
             self.penalty_term[:, :-1] + self.penalty_term[:, 1:]
@@ -75,25 +107,6 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         self.py_half[:, :] = 0.5 * (
             self.penalty_term[:-1, :] + self.penalty_term[1:, :]
         )
-
-    def _calculate_penalty_term_coeff(self, u: np.ndarray, delta: float) -> None:
-        u_pt = self.cfg.u_pt_nd
-        eps = self.cfg.epsilon
-        c = self.cfg.l / (eps * eps * self.cfg.v)
-        diff_u = u - u_pt
-
-        # --- Variant 1: sharp step ----------------------
-        # self.penalty_term[:, :] = np.where(u <= u_pt, c, 0.0)
-
-        # --- Variant 2: error‐function form -------------------
-        # self.penalty_term[:, :] = c * 0.5 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
-
-        # --- Variant 3: hyperbolic‐tangent form ---------------
-        self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
-
-        # --- Variant 4: Kozeny-Carman form ---------------
-        # f_l = 0.5 * (1.0 + np.tanh(diff_u / delta))
-        # self.penalty_term[:, :] = c * (1.0 - f_l) ** 2 / (f_l**3 + 1e-6)
 
     def _prepare(
         self,

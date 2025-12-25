@@ -11,6 +11,7 @@ from src.convective_operators import (
 from src.core.boundary_conditions import BoundaryConditions
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 
 from src.parameters.config import ExperimentConfig
 
@@ -23,6 +24,7 @@ class IterativeNavierStokesSolver:
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.MATRIX_SWEEP,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND_FC,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
         sf_max_iters: int = 1000,
         sf_stopping_criteria: float = 1e-6,
         max_iters: int = 5,
@@ -54,6 +56,7 @@ class IterativeNavierStokesSolver:
             cfg=cfg,
             convective_operator=convective_operator,
             bc_order=bc_order,
+            penalty_term_form=penalty_term_form,
         )
         self.stream_function_solver = stream_function_solver_class(
             cfg=cfg,

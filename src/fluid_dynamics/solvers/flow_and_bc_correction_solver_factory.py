@@ -10,6 +10,7 @@ from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.solvers.stream_function_solvers import *
 from src.fluid_dynamics.solvers.vorticity_solvers import *
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.config import ExperimentConfig
 
@@ -21,6 +22,7 @@ class FlowCorrectionNVSolver:
         sf_bcs: BoundaryConditions,
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
     ):
         self.cfg = cfg
         self.convective_operator = VorticityBasedConvectiveOperator(cfg=self.cfg)
@@ -40,11 +42,13 @@ class FlowCorrectionNVSolver:
             cfg=cfg,
             convective_operator=self.convective_operator,
             bc_order=1,
+            penalty_term_form=penalty_term_form,
         )
         self.vorticity_solver = vorticity_solver_class(
             cfg=cfg,
             convective_operator=self.convective_operator,
             bc_order=1,
+            penalty_term_form=penalty_term_form,
         )
         self.stream_function_solver = stream_function_solver_class(
             cfg=cfg,

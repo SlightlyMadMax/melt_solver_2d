@@ -19,6 +19,7 @@ from src.fluid_dynamics.solvers.vorticity_solvers import (
     VorticitySolverRegistry,
     VorticitySolverName,
 )
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 from src.fluid_dynamics.utils import calculate_vorticity_from_sf
 from src.parameters.config import ExperimentConfig
 
@@ -31,6 +32,7 @@ class BCCorrectionNVSolver:
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.DIVERGENT_CENTRAL,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.AMG,
         vorticity_bc_order: int = 1,
@@ -53,6 +55,7 @@ class BCCorrectionNVSolver:
             cfg=cfg,
             convective_operator=self.convective_operator,
             bc_order=vorticity_bc_order,
+            penalty_term_form=penalty_term_form,
         )
         self.stream_function_solver = stream_function_solver_class(
             cfg=cfg,
