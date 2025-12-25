@@ -8,7 +8,6 @@ class HeatTransferSolverName(Enum):
     LOC_ONE_DIM = "Locally One-Dimensional"
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
-    ENTHALPY = "Enthalpy"
     FULLY_IMPLICIT = "Fully Implicit"
 
 
