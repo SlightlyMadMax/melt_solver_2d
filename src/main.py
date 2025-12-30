@@ -85,7 +85,7 @@ if __name__ == "__main__":
         cfg=cfg,
         liquid_temp=max_temp,
         solid_temp=min_temp,
-        rect_width=0.08,
+        rect_width=0.09,
         rect_height=0.12,
         location="top",
     )
@@ -134,13 +134,13 @@ if __name__ == "__main__":
     v_x, v_y = initialize_velocity(geometry=geometry)
 
     dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.CG_GPU,
+        stream_function_solver_name=StreamFunctionSolverName.CG,
         vorticity_bc_order=2,
     )
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
@@ -203,9 +203,9 @@ if __name__ == "__main__":
         navier_solver=navier_solver,
         checkpoints_dir="../data/icicle/5pt6c",
         logger=logger,
-        save_at=set(),
+        save_at=save_at,
         log_at=log_at,
-        plot_at=plot_at,
+        plot_at=set(),
         calculate_velocity=False,
     )
     # runner.register_callback(event="on_plot", fn=on_plot)
