@@ -21,6 +21,7 @@ class PenaltyTermForm(IntEnum):
     ERF = 1
     TANH = 2
     KOZENY_CARMAN = 3
+    QUADRATIC = 4
 
 
 class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
@@ -95,6 +96,10 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
 
         elif self.penalty_term_form == PenaltyTermForm.TANH:
             self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
+
+        elif self.penalty_term_form == PenaltyTermForm.QUADRATIC:
+            f_l = 0.5 * (1.0 + np.tanh(diff_u / delta))
+            self.penalty_term[:, :] = c * (1.0 - f_l) ** 2
 
         elif self.penalty_term_form == PenaltyTermForm.KOZENY_CARMAN:
             f_l = 0.5 * (1.0 + np.tanh(diff_u / delta))
