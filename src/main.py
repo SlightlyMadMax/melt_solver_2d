@@ -161,7 +161,7 @@ if __name__ == "__main__":
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
-        penalty_term_form=PenaltyTermForm.TANH,
+        penalty_term_form=PenaltyTermForm.QUADRATIC,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.CG,
         vorticity_bc_order=2,
