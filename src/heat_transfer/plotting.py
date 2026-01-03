@@ -142,7 +142,7 @@ def plot_temperature(
         disp_u,
         levels=levels,
         cmap="Blues",
-        # extend="both",
+        extend="both",
     )
     cbar = plt.colorbar(contour)
     cbar.set_ticks(np.linspace(min_temp, max_temp, num=7))
