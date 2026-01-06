@@ -33,7 +33,7 @@ class LocOneDimSolver(ADIHeatSolver):
     def _compute_sweep_y_coeffs(self, u: np.ndarray) -> None:
         dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
-            u=self._new_u,
+            u=self._u_new,
             conv_y=self._conv_y,
             corr_y=self._correction_y,
             c_eff=self._c_eff,

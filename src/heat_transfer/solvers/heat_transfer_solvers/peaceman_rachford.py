@@ -37,7 +37,7 @@ class PeacemanRachfordSolver(ADIHeatSolver):
     def _compute_sweep_y_coeffs(self, u: np.ndarray) -> None:
         dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
-            u=self._new_u,
+            u=self._u_new,
             conv_x=self._conv_x,
             conv_y=self._conv_y,
             corr_x=self._correction_x,

@@ -60,7 +60,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_u: NDArray[np.float64] = np.empty((n_y, n_x))
+        self._u_new: NDArray[np.float64] = np.empty((n_y, n_x))
         self._conv_x: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self._conv_y: NDArray[np.float64] = np.zeros((n_y, n_x, 3))
         self._correction_x: NDArray[np.float64] = np.zeros((n_y, n_x))
@@ -265,7 +265,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
 
         self._compute_sweep_x_coeffs(u=u)
 
-        self._new_u[:, :] = u
+        self._u_new[:, :] = u
 
         self._apply_boundary_conditions_x(time=time)
 
@@ -275,7 +275,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             b=self._b_x,
             c=self._c_x,
             rhs=self._rhs_x,
-            result=self._new_u,
+            result=self._u_new,
         )
 
         if self.convective_operator.form == ConvectiveTermForm.DEFERRED_CORRECTION:
@@ -284,7 +284,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
                 conv_y=self._conv_y,
                 correction_x=self._correction_x,
                 correction_y=self._correction_y,
-                convected_quantity=self._new_u,
+                convected_quantity=self._u_new,
                 sf=sf,
                 recalculate_velocity=False,
             )
@@ -299,10 +299,10 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             b=self._b_y,
             c=self._c_y,
             rhs=self._rhs_y,
-            result=self._new_u,
+            result=self._u_new,
         )
 
-        return self._new_u
+        return self._u_new
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self._apply_standard_bc(

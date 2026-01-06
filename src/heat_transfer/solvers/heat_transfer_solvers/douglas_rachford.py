@@ -38,7 +38,7 @@ class DouglasRachfordSolver(ADIHeatSolver):
         dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             u_old=u,
-            u_prev=self._new_u,
+            u_prev=self._u_new,
             conv_y=self._conv_y,
             c_eff=self._c_eff,
             k_y=self._k_y,
