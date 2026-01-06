@@ -72,6 +72,8 @@ class BaseHeatSolver(BaseSolver, ABC):
         self._k_x = np.empty((n_y, n_x + 1))  # i = -1/2 ... n_x-1/2
         self._k_y = np.empty((n_y + 1, n_x))  # j = -1/2 ... n_y-1/2
 
+        self._h = np.empty((n_y, n_x))
+
     def compute_effective_properties(
         self,
         u: NDArray[np.float64],
@@ -223,6 +225,222 @@ class BaseHeatSolver(BaseSolver, ABC):
             # top boundary: j = n_y - 1/2
             k_y[n_y, i] = k_eff[n_y - 1, i]
 
+    @staticmethod
+    @njit
+    def _enthalpy_from_temperature(
+        h_out: NDArray[np.float64],
+        u: NDArray[np.float64],
+        u_0: float,
+        c_solid: float,
+        c_liquid: float,
+        latent_heat: float,
+        delta: float,
+    ) -> None:
+        """
+        Compute h(T) for the linear-in-T cp_app model where mushy zone is
+        Ts = u0 - delta, Tl = u0 + delta (width = 2*delta).
+        Writes into h_out (same shape as u).
+        """
+        n_y, n_x = u.shape
+        if delta > 0.0:
+            u_s = u_0 - delta
+            u_l = u_0 + delta
+            c_diff = c_liquid - c_solid
+
+            # h at Tl: evaluate integral through mushy zone
+            # Hl = c_solid*Tl + c_diff*delta + latent_heat
+            h_l = c_solid * u_l + c_diff * delta + latent_heat
+
+            for j in range(n_y):
+                for i in range(n_x):
+                    uu = u[j, i]
+                    if uu <= u_s:
+                        h_out[j, i] = c_solid * uu
+                    elif uu >= u_l:
+                        h_out[j, i] = h_l + c_liquid * (uu - u_l)
+                    else:
+                        # mushy branch:
+                        # cp_app(T) = c_solid + (c_diff/(2*delta))*(T - Ts) + latent_heat/(2*delta)
+                        # h = c_solid*T + (c_diff/(4*delta))*(T - Ts)^2 + (latent_heat/(2*delta))*(T - Ts)
+                        y = uu - u_s
+                        h_out[j, i] = (
+                            c_solid * uu
+                            + (c_diff / (4.0 * delta)) * (y * y)
+                            + (latent_heat / (2.0 * delta)) * y
+                        )
+        else:
+            # sharp jump at u_0
+            for j in range(n_y):
+                for i in range(n_x):
+                    uu = u[j, i]
+                    if uu <= u_0:
+                        h_out[j, i] = c_solid * uu
+                    else:
+                        h_out[j, i] = c_liquid * uu + latent_heat
+
+    @staticmethod
+    @njit
+    def _temperature_from_enthalpy(
+        u_out: NDArray[np.float64],
+        h: NDArray[np.float64],
+        u_0: float,
+        c_solid: float,
+        c_liquid: float,
+        latent_heat: float,
+        delta: float,
+    ) -> None:
+        """
+        Invert h -> T for the linear-in-T cp_app model with mushy width 2*delta.
+        Writes into u_out (same shape as h).
+        """
+        n_y, n_x = h.shape
+        if delta > 0.0:
+            u_s = u_0 - delta
+            u_l = u_0 + delta
+            c_diff = c_liquid - c_solid
+
+            h_s = c_solid * u_s
+            h_l = c_solid * u_l + c_diff * delta + latent_heat
+
+            # coefficients for quadratic in mushy zone:
+            # h - Hs = A*y + B*y^2  with y = T - Ts
+            # A = c_solid + latent_heat/(2*delta)
+            # B = c_diff/(4*delta)
+            A = c_solid + (latent_heat / (2.0 * delta))
+            B = c_diff / (4.0 * delta)
+
+            for j in range(n_y):
+                for i in range(n_x):
+                    hh = h[j, i]
+                    if hh <= h_s:
+                        # solid branch: T = h / c_solid (fallback if c_solid==0)
+                        if c_solid != 0.0:
+                            u_out[j, i] = hh / c_solid
+                        else:
+                            u_out[j, i] = u_s
+                    elif hh >= h_l:
+                        # liquid branch: T = Tl + (h - Hl)/c_liquid
+                        if c_liquid != 0.0:
+                            u_out[j, i] = u_l + (hh - h_l) / c_liquid
+                        else:
+                            u_out[j, i] = u_l
+                    else:
+                        # mushy: solve B*y^2 + A*y - (h - Hs) = 0 for y >= 0
+                        rhs = hh - h_s
+                        if B == 0.0:
+                            # degenerates to linear
+                            if A != 0.0:
+                                y = rhs / A
+                            else:
+                                y = 0.0
+                        else:
+                            disc = A * A + 4.0 * B * rhs
+                            if disc < 0.0:
+                                disc = 0.0
+                            sqrt_disc = np.sqrt(disc)
+                            y = (-A + sqrt_disc) / (2.0 * B)
+                            # numerical safety
+                            if y < 0.0:
+                                y = 0.0
+                            if y > 2.0 * delta:
+                                y = 2.0 * delta
+                        u_out[j, i] = u_s + y
+        else:
+            h_s = c_solid * u_0
+            for j in range(n_y):
+                for i in range(n_x):
+                    hh = h[j, i]
+                    if hh <= h_s:
+                        if c_solid != 0.0:
+                            u_out[j, i] = hh / c_solid
+                        else:
+                            u_out[j, i] = u_0
+                    else:
+                        if c_liquid != 0.0:
+                            u_out[j, i] = (hh - latent_heat) / c_liquid
+                        else:
+                            u_out[j, i] = u_0
+
+    @staticmethod
+    @njit
+    def _update_enthalpy(
+        h_new: NDArray[np.float64],
+        h_old: NDArray[np.float64],
+        c_eff: NDArray[np.float64],
+        u_star: NDArray[np.float64],
+        u_old: NDArray[np.float64],
+    ) -> None:
+        """
+        Vectorized elementwise update:
+        h_new = h_old + c_eff * (T_star - T_old)
+        """
+        n_y, n_x = h_old.shape
+        for j in range(n_y):
+            for i in range(n_x):
+                h_new[j, i] = h_old[j, i] + c_eff[j, i] * (u_star[j, i] - u_old[j, i])
+
+    def posterior_correction(
+        self,
+        u_old: NDArray[np.float64],
+        u_star: NDArray[np.float64],
+        delta: float,
+        time: float,
+    ) -> None:
+        props = self.cfg.material_props
+        c_ref = self.cfg.volumetric_heat_capacity_ref
+        c_solid_nd = props.volumetric_heat_capacity_solid / c_ref
+        c_liquid_nd = props.volumetric_heat_capacity_liquid / c_ref
+        latent_heat_nd = 1.0 / self.cfg.stefan_number
+        u0 = self.cfg.u_pt_nd
+
+        # compute h_old = h(u_old)
+        self._enthalpy_from_temperature(
+            h_out=self._h,
+            u=u_old,
+            u_0=u0,
+            c_solid=c_solid_nd,
+            c_liquid=c_liquid_nd,
+            latent_heat=latent_heat_nd,
+            delta=delta,
+        )
+
+        # compute h_new = h_old + c_eff_old * (T_star - u_old)
+        # self._c_eff already corresponds to cp_app at old time (computed at start of solve)
+        self._update_enthalpy(
+            h_new=self._h,
+            h_old=self._h,
+            c_eff=self._c_eff,
+            u_star=u_star,
+            u_old=u_old,
+        )
+
+        # invert h_new -> T_proj
+        self._temperature_from_enthalpy(
+            u_out=self._u_new,
+            h=self._h,
+            u_0=u0,
+            c_solid=c_solid_nd,
+            c_liquid=c_liquid_nd,
+            latent_heat=latent_heat_nd,
+            delta=delta,
+        )
+
+        # enforce Dirichlet BCs (keep exact prescribed BCs after projection)
+        # left/right
+        if self.bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
+            val = self.bcs.left.get_value(t=time)
+            self._u_new[:, 0] = val
+        if self.bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
+            val = self.bcs.right.get_value(t=time)
+            self._u_new[:, -1] = val
+        # bottom/top
+        if self.bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
+            val = self.bcs.bottom.get_value(t=time)
+            self._u_new[0, :] = val
+        if self.bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
+            val = self.bcs.top.get_value(t=time)
+            self._u_new[-1, :] = val
+
 
 class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
     def __init__(self, *args, **kwargs):
@@ -302,9 +520,7 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         )
 
         # perform posterior correction (one-step)
-        self.posterior_correction_linear_cp(
-            u_old=u, u_star=self._u_new, delta=delta, time=time
-        )
+        self.posterior_correction(u_old=u, u_star=self._u_new, delta=delta, time=time)
 
         return self._u_new
 
