@@ -236,11 +236,6 @@ class BaseHeatSolver(BaseSolver, ABC):
         latent_heat: float,
         delta: float,
     ) -> None:
-        """
-        Compute h(T) for the linear-in-T cp_app model where mushy zone is
-        Ts = u0 - delta, Tl = u0 + delta (width = 2*delta).
-        Writes into h_out (same shape as u).
-        """
         n_y, n_x = u.shape
         if delta > 0.0:
             u_s = u_0 - delta
@@ -289,10 +284,6 @@ class BaseHeatSolver(BaseSolver, ABC):
         latent_heat: float,
         delta: float,
     ) -> None:
-        """
-        Invert h -> T for the linear-in-T cp_app model with mushy width 2*delta.
-        Writes into u_out (same shape as h).
-        """
         n_y, n_x = h.shape
         if delta > 0.0:
             u_s = u_0 - delta
