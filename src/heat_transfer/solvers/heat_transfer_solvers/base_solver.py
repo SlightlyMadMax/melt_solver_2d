@@ -98,7 +98,7 @@ class BaseHeatSolver(BaseSolver, ABC):
             u_0=self.cfg.u_pt_nd,
             c_solid=c_solid_nd,
             c_liquid=c_liquid_nd,
-            l_solid=latent_heat_nd,
+            latent_heat=latent_heat_nd,
             k_solid=k_solid_nd,
             k_liquid=k_liquid_nd,
             delta=delta,
@@ -128,7 +128,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         u_0: float,
         c_solid: float,
         c_liquid: float,
-        l_solid: float,
+        latent_heat: float,
         k_solid: float,
         k_liquid: float,
         delta: float,
@@ -145,7 +145,7 @@ class BaseHeatSolver(BaseSolver, ABC):
                     step_val = step_fn(u[j, i], u_0, delta)
                     delta_val = delta_fn(u[j, i], u_0, delta)
 
-                    c_eff[j, i] = c_solid + c_diff * step_val + l_solid * delta_val
+                    c_eff[j, i] = c_solid + c_diff * step_val + latent_heat * delta_val
                     k_eff[j, i] = k_solid + k_diff * step_val
         else:
             for j in range(n_y):
