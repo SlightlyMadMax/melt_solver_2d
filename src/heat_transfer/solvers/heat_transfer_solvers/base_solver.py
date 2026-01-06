@@ -231,11 +231,11 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
 
     def solve(
         self,
-        u: np.ndarray,
+        u: NDArray[np.float64],
         delta: float,
-        sf: np.ndarray,
+        sf: NDArray[np.float64],
         time: float = 0.0,
-    ) -> np.ndarray:
+    ) -> NDArray[np.float64]:
         """
         Advance the solution by one ADI time step.
 
@@ -354,14 +354,14 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
 
     def _apply_standard_bc(
         self,
-        a: np.ndarray,
-        b: np.ndarray,
-        c: np.ndarray,
-        rhs: np.ndarray,
+        a: NDArray[np.float64],
+        b: NDArray[np.float64],
+        c: NDArray[np.float64],
+        rhs: NDArray[np.float64],
         bc: BoundaryCondition,
         side: int,
         time: float,
-        k_eff_slice: np.ndarray,
+        k_eff_slice: NDArray[np.float64],
     ) -> bool:
         """
         Common Dirichlet / first-order Neumann.
