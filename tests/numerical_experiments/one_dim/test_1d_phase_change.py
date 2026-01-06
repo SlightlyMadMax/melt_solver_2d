@@ -87,6 +87,8 @@ cfg = ExperimentConfig(
     delta=delta,
     epsilon=1e-6,
 )
+delta = cfg.delta_nd
+
 gamma, residual = calculate_gamma(cfg=cfg, min_temp=min_temp, max_temp=max_temp)
 print(f"Gamma: {gamma}, residual: {residual}.\n")
 print(cfg)
