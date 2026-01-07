@@ -43,6 +43,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         step_scheme: StepScheme,
         delta_scheme: DeltaScheme,
         k_face_method: KFaceMethod,
+        post_correction: bool,
         bcs: Optional[BoundaryConditions] = None,
         *args,
         **kwargs,
@@ -57,6 +58,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         self.step_scheme = step_scheme
         self.delta_scheme = delta_scheme
         self.k_face_method = k_face_method
+        self.post_correction = post_correction
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
@@ -496,8 +498,8 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             result=self._u_new,
         )
 
-        # perform posterior correction (one-step)
-        self.posterior_correction(u_old=u, u_star=self._u_new, delta=delta, time=time)
+        if self.post_correction:
+            self.posterior_correction(u_old=u, u_star=self._u_new, delta=delta, time=time)
 
         return self._u_new
 
