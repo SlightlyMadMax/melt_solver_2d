@@ -295,42 +295,33 @@ class BaseHeatSolver(BaseSolver, ABC):
             h_l = c_solid * u_l + c_diff * delta + latent_heat
 
             # coefficients for quadratic in mushy zone:
-            # h - Hs = A*y + B*y^2  with y = T - Ts
-            # A = c_solid + latent_heat/(2*delta)
-            # B = c_diff/(4*delta)
-            A = c_solid + (latent_heat / (2.0 * delta))
-            B = c_diff / (4.0 * delta)
+            # h - Hs = a*y + b*y^2  with y = T - Ts
+            # a = c_solid + latent_heat/(2*delta)
+            # b = c_diff/(4*delta)
+            a = c_solid + (latent_heat / (2.0 * delta))
+            b = c_diff / (4.0 * delta)
 
             for j in range(n_y):
                 for i in range(n_x):
                     hh = h[j, i]
                     if hh <= h_s:
-                        # solid branch: T = h / c_solid (fallback if c_solid==0)
-                        if c_solid != 0.0:
-                            u_out[j, i] = hh / c_solid
-                        else:
-                            u_out[j, i] = u_s
+                        # solid branch: T = h / c_solid
+                        u_out[j, i] = hh / c_solid
                     elif hh >= h_l:
                         # liquid branch: T = Tl + (h - Hl)/c_liquid
-                        if c_liquid != 0.0:
-                            u_out[j, i] = u_l + (hh - h_l) / c_liquid
-                        else:
-                            u_out[j, i] = u_l
+                        u_out[j, i] = u_l + (hh - h_l) / c_liquid
                     else:
-                        # mushy: solve B*y^2 + A*y - (h - Hs) = 0 for y >= 0
+                        # mushy: solve b*y^2 + A*y - (h - Hs) = 0 for y >= 0
                         rhs = hh - h_s
-                        if B == 0.0:
+                        if b == 0.0:
                             # degenerates to linear
-                            if A != 0.0:
-                                y = rhs / A
-                            else:
-                                y = 0.0
+                            y = rhs / a
                         else:
-                            disc = A * A + 4.0 * B * rhs
+                            disc = a * a + 4.0 * b * rhs
                             if disc < 0.0:
                                 disc = 0.0
                             sqrt_disc = np.sqrt(disc)
-                            y = (-A + sqrt_disc) / (2.0 * B)
+                            y = (-a + sqrt_disc) / (2.0 * b)
                             # numerical safety
                             if y < 0.0:
                                 y = 0.0
@@ -343,15 +334,9 @@ class BaseHeatSolver(BaseSolver, ABC):
                 for i in range(n_x):
                     hh = h[j, i]
                     if hh <= h_s:
-                        if c_solid != 0.0:
-                            u_out[j, i] = hh / c_solid
-                        else:
-                            u_out[j, i] = u_0
+                        u_out[j, i] = hh / c_solid
                     else:
-                        if c_liquid != 0.0:
-                            u_out[j, i] = (hh - latent_heat) / c_liquid
-                        else:
-                            u_out[j, i] = u_0
+                        u_out[j, i] = (hh - latent_heat) / c_liquid
 
     @staticmethod
     @njit
@@ -364,7 +349,7 @@ class BaseHeatSolver(BaseSolver, ABC):
     ) -> None:
         """
         Vectorized elementwise update:
-        h_new = h_old + c_eff * (T_star - T_old)
+        h_new = h_old + c_eff * (u_star - u_old)
         """
         n_y, n_x = h_old.shape
         for j in range(n_y):
@@ -397,8 +382,7 @@ class BaseHeatSolver(BaseSolver, ABC):
             delta=delta,
         )
 
-        # compute h_new = h_old + c_eff_old * (T_star - u_old)
-        # self._c_eff already corresponds to cp_app at old time (computed at start of solve)
+        # compute h_new = h_old + c_eff_old * (u_star - u_old)
         self._update_enthalpy(
             h_new=self._h,
             h_old=self._h,
@@ -407,7 +391,7 @@ class BaseHeatSolver(BaseSolver, ABC):
             u_old=u_old,
         )
 
-        # invert h_new -> T_proj
+        # invert h_new -> u_new
         self._temperature_from_enthalpy(
             u_out=self._u_new,
             h=self._h,
