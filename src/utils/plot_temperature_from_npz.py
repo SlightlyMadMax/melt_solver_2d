@@ -34,4 +34,27 @@ def plot_temperature_from_npz(
             max_temp=max_temp + ABS_ZERO,
             actual_temp_units=TemperatureUnit.KELVIN,
             display_temp_units=TemperatureUnit.CELSIUS,
+            directory="../../graphs/icicle/5pt6c_v3/",
+            x_min=0.3,
+            x_max=0.5,
         )
+
+
+cfg: ExperimentConfig = ExperimentConfig.load_from_file(
+    "../../parameter_sets/water/icicle/5pt6c.json"
+)
+plot_temperature_from_npz(
+    cfg=cfg,
+    min_temp=273.15,
+    max_temp=278.75,
+    files_path_mask="../../data/icicle/5pt6c_v3/checkpoint_*.npz",
+)
+
+# from src.heat_transfer.plotting import create_gif_from_images
+#
+# create_gif_from_images(
+#     output_filename="5pt6c_v2",
+#     source_directory="../../graphs/icicle/5pt6c_v3/",
+#     output_directory="../../graphs/animations/",
+#     duration=200,
+# )
