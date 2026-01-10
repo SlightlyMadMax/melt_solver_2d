@@ -8,13 +8,11 @@ from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
-from src.heat_transfer.coefficient_smoothing.mushy_zone import (
-    get_mushy_zone_temperature_range,
-)
 from src.heat_transfer.init_values import init_temperature_with_interface
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
+from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
@@ -32,9 +30,9 @@ geometry = DomainGeometry(
     width=1.0,
     height=1.0,
     end_time=60.0 * 60.0 * 24.0 * 250.0,
-    n_x=200,
-    n_y=200,
-    n_t=24 * 250,
+    n_x=150,
+    n_y=150,
+    n_t=2 * 24 * 250,
 )
 
 print(geometry)
@@ -58,7 +56,7 @@ cfg = ExperimentConfig(
     u_ref=0.5 * (min_temp + max_temp),
     delta_u=0.5 * (max_temp - min_temp),
     l=geometry.max_dimension,
-    delta=None,
+    delta=0.1,
     epsilon=1e-6,
 )
 n_x, n_y = geometry.n_x, geometry.n_y
@@ -125,22 +123,18 @@ bcs = BoundaryConditions(
 
 heat_transfer_solver = HeatTransferSolver(
     cfg=cfg,
-    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
+    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
     bcs=bcs,
-    max_iters=1,
-    tolerance=1e-6,
-    urf=1.0,
+    k_face_method=KFaceMethod.FROM_TEMP,
+    post_correction=False,
 )
 
 start_time = time.perf_counter()
 
 for i in range(1, geometry.n_t + 1):
     t = i * geometry.dt
-    delta = get_mushy_zone_temperature_range(
-        u * cfg.delta_u + cfg.u_ref, u_pt=cfg.material_props.u_pt
-    )
-    u[:, :] = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=delta)
+    u[:, :] = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=cfg.delta_nd)
     if i % 24 == 0:
         print(
             f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(i / 24)} дней, "
