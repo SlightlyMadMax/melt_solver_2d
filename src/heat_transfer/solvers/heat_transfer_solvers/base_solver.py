@@ -497,7 +497,9 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
         )
 
         if self.post_correction:
-            self.posterior_correction(u_old=u, u_star=self._u_new, delta=delta, time=time)
+            self.posterior_correction(
+                u_old=u, u_star=self._u_new, delta=delta, time=time
+            )
 
         return self._u_new
 
