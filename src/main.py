@@ -30,7 +30,7 @@ from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
 )
-from src.utils.stand_with_icicle import init_temperature_icicle
+from src.utils.icicle import init_temperature_icicle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,14 +41,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/icicle/5pt6c.json"
+        "../parameter_sets/water/freezing.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 273.15
-    max_temp = 278.75
+    min_temp = 263.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
-        right=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
         # right=const_neumann_condition(n_y, value=0.0),
         bottom=const_neumann_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
@@ -77,18 +77,18 @@ if __name__ == "__main__":
     # u = init_temperature(
     #     cfg=cfg,
     #     bcs=u_bcs,
-    #     shape=DomainShape.UNIFORM_SOLID,
-    #     solid_temp=max_temp,
-    #     liquid_temp=min_temp,
+    #     shape=DomainShape.LINEAR,
+    #     solid_temp=min_temp,
+    #     liquid_temp=max_temp,
     # )
-    u = init_temperature_icicle(
-        cfg=cfg,
-        liquid_temp=max_temp,
-        solid_temp=min_temp,
-        rect_width=0.09,
-        rect_height=0.12,
-        location="top",
-    )
+    # u = init_temperature_icicle(
+    #     cfg=cfg,
+    #     liquid_temp=max_temp,
+    #     solid_temp=min_temp,
+    #     rect_width=0.09,
+    #     rect_height=0.12,
+    #     location="top",
+    # )
 
     # water_thickness = 0.01
     # crevasse_width = 0.02
@@ -129,11 +129,11 @@ if __name__ == "__main__":
     # )
 
     # Initial stream function, vorticity and velocity fields
-    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    w = initialize_vorticity(geometry=geometry)
-    v_x, v_y = initialize_velocity(geometry=geometry)
-
-    dim_u = u * delta_u + u_ref
+    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    # w = initialize_vorticity(geometry=geometry)
+    # v_x, v_y = initialize_velocity(geometry=geometry)
+    #
+    # dim_u = u * delta_u + u_ref
     # plot_temperature(
     #     u=dim_u,
     #     cfg=cfg,
@@ -153,6 +153,7 @@ if __name__ == "__main__":
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
+        post_correction=False,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -163,9 +164,16 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.CG,
-        vorticity_bc_order=2,
+        stream_function_solver_name=StreamFunctionSolverName.AMG,
+        vorticity_bc_order=1,
     )
+
+    data = np.load("../data/water_convection/checkpoint_7200.npz")
+    u = data["u"]
+    sf = data["sf"]
+    w = data["w"]
+    v_x = data["v_x"]
+    v_y = data["v_y"]
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
     log_interval = 60
@@ -173,7 +181,7 @@ if __name__ == "__main__":
     save_interval = 30
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
-    save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
+    # save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
 
     # save_at = {
     #     int(2.0 * 60 / dt),
@@ -187,26 +195,18 @@ if __name__ == "__main__":
     #     int(19.0 * 60 / dt),
     # }
     # save_at = {int(800 / dt), int(1575 / dt)}
-    def on_plot(s):
-        base = s.u[-2, :]
-        signs = np.sign(base)
-        mask = (signs[:-1] * signs[1:]) < 0
-        abs_diffs = np.abs(base[:-1] - base[1:])
-        result = abs_diffs[mask]
-        print(f"\nmid: {base[int(n_x // 2)] * cfg.delta_u}")
-        print(f"diff: {result}")
 
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/icicle/5pt6c_V3",
+        checkpoints_dir="../data/water_freezing",
         logger=logger,
-        save_at=save_at,
+        save_at={234000},
         log_at=log_at,
         plot_at=set(),
-        calculate_velocity=False,
+        calculate_velocity=True,
     )
     # runner.register_callback(event="on_plot", fn=on_plot)
     runner.run()
