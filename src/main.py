@@ -153,7 +153,7 @@ if __name__ == "__main__":
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
-        post_correction=True,
+        post_correction=False,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.AMG,
-        vorticity_bc_order=1,
+        vorticity_bc_order=2,
     )
 
     data = np.load("../data/water_convection/checkpoint_7200.npz")
