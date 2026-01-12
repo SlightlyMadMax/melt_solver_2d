@@ -203,7 +203,7 @@ if __name__ == "__main__":
         navier_solver=navier_solver,
         checkpoints_dir="../data/water_freezing",
         logger=logger,
-        save_at={234000},
+        save_at={468000},
         log_at=log_at,
         plot_at=set(),
         calculate_velocity=True,
