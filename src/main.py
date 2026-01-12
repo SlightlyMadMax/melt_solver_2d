@@ -153,7 +153,7 @@ if __name__ == "__main__":
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
-        post_correction=False,
+        post_correction=True,
     )
 
     navier_solver = BCCorrectionNVSolver(
