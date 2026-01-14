@@ -1,70 +1,115 @@
-import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
+import matplotlib.patches as patches
+import numpy as np
 
+from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.fluid_dynamics.init_values import initialize_velocity
-from src.fluid_dynamics.plotting import plot_velocity_field
 from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
-img = plt.imread("../../data/kowalewski.png")
-
-cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/freezing.json"
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "axes.labelsize": 12,
+        "axes.titlesize": 12,
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
+    }
 )
+
+
+# -----------------------------
+# helper for subfigure labels
+# -----------------------------
+def add_subfigure_label(ax, label):
+    circle = patches.Circle(
+        (0.06, 0.94),
+        0.045,
+        transform=ax.transAxes,
+        facecolor="white",
+        edgecolor="black",
+        linewidth=1.2,
+        zorder=10,
+    )
+    ax.add_patch(circle)
+
+    ax.text(
+        0.06,
+        0.94,
+        label,
+        transform=ax.transAxes,
+        ha="center",
+        va="center",
+        fontsize=12,
+        zorder=11,
+    )
+
+
+# -----------------------------
+# load data
+# -----------------------------
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("../../parameter_sets/water/freezing.json")
 geometry: DomainGeometry = cfg.geometry
-
-min_temp = 263.15
-max_temp = 283.15
-delta_u = cfg.delta_u
-u_ref = cfg.u_ref
-u_pt = cfg.material_props.u_pt
-l = cfg.l
-v = cfg.v
-
-# fig, ax = plt.subplots()
-# ax.imshow(img, extent=[0, 1.0, 0, 1.0])
-
-data = np.load("../../data/water_freezing/after_freezing_151x151.npz")
+img = plt.imread("../../data/kowalewski.png")
+data = np.load("../../data/water_freezing/checkpoint_234000_v3.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
-u_dim = u * delta_u + u_ref
+u_dim = u * cfg.delta_u + cfg.u_ref
 v_x, v_y = initialize_velocity(geometry=geometry)
 calculate_velocity_from_sf(sf, v_x, v_y, cfg)
 
-plot_velocity_field(
-    v_x * v,
-    v_y * v,
-    u_dim,
-    cfg,
-    111025,
-    True,
-    True,
-    equal_aspect=False,
-    stride=8,
-    directory="../../graphs/velocity/",
+n_x, n_y = u.shape[1], u.shape[0]
+x = np.linspace(0, geometry.width, n_x)
+y = np.linspace(0, geometry.height, n_y)
+X, Y = np.meshgrid(x, y)
+
+# -----------------------------
+# figure
+# -----------------------------
+fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
+
+# -------- (а) field ----------
+ax0.imshow(img, extent=[0, geometry.width, 0, geometry.height])
+X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
+ax0.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2, label="Численное решение")
+ax0.legend()
+
+ax0.set_xlabel("x, м")
+ax0.set_ylabel("y, м")
+ax0.set_aspect("equal", adjustable="box")
+
+add_subfigure_label(ax0, "а")
+
+# -------- (б) profile --------
+stride = 8
+contour = ax1.contourf(X, Y, u_dim + ABS_ZERO, levels=101, cmap="Blues")
+
+ax1.quiver(
+    X[::stride, ::stride],
+    Y[::stride, ::stride],
+    v_x[::stride, ::stride],
+    v_y[::stride, ::stride],
+    color="black",
+    scale_units="xy",
 )
 
-# X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u * cfg.delta_u + cfg.u_ref)
-# for i in range(len(X_b)):
-#     X_b[i] /= cfg.l
-#     Y_b[i] /= cfg.l
-# ax.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
-#
-# legend_elements = [
-#     mlines.Line2D(
-#         [], [], linestyle="--", color="red", linewidth=2, label="Numerical solution"
-#     ),
-# ]
-# ax.legend(handles=legend_elements, fontsize=12)
-#
-# ax.set_xlabel("X", fontsize=14)
-# ax.set_ylabel("Y", fontsize=14)
-# plt.tight_layout()
-#
-# plt.savefig(f"../../graphs/water_freezing_exp_vs_num.jpg", dpi=300)
-#
-# plt.show()
+ax1.plot(X_b, Y_b, linestyle="--", color="k", linewidth=1.5)
+
+ax1.set_xlabel("x, м")
+ax1.set_ylabel("y, м")
+ax1.set_aspect("equal", adjustable="box")
+
+cbar = fig.colorbar(contour, ax=ax1, fraction=0.046, pad=0.04)
+cbar.set_ticks(np.linspace(-10, 10, 9))
+cbar.set_label(r"Температура, $^{\circ}\mathrm{C}$", rotation=270, labelpad=15)
+
+add_subfigure_label(ax1, "б")
+
+# -----------------------------
+plt.savefig("../../graphs/velocity/bruh.jpg", dpi=300)
+plt.show()
