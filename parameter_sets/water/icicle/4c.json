@@ -1,14 +1,14 @@
 {
   "geometry": {
-    "width": 0.4,
+    "width": 0.8,
     "height": 0.2,
-    "end_time": 14400,
-    "n_x": 601,
-    "n_y": 301,
-    "n_t": 14400
+    "end_time": 7200,
+    "n_x": 2001,
+    "n_y": 501,
+    "n_t": 36000
   },
   "material_props": {
-    "u_pt": 273.15,
+    "u_pt": 273.2,
     "specific_heat_liquid": 4212,
     "specific_heat_solid": 2116,
     "specific_latent_heat": 333550,
@@ -27,9 +27,9 @@
     ]
   },
   "u_ref": 273.15,
-  "delta_u": 4.0,
+  "delta_u": 8.0,
   "l": 0.2,
-  "delta": 0.08,
-  "delta_flow": 0.08,
-  "epsilon": 0.0005
+  "delta": 0.05,
+  "delta_flow": 0.05,
+  "epsilon": 0.000005
 }

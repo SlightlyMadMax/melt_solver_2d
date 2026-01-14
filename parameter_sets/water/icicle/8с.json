@@ -8,7 +8,7 @@
     "n_t": 36000
   },
   "material_props": {
-    "u_pt": 273.15,
+    "u_pt": 273.2,
     "specific_heat_liquid": 4212,
     "specific_heat_solid": 2116,
     "specific_latent_heat": 333550,
@@ -29,7 +29,7 @@
   "u_ref": 273.15,
   "delta_u": 8.0,
   "l": 0.2,
-  "delta": 0.025,
-  "delta_flow": 0.025,
-  "epsilon": 0.00001
+  "delta": 0.05,
+  "delta_flow": 0.05,
+  "epsilon": 0.000005
 }
