@@ -41,14 +41,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/freezing.json"
+        "../parameter_sets/water/horizontal_layer.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 263.15
-    max_temp = 283.15
+    min_temp = 268.15
+    max_temp = 278.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -57,12 +57,14 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        top=const_neumann_condition(n_x, value=0.0),
-        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
-        # right=const_neumann_condition(n_y, value=0.0),
-        bottom=const_neumann_condition(n_x, value=0.0),
-        left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
-        # left=const_neumann_condition(n_y, value=0.0),
+        # top=const_neumann_condition(n_x, value=0.0),
+        top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
+        # right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
+        right=const_neumann_condition(n_y, value=0.0),
+        # bottom=const_neumann_condition(n_x, value=0.0),
+        bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
+        # left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        left=const_neumann_condition(n_y, value=0.0),
     )
 
     # Stream function boundary conditions
@@ -90,10 +92,10 @@ if __name__ == "__main__":
     #     location="top",
     # )
 
-    # water_thickness = 0.01
+    water_thickness = 0.025
     # crevasse_width = 0.02
     # crevasse_depth = 0.2
-    # f = np.empty(n_x)
+    f = np.empty(n_x)
 
     # angle_rad = np.deg2rad(15.0)
     # tan15 = np.tan(angle_rad)
@@ -116,23 +118,23 @@ if __name__ == "__main__":
     #     else:
     #         f[i] = geometry.height - water_thickness
 
-    # for i in range(n_x):
-    #     x = i * geometry.dx
-    #     f[i] = geometry.height - water_thickness
-    #
-    # u = init_temperature_with_interface(
-    #     cfg=cfg,
-    #     f=f,
-    #     liquid_region_height=water_thickness,
-    #     liquid_temp=min_temp,
-    #     solid_temp=max_temp,
-    # )
+    for i in range(n_x):
+        x = i * geometry.dx
+        f[i] = geometry.height - water_thickness
+
+    u = init_temperature_with_interface(
+        cfg=cfg,
+        f=f,
+        liquid_region_height=water_thickness,
+        liquid_temp=max_temp,
+        solid_temp=min_temp,
+    )
 
     # Initial stream function, vorticity and velocity fields
-    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geometry=geometry)
-    # v_x, v_y = initialize_velocity(geometry=geometry)
-    #
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
+
     # dim_u = u * delta_u + u_ref
     # plot_temperature(
     #     u=dim_u,
@@ -168,21 +170,14 @@ if __name__ == "__main__":
         vorticity_bc_order=2,
     )
 
-    data = np.load("../data/water_convection/checkpoint_7200.npz")
-    u = data["u"]
-    sf = data["sf"]
-    w = data["w"]
-    v_x = data["v_x"]
-    v_y = data["v_y"]
-
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
     log_interval = 60
     plot_interval = 60
-    save_interval = 30
+    save_interval = 60
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
-    # save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
+    save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
 
     # save_at = {
     #     int(2.0 * 60 / dt),
@@ -202,12 +197,12 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/water_freezing",
+        checkpoints_dir="../data/wavy_surface/5x20_3",
         logger=logger,
-        save_at={2340000},
+        save_at=save_at,
         log_at=log_at,
         plot_at=set(),
-        calculate_velocity=True,
+        calculate_velocity=False,
     )
     # runner.register_callback(event="on_plot", fn=on_plot)
     runner.run()

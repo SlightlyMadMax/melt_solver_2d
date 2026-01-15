@@ -27,12 +27,12 @@ min_temp = 268.15
 reference_temperature = 0.5 * (min_temp + max_temp)
 
 geometry = DomainGeometry(
-    width=1.0,
-    height=1.0,
-    end_time=60.0 * 60.0 * 24.0 * 250.0,
-    n_x=150,
-    n_y=150,
-    n_t=2 * 24 * 250,
+    width=0.2,
+    height=0.05,
+    end_time=60.0 * 60.0 * 20.0,
+    n_x=401,
+    n_y=101,
+    n_t=60 * 20,
 )
 
 print(geometry)
@@ -47,7 +47,7 @@ material_props = MaterialProperties(
     thermal_conductivity_liquid=0.59,
     thermal_conductivity_solid=2.21,
     dynamic_viscosity=1.7888e-3,
-    volumetric_thermal_exp=-6.733353e-05
+    volumetric_thermal_exp=-6.733353e-05,
 )
 
 cfg = ExperimentConfig(
@@ -56,7 +56,7 @@ cfg = ExperimentConfig(
     u_ref=0.5 * (min_temp + max_temp),
     delta_u=0.5 * (max_temp - min_temp),
     l=geometry.max_dimension,
-    delta=0.1,
+    delta=0.05,
     epsilon=1e-6,
 )
 n_x, n_y = geometry.n_x, geometry.n_y
@@ -82,15 +82,17 @@ b_lim = (
         * abs(min_temp + ABS_ZERO)
     )
 )
-print(f"Theoretical terminal boundary position: {1.0 - b_lim}")
+print(f"Theoretical terminal boundary position: {(1.0 - b_lim) * geometry.height}")
 
 
-f = [
-    geometry.height / 2
-    - 0.2 * math.exp(-((i * geometry.dx - geometry.width / 4.0) ** 2) / 0.005)
-    + 0.2 * math.exp(-((i * geometry.dx - geometry.width / 1.5) ** 2) / 0.005)
-    for i in range(geometry.n_x)
-]
+# f = [
+#     geometry.height / 2
+#     - 0.2 * math.exp(-((i * geometry.dx - geometry.width / 4.0) ** 2) / 0.005)
+#     + 0.2 * math.exp(-((i * geometry.dx - geometry.width / 1.5) ** 2) / 0.005)
+#     for i in range(geometry.n_x)
+# ]
+
+f = [geometry.height / 2 for i in range(geometry.n_x)]
 f = np.array(f)
 
 u = init_temperature_with_interface(
@@ -123,60 +125,54 @@ bcs = BoundaryConditions(
 
 heat_transfer_solver = HeatTransferSolver(
     cfg=cfg,
-    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-    convective_term_form=ConvectiveTermForm.NON_DIVERGENT_CENTRAL,
+    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
     bcs=bcs,
     k_face_method=KFaceMethod.FROM_TEMP,
     post_correction=False,
 )
 
+pt_arr = [geometry.height / 2]
+
 start_time = time.perf_counter()
 
-for i in range(1, geometry.n_t + 1):
-    t = i * geometry.dt
-    u[:, :] = heat_transfer_solver.solve(u, sf=np.zeros_like(u), time=t, delta=cfg.delta_nd)
-    if i % 24 == 0:
+for n in range(1, geometry.n_t + 1):
+    t = n * geometry.dt
+    u[:, :] = heat_transfer_solver.solve(
+        u, sf=np.zeros_like(u), time=t, delta=cfg.delta_nd
+    )
+    if n % 60 == 0:
         print(
-            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(i / 24)} дней, "
+            f"ВРЕМЯ МОДЕЛИРОВАНИЯ: {int(n / 60)} часов, "
             f"ВРЕМЯ ВЫПОЛНЕНИЯ: {(time.perf_counter() - start_time) / 60:.2f} мин., "
-            f"ОСТАЛОСЬ: {get_remaining_time(n=i, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
+            f"ОСТАЛОСЬ: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
         )
-        plot_temperature(
-            u=u * cfg.delta_u + cfg.u_ref,
-            cfg=cfg,
-            graph_id=i,
-            plot_boundary=True,
-            show_graph=False,
-            min_temp=min_temp + ABS_ZERO,
-            max_temp=max_temp + ABS_ZERO,
-            invert_yaxis=False,
-            actual_temp_units=TemperatureUnit.KELVIN,
-            display_temp_units=TemperatureUnit.CELSIUS,
-            directory="./results/",
-        )
+    i = int(geometry.n_x / 2)
 
-u_dim = u * cfg.delta_u - cfg.u_pt_ref
-center_i_index = int(geometry.n_x / 2)
-for j in range(geometry.n_y - 2):
+    dy = geometry.dy
+    u_pt = cfg.u_pt_nd
+    diff = u - u_pt
+    j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
     u0, u1, u2 = (
-        u_dim[j, center_i_index],
-        u_dim[j + 1, center_i_index],
-        u_dim[j + 2, center_i_index],
+        u[j, i],
+        u[j + 1, i],
+        u[j + 2, i],
     )
     y0 = j * geometry.dy
     y1 = (j + 1) * geometry.dy
     y2 = (j + 2) * geometry.dy
-    pt = get_pt_quadratic(u0, u1, u2, cfg.u_pt_ref, y0, y1, y2)
-    if pt is not None:
-        print(f"Calculated final location of the boundary: {pt}")
-        print(
-            f"Absolute error: {abs(pt - 1 + b_lim)}, relative: {round(abs(pt - 1 + b_lim) * 100 / b_lim, 2)}%"
-        )
-        break
+    pt_arr.append(get_pt_quadratic(u0, u1, u2, u_pt, y0, y1, y2))
 
-print("СОЗДАНИЕ АНИМАЦИИ...")
-create_gif_from_images(
-    output_filename="test_animation",
-    source_directory="./results/",
-    output_directory="./results/",
+np.savez("../../../../data/wavy_surface/stefan_boundary.npz", b=np.asarray(pt_arr))
+pt_a = (1.0 - b_lim) * geometry.height
+pt_num = pt_arr[-1]
+print(f"Calculated final location of the boundary: {pt_num}")
+print(
+    f"Absolute error: {abs(pt_num - pt_a)}, relative: {round(abs(pt_num - pt_a) * 100 / pt_a, 2)}%"
 )
+
+# print("СОЗДАНИЕ АНИМАЦИИ...")
+# create_gif_from_images(
+#     output_filename="test_animation",
+#     source_directory="./results/",
+#     output_directory="./results/",
+# )
