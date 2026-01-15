@@ -152,7 +152,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
-        k_face_method=KFaceMethod.ARITHMETIC,
+        k_face_method=KFaceMethod.FROM_TEMP,
         post_correction=False,
     )
 
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.AMG,
-        vorticity_bc_order=1,
+        vorticity_bc_order=2,
     )
 
     data = np.load("../data/water_convection/checkpoint_7200.npz")
@@ -174,6 +174,7 @@ if __name__ == "__main__":
     w = data["w"]
     v_x = data["v_x"]
     v_y = data["v_y"]
+
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
     log_interval = 60
@@ -203,7 +204,7 @@ if __name__ == "__main__":
         navier_solver=navier_solver,
         checkpoints_dir="../data/water_freezing",
         logger=logger,
-        save_at={468000},
+        save_at={2340000},
         log_at=log_at,
         plot_at=set(),
         calculate_velocity=True,
