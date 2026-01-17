@@ -73,7 +73,7 @@ heat_transfer_solver = HeatTransferSolver(
     urf=1.0,
     step_scheme=StepScheme.CONST,
     delta_scheme=DeltaScheme.GAUSS,
-    post_correction=True,
+    post_correction=False,
 )
 
 u = np.ones((geometry.n_y, geometry.n_x)) * max_temp
