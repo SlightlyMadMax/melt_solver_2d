@@ -76,13 +76,13 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    # u = init_temperature(
-    #     cfg=cfg,
-    #     bcs=u_bcs,
-    #     shape=DomainShape.LINEAR,
-    #     solid_temp=min_temp,
-    #     liquid_temp=max_temp,
-    # )
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_SOLID,
+        solid_temp=min_temp,
+        liquid_temp=max_temp,
+    )
     # u = init_temperature_icicle(
     #     cfg=cfg,
     #     liquid_temp=max_temp,
@@ -92,10 +92,10 @@ if __name__ == "__main__":
     #     location="top",
     # )
 
-    water_thickness = 0.025
+    # water_thickness = 0.025
     # crevasse_width = 0.02
     # crevasse_depth = 0.2
-    f = np.empty(n_x)
+    # f = np.empty(n_x)
 
     # angle_rad = np.deg2rad(15.0)
     # tan15 = np.tan(angle_rad)
@@ -118,17 +118,17 @@ if __name__ == "__main__":
     #     else:
     #         f[i] = geometry.height - water_thickness
 
-    for i in range(n_x):
-        x = i * geometry.dx
-        f[i] = geometry.height - water_thickness
-
-    u = init_temperature_with_interface(
-        cfg=cfg,
-        f=f,
-        liquid_region_height=water_thickness,
-        liquid_temp=max_temp,
-        solid_temp=min_temp,
-    )
+    # for i in range(n_x):
+    #     x = i * geometry.dx
+    #     f[i] = geometry.height - water_thickness
+    #
+    # u = init_temperature_with_interface(
+    #     cfg=cfg,
+    #     f=f,
+    #     liquid_region_height=water_thickness,
+    #     liquid_temp=max_temp,
+    #     solid_temp=min_temp,
+    # )
 
     # Initial stream function, vorticity and velocity fields
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/5x20_3",
+        checkpoints_dir="../data/wavy_surface/5x20_4",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
