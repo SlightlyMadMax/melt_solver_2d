@@ -186,7 +186,9 @@ class ExperimentRunner:
         self.logger = logger or logging.getLogger("experiment")
         self.heat_solver = heat_solver
         self.navier_solver = navier_solver
-        self.calculate_velocity = calculate_velocity if calculate_velocity is not None else False
+        self.calculate_velocity = (
+            calculate_velocity if calculate_velocity is not None else False
+        )
         self.save_at = set() if save_at is None else save_at
         self.plot_at = set() if plot_at is None else plot_at
         self.log_at = set() if log_at is None else log_at
@@ -212,12 +214,9 @@ class ExperimentRunner:
                 self.step()
 
                 if self.state.n in self.save_at:
-                    try:
-                        path = self.file_manager.save(self.state, cfg=dict(self.cfg))
-                        self._call_event("on_save")
-                        self.logger.info(f"Saved checkpoint: {path}")
-                    except Exception as exc:
-                        self.logger.exception("Failed to save checkpoint: %s", exc)
+                    path = self.file_manager.save(self.state, cfg=dict(self.cfg))
+                    self._call_event("on_save")
+                    self.logger.info(f"Saved checkpoint: {path}")
 
                 if self.state.n in self.plot_at:
                     try:
@@ -272,13 +271,14 @@ class ExperimentRunner:
 
         except Exception as exc:
             self._call_event("on_error")
-            self.logger.exception("Uncaught exception during run: %s", exc)
+            self.logger.exception("Exception during simulation run")
 
             try:
-                self.file_manager.save(self.state, cfg=dict(self.cfg))
-                self.logger.info("Saved checkpoint after exception")
+                path = self.file_manager.save(self.state, cfg=dict(self.cfg))
+                self.logger.info(f"Saved error checkpoint: {path}")
             except Exception:
-                self.logger.exception("Failed to save checkpoint after exception")
+                self.logger.exception("Failed to save error checkpoint")
+
             raise
 
         finally:
@@ -323,12 +323,12 @@ class ExperimentRunner:
                     self.state.sf, self.state.v_x, self.state.v_y, self.cfg
                 )
 
-        except Exception:
-            self.logger.exception("Error during solvers step")
-            raise
+            self.state.n = n
+            self.state.t = t
 
-        self.state.n = n
-        self.state.t = t
+        except Exception:
+            self.logger.exception("Error during solver step")
+            raise
 
         self._call_event("post_step")
 
