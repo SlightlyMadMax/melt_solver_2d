@@ -8,7 +8,11 @@ from src.core.constants import ABS_ZERO
 from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
-from src.heat_transfer.init_values import init_temperature_with_interface
+from src.heat_transfer.init_values import (
+    init_temperature_with_interface,
+    DomainShape,
+    init_temperature,
+)
 from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
 from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
@@ -32,20 +36,20 @@ geometry = DomainGeometry(
     end_time=60.0 * 60.0 * 20.0,
     n_x=401,
     n_y=101,
-    n_t=60 * 20,
+    n_t=60 * 60 * 20,
 )
 
 print(geometry)
 
 material_props = MaterialProperties(
     u_pt=273.15,
-    specific_heat_liquid=4120.7,
-    specific_heat_solid=2056.8,
-    specific_latent_heat=3.33e5,
-    density_liquid=999.84,
-    density_solid=918.9,
-    thermal_conductivity_liquid=0.59,
-    thermal_conductivity_solid=2.21,
+    specific_heat_liquid=4212,
+    specific_heat_solid=2116,
+    specific_latent_heat=335000,
+    density_liquid=999.8,
+    density_solid=916.8,
+    thermal_conductivity_liquid=0.566,
+    thermal_conductivity_solid=2.26,
     dynamic_viscosity=1.7888e-3,
     volumetric_thermal_exp=-6.733353e-05,
 )
@@ -55,7 +59,7 @@ cfg = ExperimentConfig(
     material_props=material_props,
     u_ref=0.5 * (min_temp + max_temp),
     delta_u=0.5 * (max_temp - min_temp),
-    l=geometry.max_dimension,
+    l=0.05,
     delta=0.05,
     epsilon=1e-6,
 )
@@ -92,15 +96,30 @@ print(f"Theoretical terminal boundary position: {(1.0 - b_lim) * geometry.height
 #     for i in range(geometry.n_x)
 # ]
 
-f = [geometry.height / 2 for i in range(geometry.n_x)]
-f = np.array(f)
+# f = [geometry.height / 2 for i in range(geometry.n_x)]
+# f = np.array(f)
+#
+# u = init_temperature_with_interface(
+#     cfg=cfg,
+#     liquid_temp=max_temp,
+#     solid_temp=min_temp,
+#     f=f,
+#     liquid_region_height=0.0,
+# )
 
-u = init_temperature_with_interface(
+bcs = BoundaryConditions(
+    top=const_dirichlet_condition(n_x, value=(max_temp - cfg.u_ref) / cfg.delta_u),
+    right=const_neumann_condition(n_y, value=0.0),
+    bottom=const_dirichlet_condition(n_x, value=(min_temp - cfg.u_ref) / cfg.delta_u),
+    left=const_neumann_condition(n_y, value=0.0),
+)
+
+u = init_temperature(
     cfg=cfg,
-    liquid_temp=max_temp,
+    bcs=bcs,
+    shape=DomainShape.UNIFORM_SOLID,
     solid_temp=min_temp,
-    f=f,
-    liquid_region_height=0.0,
+    liquid_temp=max_temp,
 )
 
 plot_temperature(
@@ -116,22 +135,16 @@ plot_temperature(
     display_temp_units=TemperatureUnit.CELSIUS,
     directory="./results/",
 )
-bcs = BoundaryConditions(
-    top=const_dirichlet_condition(n_x, value=(max_temp - cfg.u_ref) / cfg.delta_u),
-    right=const_neumann_condition(n_y, value=0.0),
-    bottom=const_dirichlet_condition(n_x, value=(min_temp - cfg.u_ref) / cfg.delta_u),
-    left=const_neumann_condition(n_y, value=0.0),
-)
 
 heat_transfer_solver = HeatTransferSolver(
     cfg=cfg,
-    solver_name=HeatTransferSolverName.LOC_ONE_DIM,
+    solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
     bcs=bcs,
     k_face_method=KFaceMethod.FROM_TEMP,
     post_correction=False,
 )
 
-pt_arr = [geometry.height / 2]
+pt_arr = [0.05]
 
 start_time = time.perf_counter()
 
@@ -146,21 +159,21 @@ for n in range(1, geometry.n_t + 1):
             f"ВРЕМЯ ВЫПОЛНЕНИЯ: {(time.perf_counter() - start_time) / 60:.2f} мин., "
             f"ОСТАЛОСЬ: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
         )
-    i = int(geometry.n_x / 2)
+        i = int(geometry.n_x / 2)
 
-    dy = geometry.dy
-    u_pt = cfg.u_pt_nd
-    diff = u - u_pt
-    j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
-    u0, u1, u2 = (
-        u[j, i],
-        u[j + 1, i],
-        u[j + 2, i],
-    )
-    y0 = j * geometry.dy
-    y1 = (j + 1) * geometry.dy
-    y2 = (j + 2) * geometry.dy
-    pt_arr.append(get_pt_quadratic(u0, u1, u2, u_pt, y0, y1, y2))
+        dy = geometry.dy
+        u_pt = cfg.u_pt_nd
+        diff = u - u_pt
+        j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
+        u0, u1, u2 = (
+            u[j, i],
+            u[j + 1, i],
+            u[j + 2, i],
+        )
+        y0 = j * geometry.dy
+        y1 = (j + 1) * geometry.dy
+        y2 = (j + 2) * geometry.dy
+        pt_arr.append(get_pt_quadratic(u0, u1, u2, u_pt, y0, y1, y2))
 
 np.savez("../../../../data/wavy_surface/stefan_boundary.npz", b=np.asarray(pt_arr))
 pt_a = (1.0 - b_lim) * geometry.height
