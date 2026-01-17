@@ -28,18 +28,26 @@ class SimulationState:
 
     def snapshot(self) -> Dict:
         return {
-            "n": int(self.n),
-            "t": float(self.t),
-            "u": np.array(self.u, copy=True),
-            "sf": np.array(self.sf, copy=True),
-            "w": np.array(self.w, copy=True),
-            "v_x": None if self.v_x is None else np.array(self.v_x, copy=True),
-            "v_y": None if self.v_y is None else np.array(self.v_y, copy=True),
+            "n": self.n,
+            "t": self.t,
+            "u": self.u.copy(),
+            "sf": self.sf.copy(),
+            "w": self.w.copy(),
+            "v_x": None if self.v_x is None else self.v_x.copy(),
+            "v_y": None if self.v_y is None else self.v_y.copy(),
         }
 
     def restore(self, data: Dict) -> None:
-        self.n = int(data["n"])
-        self.t = float(data["t"])
+        # Validate required keys
+        required_keys = {"n", "t", "u", "sf", "w"}
+        missing_keys = required_keys - data.keys()
+        if missing_keys:
+            raise ValueError(
+                f"Missing required keys in checkpoint data: {missing_keys}"
+            )
+
+        self.n = data["n"]
+        self.t = data["t"]
 
         for name in ("u", "sf", "w"):
             arr = data[name]
@@ -49,6 +57,7 @@ class SimulationState:
                     f"Shape mismatch restoring {name}: {arr.shape} != {target.shape}"
                 )
             target[:] = arr
+
         if data.get("v_x") is not None and self.v_x is not None:
             self.v_x[:] = data["v_x"]
         if data.get("v_y") is not None and self.v_y is not None:
