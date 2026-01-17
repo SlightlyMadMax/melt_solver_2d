@@ -28,18 +28,25 @@ class SimulationState:
 
     def snapshot(self) -> Dict:
         return {
-            "n": int(self.n),
-            "t": float(self.t),
-            "u": np.array(self.u, copy=True),
-            "sf": np.array(self.sf, copy=True),
-            "w": np.array(self.w, copy=True),
-            "v_x": None if self.v_x is None else np.array(self.v_x, copy=True),
-            "v_y": None if self.v_y is None else np.array(self.v_y, copy=True),
+            "n": self.n,
+            "t": self.t,
+            "u": self.u.copy(),
+            "sf": self.sf.copy(),
+            "w": self.w.copy(),
+            "v_x": None if self.v_x is None else self.v_x.copy(),
+            "v_y": None if self.v_y is None else self.v_y.copy(),
         }
 
     def restore(self, data: Dict) -> None:
-        self.n = int(data["n"])
-        self.t = float(data["t"])
+        required_keys = {"n", "t", "u", "sf", "w"}
+        missing_keys = required_keys - data.keys()
+        if missing_keys:
+            raise ValueError(
+                f"Missing required keys in checkpoint data: {missing_keys}"
+            )
+
+        self.n = data["n"]
+        self.t = data["t"]
 
         for name in ("u", "sf", "w"):
             arr = data[name]
@@ -49,6 +56,7 @@ class SimulationState:
                     f"Shape mismatch restoring {name}: {arr.shape} != {target.shape}"
                 )
             target[:] = arr
+
         if data.get("v_x") is not None and self.v_x is not None:
             self.v_x[:] = data["v_x"]
         if data.get("v_y") is not None and self.v_y is not None:
@@ -161,11 +169,11 @@ class ExperimentRunner:
         file_manager: Optional[FileManager] = None,
         plot_manager: Optional[PlotManager] = None,
         logger: Optional[logging.Logger] = None,
-        checkpoints_dir: str | None = "../data",
-        calculate_velocity: bool | None = False,
-        save_at: set[int] | None = None,
-        plot_at: set[int] | None = None,
-        log_at: set[int] | None = None,
+        checkpoints_dir: Optional[str | Path] = "../data",
+        calculate_velocity: Optional[bool] = None,
+        save_at: Optional[set[int]] = None,
+        plot_at: Optional[set[int]] = None,
+        log_at: Optional[set[int]] = None,
     ) -> None:
         self.cfg: ExperimentConfig = cfg
         self.geometry: DomainGeometry = cfg.geometry
@@ -177,11 +185,68 @@ class ExperimentRunner:
         self.logger = logger or logging.getLogger("experiment")
         self.heat_solver = heat_solver
         self.navier_solver = navier_solver
-        self.calculate_velocity = calculate_velocity
+        self.calculate_velocity = (
+            calculate_velocity if calculate_velocity is not None else False
+        )
         self.save_at = set() if save_at is None else save_at
         self.plot_at = set() if plot_at is None else plot_at
         self.log_at = set() if log_at is None else log_at
         self._callbacks: Dict[str, list[Callable[[SimulationState], None]]] = {}
+
+        if self.calculate_velocity:
+            if self.state.v_x is None or self.state.v_y is None:
+                raise ValueError(
+                    "calculate_velocity=True requires v_x and v_y to be initialized in SimulationState"
+                )
+
+    @classmethod
+    def from_checkpoint(
+        cls,
+        checkpoint_path: str | Path,
+        cfg: ExperimentConfig,
+        heat_solver,
+        navier_solver,
+        file_manager: Optional[FileManager] = None,
+        plot_manager: Optional[PlotManager] = None,
+        logger: Optional[logging.Logger] = None,
+        checkpoints_dir: Optional[str | Path] = "../data",
+        calculate_velocity: Optional[bool] = None,
+        save_at: Optional[set[int]] = None,
+        plot_at: Optional[set[int]] = None,
+        log_at: Optional[set[int]] = None,
+    ) -> "ExperimentRunner":
+        data = FileManager.load(checkpoint_path)
+
+        state = SimulationState(
+            u=np.zeros_like(data["u"]),
+            sf=np.zeros_like(data["sf"]),
+            w=np.zeros_like(data["w"]),
+            v_x=np.zeros_like(data["v_x"]) if data.get("v_x") is not None else None,
+            v_y=np.zeros_like(data["v_y"]) if data.get("v_y") is not None else None,
+        )
+
+        state.restore(data)
+
+        runner = cls(
+            cfg=cfg,
+            state=state,
+            heat_solver=heat_solver,
+            navier_solver=navier_solver,
+            file_manager=file_manager,
+            plot_manager=plot_manager,
+            logger=logger,
+            checkpoints_dir=checkpoints_dir,
+            calculate_velocity=calculate_velocity,
+            save_at=save_at,
+            plot_at=plot_at,
+            log_at=log_at,
+        )
+
+        if logger is None:
+            logger = logging.getLogger("experiment")
+        logger.info(f"Initialized runner from checkpoint: {checkpoint_path}")
+
+        return runner
 
     def register_callback(
         self, event: str, fn: Callable[[SimulationState], None]
@@ -197,12 +262,9 @@ class ExperimentRunner:
                 self.step()
 
                 if self.state.n in self.save_at:
-                    try:
-                        path = self.file_manager.save(self.state, cfg=dict(self.cfg))
-                        self._call_event("on_save")
-                        self.logger.info(f"Saved checkpoint: {path}")
-                    except Exception as exc:
-                        self.logger.exception("Failed to save checkpoint: %s", exc)
+                    path = self.file_manager.save(self.state, cfg=dict(self.cfg))
+                    self._call_event("on_save")
+                    self.logger.info(f"Saved checkpoint: {path}")
 
                 if self.state.n in self.plot_at:
                     try:
@@ -257,13 +319,14 @@ class ExperimentRunner:
 
         except Exception as exc:
             self._call_event("on_error")
-            self.logger.exception("Uncaught exception during run: %s", exc)
+            self.logger.exception("Exception during simulation run: %s", exc)
 
             try:
-                self.file_manager.save(self.state, cfg=dict(self.cfg))
-                self.logger.info("Saved checkpoint after exception")
+                path = self.file_manager.save(self.state, cfg=dict(self.cfg))
+                self.logger.info(f"Saved error checkpoint: {path}")
             except Exception:
-                self.logger.exception("Failed to save checkpoint after exception")
+                self.logger.exception("Failed to save error checkpoint")
+
             raise
 
         finally:
@@ -303,36 +366,19 @@ class ExperimentRunner:
             self.state.sf[:, :] = sf_new
             self.state.w[:, :] = w_new
 
-            if (
-                self.calculate_velocity
-                and self.state.v_x is not None
-                and self.state.v_y is not None
-            ):
+            if self.calculate_velocity:
                 calculate_velocity_from_sf(
                     self.state.sf, self.state.v_x, self.state.v_y, self.cfg
                 )
 
+            self.state.n = n
+            self.state.t = t
+
         except Exception:
-            self.logger.exception("Error during solvers step")
+            self.logger.exception("Error during solver step")
             raise
 
-        self.state.n = n
-        self.state.t = t
-
         self._call_event("post_step")
-
-    def save_checkpoint(self, path: Optional[str | Path] = None) -> Path:
-        if path is None:
-            return self.file_manager.save(self.state, cfg=dict(self.cfg))
-        else:
-            data = self.state.snapshot()
-            np.savez_compressed(path, **data)
-            return Path(path)
-
-    def load_checkpoint(self, path: str | Path) -> None:
-        data = self.file_manager.load(path)
-        self.state.restore(data)
-        self.logger.info("Loaded checkpoint: %s", path)
 
     def _call_event(self, event: str) -> None:
         for fn in self._callbacks.get(event, []):
