@@ -170,11 +170,11 @@ class ExperimentRunner:
         file_manager: Optional[FileManager] = None,
         plot_manager: Optional[PlotManager] = None,
         logger: Optional[logging.Logger] = None,
-        checkpoints_dir: str | None = "../data",
-        calculate_velocity: bool | None = False,
-        save_at: set[int] | None = None,
-        plot_at: set[int] | None = None,
-        log_at: set[int] | None = None,
+        checkpoints_dir: Optional[str | Path] = "../data",
+        calculate_velocity: Optional[bool] = None,
+        save_at: Optional[set[int]] = None,
+        plot_at: Optional[set[int]] = None,
+        log_at: Optional[set[int]] = None,
     ) -> None:
         self.cfg: ExperimentConfig = cfg
         self.geometry: DomainGeometry = cfg.geometry
@@ -186,11 +186,17 @@ class ExperimentRunner:
         self.logger = logger or logging.getLogger("experiment")
         self.heat_solver = heat_solver
         self.navier_solver = navier_solver
-        self.calculate_velocity = calculate_velocity
+        self.calculate_velocity = calculate_velocity if calculate_velocity is not None else False
         self.save_at = set() if save_at is None else save_at
         self.plot_at = set() if plot_at is None else plot_at
         self.log_at = set() if log_at is None else log_at
         self._callbacks: Dict[str, list[Callable[[SimulationState], None]]] = {}
+
+        if self.calculate_velocity:
+            if self.state.v_x is None or self.state.v_y is None:
+                raise ValueError(
+                    "calculate_velocity=True requires v_x and v_y to be initialized in SimulationState"
+                )
 
     def register_callback(
         self, event: str, fn: Callable[[SimulationState], None]
@@ -313,10 +319,6 @@ class ExperimentRunner:
             self.state.w[:, :] = w_new
 
             if self.calculate_velocity:
-                if self.state.v_x is None or self.state.v_y is None:
-                    raise ValueError(
-                        "v_x and v_y must be initialized when calculate_velocity=True"
-                    )
                 calculate_velocity_from_sf(
                     self.state.sf, self.state.v_x, self.state.v_y, self.cfg
                 )
