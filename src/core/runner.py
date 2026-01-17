@@ -303,11 +303,11 @@ class ExperimentRunner:
             self.state.sf[:, :] = sf_new
             self.state.w[:, :] = w_new
 
-            if (
-                self.calculate_velocity
-                and self.state.v_x is not None
-                and self.state.v_y is not None
-            ):
+            if self.calculate_velocity:
+                if self.state.v_x is None or self.state.v_y is None:
+                    raise ValueError(
+                        "v_x and v_y must be initialized when calculate_velocity=True"
+                    )
                 calculate_velocity_from_sf(
                     self.state.sf, self.state.v_x, self.state.v_y, self.cfg
                 )
