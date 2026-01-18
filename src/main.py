@@ -87,7 +87,7 @@ if __name__ == "__main__":
         cfg=cfg,
         liquid_temp=max_temp,
         solid_temp=min_temp,
-        rect_width=0.12,
+        rect_width=0.8,
         rect_height=0.12,
         location="top",
     )
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/icicle/5pt6c_thick",
+        checkpoints_dir="../data/icicle/5pt6c_thin",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
