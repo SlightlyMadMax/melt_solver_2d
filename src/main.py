@@ -87,7 +87,7 @@ if __name__ == "__main__":
         cfg=cfg,
         liquid_temp=max_temp,
         solid_temp=min_temp,
-        rect_width=0.8,
+        rect_width=0.08,
         rect_height=0.12,
         location="top",
     )
