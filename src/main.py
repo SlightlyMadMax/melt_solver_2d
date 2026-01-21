@@ -197,7 +197,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/icicle/5pt6c_thin_high_ste",
+        checkpoints_dir="../data/icicle/5pt6c_thin_low_ste",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
