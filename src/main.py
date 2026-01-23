@@ -166,7 +166,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         penalty_term_form=PenaltyTermForm.TANH,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
-        stream_function_solver_name=StreamFunctionSolverName.AMG,
+        stream_function_solver_name=StreamFunctionSolverName.CG,
         vorticity_bc_order=2,
     )
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/icicle/5pt6c_thin_low_ste",
+        checkpoints_dir="../data/icicle/5pt6c_thin_lower_ste",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
