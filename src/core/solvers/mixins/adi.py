@@ -15,10 +15,16 @@ class HasConfig(Protocol):
     cfg: "ExperimentConfig"
 
 
-class Sweep2DMixin:
+class ADIMixin:
     """
-    Mixin that provides pre-allocated coefficient arrays and abstract sweep methods
-    for 2D splitting schemes (e.g. Peaceman–Rachford, Douglas–Rachford).
+    Mixin that provides complete ADI functionality for 2D splitting schemes
+    (e.g. Peaceman–Rachford, Douglas–Rachford).
+
+    Provides:
+    - Pre-allocated coefficient arrays
+    - Abstract methods for computing coefficients and applying BCs
+    - Tridiagonal solve methods for x and y directions
+    - Full sweep orchestration with optional direction alternation
 
     Assumes the consuming class defines a `.cfg` attribute.
     """
@@ -33,6 +39,7 @@ class Sweep2DMixin:
     _rhs_y: NDArray[np.float64]
 
     def _initialize_sweep_arrays(self: HasConfig) -> None:
+        """Initialize coefficient and RHS arrays for both sweep directions."""
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
         self._a_x = np.empty((n_y, n_x))
         self._b_x = np.empty((n_y, n_x))
@@ -66,10 +73,14 @@ class Sweep2DMixin:
         ...
 
     @abstractmethod
-    def _apply_boundary_conditions_x(self, *args, **kwargs) -> None: ...
+    def _apply_boundary_conditions_x(self, *args, **kwargs) -> None:
+        """Apply boundary conditions to x-direction sweep."""
+        ...
 
     @abstractmethod
-    def _apply_boundary_conditions_y(self, *args, **kwargs) -> None: ...
+    def _apply_boundary_conditions_y(self, *args, **kwargs) -> None:
+        """Apply boundary conditions to y-direction sweep."""
+        ...
 
     @staticmethod
     def apply_dirichlet(
@@ -81,16 +92,14 @@ class Sweep2DMixin:
         side: int,
     ) -> None:
         """
-        Enforce a Dirichlet boundary condition along one edge of a 2D tridiagonal coefficient grid
-        (either left/right for x-sweep or top/bottom for y-sweep).
-        :param a: sub-diagonal coefficients, shape (n_rows, n_cols) for x-sweep or (n_cols, n_rows) for y-sweep.
-        :param b: diagonal coefficients, same shape as a.
-        :param c: super-diagonal coefficients, same shape as a.
-        :param rhs: right-hand side, same shape as a.
-        :param value: Dirichlet values to impose along the boundary; should have length n_rows for x-sweep
-        (one value per row) or length n_cols for y-sweep.
-        :param side: boundary side: 0 for the "left" or "bottom" boundary (index 0), 1 for the "right" or "top" boundary (last index).
-        :return: None
+        Enforce Dirichlet boundary condition along one edge.
+
+        :param a: sub-diagonal coefficients
+        :param b: diagonal coefficients
+        :param c: super-diagonal coefficients
+        :param rhs: right-hand side
+        :param value: Dirichlet values to impose along the boundary
+        :param side: 0 for left/bottom boundary, 1 for right/top boundary
         """
         n, m = b.shape
         idx = 0 if side == 0 else m - 1
@@ -109,16 +118,14 @@ class Sweep2DMixin:
         side: int,
     ) -> None:
         """
-        Enforce a Neumann boundary condition along one edge of a 2D tridiagonal coefficient grid
-        (either left/right for x-sweep or top/bottom for y-sweep).
-        This function uses first-order accuracy approximation.
-        :param a: sub-diagonal coefficients, shape (n_rows, n_cols) for x-sweep or (n_cols, n_rows) for y-sweep.
-        :param b: diagonal coefficients, same shape as a.
-        :param c: super-diagonal coefficients, same shape as a.
-        :param rhs: right-hand side, same shape as a.
-        :param flux: flux values to impose along the boundary; should have length n_rows for x-sweep (one value per row) or length n_cols for y-sweep.
-        :param side: boundary side: 0 for the "left" or "bottom" boundary (index 0), 1 for the "right" or "top" boundary (last index).
-        :return: None
+        Enforce Neumann boundary condition along one edge (first-order accurate).
+
+        :param a: sub-diagonal coefficients
+        :param b: diagonal coefficients
+        :param c: super-diagonal coefficients
+        :param rhs: right-hand side
+        :param flux: flux values to impose along the boundary
+        :param side: 0 for left/bottom boundary, 1 for right/top boundary
         """
         n, m = b.shape
         if side == 0:
@@ -142,6 +149,7 @@ class Sweep2DMixin:
         rhs: NDArray[np.float64],
         result: NDArray[np.float64],
     ) -> None:
+        """Solve tridiagonal systems along x-direction for all y rows."""
         for j in range(1, n - 1):
             solve_tridiagonal(
                 a=a[j, :],
@@ -161,6 +169,7 @@ class Sweep2DMixin:
         rhs: NDArray[np.float64],
         result: NDArray[np.float64],
     ) -> None:
+        """Solve tridiagonal systems along y-direction for all x columns."""
         for i in range(1, n - 1):
             solve_tridiagonal(
                 a=a[i, :],
@@ -169,3 +178,62 @@ class Sweep2DMixin:
                 f=rhs[i, :],
                 result=result[:, i],
             )
+
+    def _execute_adi_step(
+        self,
+        result: NDArray[np.float64],
+        n_x: int,
+        n_y: int,
+        time: float,
+        **sweep_kwargs,
+    ) -> None:
+        """
+        Execute the full ADI sweep sequence.
+
+        :param result: Array to store the solution (modified in-place)
+        :param n_x: Number of grid points in x-direction
+        :param n_y: Number of grid points in y-direction
+        :param time: Current physical time (for time-dependent BCs)
+        :param sweep_kwargs: Additional arguments passed to coefficient methods
+        """
+        # X-direction sweep
+        self._compute_sweep_x_coeffs(**sweep_kwargs)
+        self._apply_boundary_conditions_x(time=time)
+        self._solve_sweep_x(
+            n=n_y,
+            a=self._a_x,
+            b=self._b_x,
+            c=self._c_x,
+            rhs=self._rhs_x,
+            result=result,
+        )
+
+        # Optional hook after the first sweep
+        self._after_first_sweep(result=result, **sweep_kwargs)
+
+        # Y-direction sweep
+        self._compute_sweep_y_coeffs(**sweep_kwargs)
+        self._apply_boundary_conditions_y(time=time)
+        self._solve_sweep_y(
+            n=n_x,
+            a=self._a_y,
+            b=self._b_y,
+            c=self._c_y,
+            rhs=self._rhs_y,
+            result=result,
+        )
+
+        # Optional hook after the second sweep
+        self._after_second_sweep(result=result, **sweep_kwargs)
+
+    def _after_first_sweep(self, result: NDArray[np.float64], **kwargs) -> None:
+        """
+        Hook called after the first sweep. Override to add custom logic.
+        """
+        pass
+
+    def _after_second_sweep(self, result: NDArray[np.float64], **kwargs) -> None:
+        """
+        Hook called after the second sweep. Override to add custom logic.
+        """
+        pass

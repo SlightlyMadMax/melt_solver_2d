@@ -15,7 +15,7 @@ from src.core.boundary_conditions import (
     BoundaryConditionType,
 )
 from src.core.solvers.base_solver import BaseSolver
-from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
+from src.core.solvers.mixins.adi import ADIMixin
 from src.heat_transfer.coefficient_smoothing.coefficients import (
     StepScheme,
     DeltaScheme,
@@ -228,7 +228,7 @@ class BaseHeatSolver(BaseSolver, ABC):
             k_y[n_y, i] = k_eff[n_y - 1, i]
 
 
-class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
+class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._initialize_sweep_arrays()
@@ -242,11 +242,6 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
     ) -> NDArray[np.float64]:
         """
         Advance the solution by one ADI time step.
-
-        Performs an x-direction sweep followed by a y-direction sweep using
-        the coefficients provided by `_compute_sweep_x_coeffs` and
-        `_compute_sweep_y_coeffs`. Boundary conditions are applied between
-        the sweeps.
 
         :param u: solution array at the beginning of the step (u^n).
         :param sf: stream function
@@ -265,47 +260,30 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             convected_quantity=u,
             sf=sf,
         )
-
-        self._compute_sweep_x_coeffs(u=u)
-
         self._u_new[:, :] = u
 
-        self._apply_boundary_conditions_x(time=time)
+        self._execute_adi_step(result=self._u_new, n_x=n_x, n_y=n_y, time=time, u=u)
 
-        self._solve_sweep_x(
-            n=n_y,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
-            result=self._u_new,
-        )
+        return self._u_new
 
+    def _after_first_sweep(self, result: NDArray[np.float64], **kwargs) -> None:
+        """
+        Recalculate convective term after first sweep if using deferred correction.
+        """
         if self.convective_operator.form == ConvectiveTermForm.DEFERRED_CORRECTION:
+            sf = kwargs.get("sf")
+            if sf is None:
+                raise ValueError("sf is required for deferred correction")
+
             self.convective_operator(
                 conv_x=self._conv_x,
                 conv_y=self._conv_y,
                 correction_x=self._correction_x,
                 correction_y=self._correction_y,
-                convected_quantity=self._u_new,
+                convected_quantity=result,
                 sf=sf,
                 recalculate_velocity=False,
             )
-
-        self._compute_sweep_y_coeffs(u=u)
-
-        self._apply_boundary_conditions_y(time=time)
-
-        self._solve_sweep_y(
-            n=n_x,
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            result=self._u_new,
-        )
-
-        return self._u_new
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self._apply_standard_bc(

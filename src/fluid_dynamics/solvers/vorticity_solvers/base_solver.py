@@ -11,7 +11,7 @@ from src.convective_operators import (
 )
 from src.core.constants import ABS_ZERO
 from src.core.solvers.base_solver import BaseSolver
-from src.core.solvers.mixins.sweep_2d import Sweep2DMixin
+from src.core.solvers.mixins.adi import ADIMixin
 from src.fluid_dynamics.utils import VorticityBCMixin
 from src.parameters.config import ExperimentConfig
 
@@ -146,7 +146,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         )
 
 
-class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
+class ADIVorticitySolver(BaseVorticitySolver, ADIMixin, ABC):
     def __init__(
         self,
         *args,
@@ -169,32 +169,15 @@ class ADIVorticitySolver(BaseVorticitySolver, Sweep2DMixin, ABC):
 
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
 
-        self._compute_sweep_x_coeffs(w=w, sf=sf)
-
-        self._apply_boundary_conditions_x(time=time)
-
         self._new_w[:, :] = w
 
-        self._solve_sweep_x(
-            n=n_y,
-            a=self._a_x,
-            b=self._b_x,
-            c=self._c_x,
-            rhs=self._rhs_x,
+        self._execute_adi_step(
             result=self._new_w,
-        )
-
-        self._compute_sweep_y_coeffs(w=w, sf=sf)
-
-        self._apply_boundary_conditions_y(time=time)
-
-        self._solve_sweep_y(
-            n=n_x,
-            a=self._a_y,
-            b=self._b_y,
-            c=self._c_y,
-            rhs=self._rhs_y,
-            result=self._new_w,
+            n_x=n_x,
+            n_y=n_y,
+            time=time,
+            w=w,
+            sf=sf,
         )
 
         return self._new_w
