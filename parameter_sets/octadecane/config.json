@@ -22,7 +22,7 @@
   "u_ref": 301.33,
   "delta_u": 8.74,
   "l": 0.015,
-  "delta": 0.06,
+  "delta": 0.3,
   "delta_flow": 0.08,
   "epsilon": 0.00001
 }
