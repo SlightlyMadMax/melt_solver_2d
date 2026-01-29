@@ -196,7 +196,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/octadecane/bigger_delta",
+        checkpoints_dir="../data/octadecane/smaller_timestep",
         logger=logger,
         save_at=save_at,
         log_at=log_at,

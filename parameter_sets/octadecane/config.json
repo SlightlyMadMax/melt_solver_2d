@@ -5,7 +5,7 @@
     "end_time": 1600,
     "n_x": 151,
     "n_y": 151,
-    "n_t": 16000
+    "n_t": 64000
   },
   "material_props": {
     "u_pt": 301.33,
@@ -22,7 +22,7 @@
   "u_ref": 301.33,
   "delta_u": 8.74,
   "l": 0.015,
-  "delta": 0.3,
+  "delta": 0.06,
   "delta_flow": 0.08,
   "epsilon": 0.00001
 }
