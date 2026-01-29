@@ -150,12 +150,11 @@ if __name__ == "__main__":
         max_iters=1,
         tolerance=1e-6,
         urf=1.0,
-        solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
+        solver_name=HeatTransferSolverName.FULLY_IMPLICIT,
+        convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         step_scheme=StepScheme.JUMP,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
-        post_correction=False,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -197,7 +196,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/octadecane/201x201",
+        checkpoints_dir="../data/octadecane/fully_imp",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
