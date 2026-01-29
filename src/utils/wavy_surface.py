@@ -27,13 +27,13 @@ geometry: DomainGeometry = cfg.geometry
 #     directory="../../graphs/temperature/",
 # )
 
-files_path_mask = "../../data/wavy_surface/5x20_3/checkpoint_*.npz"
+files_path_mask = "../../data/wavy_surface/5x20_4/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 
-pt_arr = [0.025]
+pt_arr = [0.05]
 for file_path in exp_paths:
     match = re.search(r"checkpoint_(\d+)\.npz", file_path)
     n = int(match.group(1))
