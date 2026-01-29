@@ -262,7 +262,14 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
         )
         self._u_new[:, :] = u
 
-        self._execute_adi_step(result=self._u_new, n_x=n_x, n_y=n_y, time=time, u=u)
+        self._execute_adi_step(
+            result=self._u_new,
+            n_x=n_x,
+            n_y=n_y,
+            time=time,
+            coeff_kwargs={"u": u},
+            hook_kwargs={"sf": sf}
+        )
 
         return self._u_new
 

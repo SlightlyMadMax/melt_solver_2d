@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Protocol, TYPE_CHECKING
+from typing import Protocol, TYPE_CHECKING, Optional
 
 import numpy as np
 from numba import njit
@@ -185,7 +185,8 @@ class ADIMixin:
         n_x: int,
         n_y: int,
         time: float,
-        **sweep_kwargs,
+        coeff_kwargs: Optional[dict] = None,
+        hook_kwargs: Optional[dict] = None,
     ) -> None:
         """
         Execute the full ADI sweep sequence.
@@ -194,10 +195,14 @@ class ADIMixin:
         :param n_x: Number of grid points in x-direction
         :param n_y: Number of grid points in y-direction
         :param time: Current physical time (for time-dependent BCs)
-        :param sweep_kwargs: Additional arguments passed to coefficient methods
+        :param coeff_kwargs: Arguments for _compute_sweep_*_coeffs methods
+        :param hook_kwargs: Arguments for _between_sweeps_hook
         """
+        coeff_kwargs = coeff_kwargs or {}
+        hook_kwargs = hook_kwargs or {}
+
         # X-direction sweep
-        self._compute_sweep_x_coeffs(**sweep_kwargs)
+        self._compute_sweep_x_coeffs(**coeff_kwargs)
         self._apply_boundary_conditions_x(time=time)
         self._solve_sweep_x(
             n=n_y,
@@ -209,10 +214,10 @@ class ADIMixin:
         )
 
         # Optional hook after the first sweep
-        self._after_first_sweep(result=result, **sweep_kwargs)
+        self._after_first_sweep(result=result, **hook_kwargs)
 
         # Y-direction sweep
-        self._compute_sweep_y_coeffs(**sweep_kwargs)
+        self._compute_sweep_y_coeffs(**coeff_kwargs)
         self._apply_boundary_conditions_y(time=time)
         self._solve_sweep_y(
             n=n_x,
@@ -224,7 +229,7 @@ class ADIMixin:
         )
 
         # Optional hook after the second sweep
-        self._after_second_sweep(result=result, **sweep_kwargs)
+        self._after_second_sweep(result=result, **coeff_kwargs)
 
     def _after_first_sweep(self, result: NDArray[np.float64], **kwargs) -> None:
         """

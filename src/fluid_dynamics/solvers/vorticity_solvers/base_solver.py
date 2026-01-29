@@ -176,8 +176,7 @@ class ADIVorticitySolver(BaseVorticitySolver, ADIMixin, ABC):
             n_x=n_x,
             n_y=n_y,
             time=time,
-            w=w,
-            sf=sf,
+            coeff_kwargs={"w": w, "sf": sf},
         )
 
         return self._new_w
