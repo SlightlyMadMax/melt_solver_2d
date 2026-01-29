@@ -305,11 +305,6 @@ class ADIHeatSolver(BaseHeatSolver, Sweep2DMixin, ABC):
             result=self._u_new,
         )
 
-        if self.post_correction:
-            self.posterior_correction(
-                u_old=u, u_star=self._u_new, delta=delta, time=time
-            )
-
         return self._u_new
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
