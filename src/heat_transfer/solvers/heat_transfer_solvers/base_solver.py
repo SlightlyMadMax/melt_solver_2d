@@ -249,7 +249,6 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
         :param time: current physical time.
         :return:
         """
-        n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
         self.compute_effective_properties(u=u, delta=delta)
 
         self.convective_operator(
@@ -264,8 +263,6 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
 
         self._execute_adi_step(
             result=self._u_new,
-            n_x=n_x,
-            n_y=n_y,
             time=time,
             coeff_kwargs={"u": u},
             hook_kwargs={"sf": sf},

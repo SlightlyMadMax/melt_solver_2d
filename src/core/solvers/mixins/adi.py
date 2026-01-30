@@ -182,8 +182,6 @@ class ADIMixin:
     def _execute_adi_step(
         self,
         result: NDArray[np.float64],
-        n_x: int,
-        n_y: int,
         time: float,
         coeff_kwargs: Optional[dict] = None,
         hook_kwargs: Optional[dict] = None,
@@ -192,12 +190,11 @@ class ADIMixin:
         Execute the full ADI sweep sequence.
 
         :param result: Array to store the solution (modified in-place)
-        :param n_x: Number of grid points in x-direction
-        :param n_y: Number of grid points in y-direction
         :param time: Current physical time (for time-dependent BCs)
         :param coeff_kwargs: Arguments for _compute_sweep_*_coeffs methods
         :param hook_kwargs: Arguments for _between_sweeps_hook
         """
+        n_y, n_x = result.shape
         coeff_kwargs = coeff_kwargs or {}
         hook_kwargs = hook_kwargs or {}
 

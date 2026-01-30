@@ -167,14 +167,10 @@ class ADIVorticitySolver(BaseVorticitySolver, ADIMixin, ABC):
     ) -> np.ndarray:
         self._prepare(sf=sf, u=u, conv_w=conv_w, delta=delta)
 
-        n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
-
         self._w_new[:, :] = w
 
         self._execute_adi_step(
             result=self._w_new,
-            n_x=n_x,
-            n_y=n_y,
             time=time,
             coeff_kwargs={"w": w, "sf": sf},
         )
