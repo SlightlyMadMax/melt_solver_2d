@@ -9,6 +9,7 @@ class HeatTransferSolverName(Enum):
     DOUGLAS_RACHFORD = "Douglas-Rachford"
     PEACEMAN_RACHFORD = "Peaceman-Rachford"
     FULLY_IMPLICIT = "Fully Implicit"
+    EXPLICIT = "Explicit"
 
 
 def register_solver(solver_name: HeatTransferSolverName):
