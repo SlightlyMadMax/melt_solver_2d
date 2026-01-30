@@ -268,7 +268,7 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
             n_y=n_y,
             time=time,
             coeff_kwargs={"u": u},
-            hook_kwargs={"sf": sf}
+            hook_kwargs={"sf": sf},
         )
 
         return self._u_new
