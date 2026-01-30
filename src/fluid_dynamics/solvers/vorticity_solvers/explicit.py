@@ -91,7 +91,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
 
         self._prepare(sf=sf, u=u, conv_w=w, delta=delta)
 
-        self._new_w[:, :] = w
+        self._w_new[:, :] = w
 
         self._compute_vorticity(
             w=w,
@@ -104,7 +104,7 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             right_bc=self.right_bc,
             top_bc=self.top_bc,
             bottom_bc=self.bottom_bc,
-            result=self._new_w,
+            result=self._w_new,
             dx=dx_scaled,
             dy=dy_scaled,
             dt=dt_scaled,
@@ -112,4 +112,4 @@ class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
             buoy=self.buoyancy_term,
         )
 
-        return self._new_w
+        return self._w_new

@@ -36,7 +36,7 @@ class PRNavierStokesScheme(ADIVorticitySolver):
     def _compute_sweep_y_coeffs(self, w: np.ndarray, sf: np.ndarray) -> None:
         dx, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
-            w=self._new_w,
+            w=self._w_new,
             sf=sf,
             conv_x=self._conv_x,
             conv_y=self._conv_y,

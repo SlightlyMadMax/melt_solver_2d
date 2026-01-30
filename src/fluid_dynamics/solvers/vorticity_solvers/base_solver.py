@@ -43,7 +43,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
-        self._new_w: np.ndarray = np.empty((n_y, n_x))
+        self._w_new: np.ndarray = np.empty((n_y, n_x))
         self._conv_x: np.ndarray = np.zeros((n_y, n_x, 3))
         self._conv_y: np.ndarray = np.zeros((n_y, n_x, 3))
         self.top_bc: np.ndarray = np.empty(n_x)
@@ -169,17 +169,17 @@ class ADIVorticitySolver(BaseVorticitySolver, ADIMixin, ABC):
 
         n_x, n_y = self.cfg.geometry.n_x, self.cfg.geometry.n_y
 
-        self._new_w[:, :] = w
+        self._w_new[:, :] = w
 
         self._execute_adi_step(
-            result=self._new_w,
+            result=self._w_new,
             n_x=n_x,
             n_y=n_y,
             time=time,
             coeff_kwargs={"w": w, "sf": sf},
         )
 
-        return self._new_w
+        return self._w_new
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self.apply_dirichlet(

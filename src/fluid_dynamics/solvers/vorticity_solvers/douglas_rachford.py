@@ -37,7 +37,7 @@ class DRNavierStokesScheme(ADIVorticitySolver):
         _, dy, dt = self.cfg.scaled_grid_steps
         self._compute_sweep_y_coeffs_jit(
             w_old=w,
-            w_prev=self._new_w,
+            w_prev=self._w_new,
             conv_y=self._conv_y,
             dy=dy,
             dt=dt,
