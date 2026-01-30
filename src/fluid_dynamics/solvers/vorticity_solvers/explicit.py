@@ -4,9 +4,7 @@ import numpy as np
 from numba import njit
 from numpy.typing import NDArray
 
-from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import (
-    ExplicitVorticitySolver,
-)
+from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import BaseVorticitySolver
 from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
     VorticitySolverName,
     register_solver,
@@ -14,7 +12,10 @@ from src.fluid_dynamics.solvers.vorticity_solvers.registry import (
 
 
 @register_solver(VorticitySolverName.EXPLICIT)
-class ExplicitNavierStokesSolver(ExplicitVorticitySolver):
+class ExplicitNavierStokesSolver(BaseVorticitySolver):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     @staticmethod
     @njit
     def _compute_vorticity(

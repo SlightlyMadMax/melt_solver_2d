@@ -212,8 +212,3 @@ class ADIVorticitySolver(BaseVorticitySolver, ADIMixin, ABC):
             value=self.top_bc,
             side=1,
         )
-
-
-class ExplicitVorticitySolver(BaseVorticitySolver, ABC):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
