@@ -29,7 +29,7 @@ from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
     const_dirichlet_condition,
-    const_neumann_condition,
+    const_neumann_condition, linear_dirichlet_ramp,
 )
 from src.utils.icicle import init_temperature_icicle
 
@@ -60,7 +60,8 @@ if __name__ == "__main__":
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
         # top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
-        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
+        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
+        # right=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
         # right=const_neumann_condition(n_y, value=0.0),
         bottom=const_neumann_condition(n_x, value=0.0),
         # bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
