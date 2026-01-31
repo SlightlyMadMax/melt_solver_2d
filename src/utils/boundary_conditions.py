@@ -31,3 +31,37 @@ def const_dirichlet_condition(n: int, value: float) -> BoundaryCondition:
         n=n,
         value_func=lambda t, n: np.full(n, value),
     )
+
+
+def linear_dirichlet_ramp(
+    n: int,
+    start_value: float,
+    end_value: float,
+    duration: float,
+) -> BoundaryCondition:
+    """
+    Time-dependent Dirichlet BC where the value changes linearly
+    from start_value to end_value over 'duration' seconds.
+
+    After 'duration', the value stays equal to end_value.
+    """
+
+    if duration <= 0:
+        raise ValueError("duration must be positive")
+
+    def value_func(t: float, n: int) -> np.ndarray:
+        if t <= 0.0:
+            value = start_value
+        elif t >= duration:
+            value = end_value
+        else:
+            alpha = t / duration
+            value = start_value + alpha * (end_value - start_value)
+
+        return np.full(n, value)
+
+    return BoundaryCondition(
+        boundary_type=BoundaryConditionType.DIRICHLET,
+        n=n,
+        value_func=value_func,
+    )
