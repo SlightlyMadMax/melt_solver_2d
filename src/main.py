@@ -160,7 +160,7 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         step_scheme=StepScheme.ERF,
-        delta_scheme=DeltaScheme.GAUSS,
+        delta_scheme=DeltaScheme.BOX,
         k_face_method=KFaceMethod.FROM_TEMP,
     )
 
