@@ -15,6 +15,7 @@ from src.fluid_dynamics.init_values import (
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
+from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import (
     init_temperature,
@@ -41,14 +42,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/octadecane/config.json"
+        "../parameter_sets/water/freezing.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 301.2426
-    max_temp = 310.07
+    min_temp = 263.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -76,13 +77,13 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    u = init_temperature(
-        cfg=cfg,
-        bcs=u_bcs,
-        shape=DomainShape.UNIFORM_SOLID,
-        solid_temp=min_temp,
-        liquid_temp=max_temp,
-    )
+    # u = init_temperature(
+    #     cfg=cfg,
+    #     bcs=u_bcs,
+    #     shape=DomainShape.UNIFORM_SOLID,
+    #     solid_temp=min_temp,
+    #     liquid_temp=max_temp,
+    # )
     # u = init_temperature_icicle(
     #     cfg=cfg,
     #     liquid_temp=max_temp,
@@ -131,18 +132,23 @@ if __name__ == "__main__":
     # )
 
     # Initial stream function, vorticity and velocity fields
-    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    w = initialize_vorticity(geometry=geometry)
+    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    # w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
+    data = np.load("../data/water_freezing/before_freezing_151x151.npz")
+    u = data["u"]
+    sf = data["sf"]
+    w = data["w"]
+    calculate_velocity_from_sf(sf, v_x=v_x, v_y=v_y, cfg=cfg)
 
-    dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # dim_u = u * delta_u + u_ref
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -152,8 +158,8 @@ if __name__ == "__main__":
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
-        step_scheme=StepScheme.JUMP,
-        delta_scheme=DeltaScheme.GAUSS,
+        step_scheme=StepScheme.ERF,
+        delta_scheme=DeltaScheme.BOX,
         k_face_method=KFaceMethod.FROM_TEMP,
     )
 
@@ -169,7 +175,7 @@ if __name__ == "__main__":
         vorticity_bc_order=2,
     )
 
-    state = SimulationState(u=u, sf=sf, w=w)
+    state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
     log_interval = 60
     plot_interval = 60
@@ -189,19 +195,19 @@ if __name__ == "__main__":
     #     int(17.0 * 60 / dt),
     #     int(19.0 * 60 / dt),
     # }
-    save_at = {int(800 / dt), int(1575 / dt)}
+    # save_at = {int(800 / dt), int(1575 / dt)}
 
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/octadecane/smaller_timestep",
+        checkpoints_dir="../data/water_freezing_local",
         logger=logger,
-        save_at=save_at,
+        save_at={int(2340 / dt)},
         log_at=log_at,
-        plot_at=plot_at,
-        calculate_velocity=False,
+        plot_at=set(),
+        calculate_velocity=True,
     )
     # runner.register_callback(event="on_plot", fn=on_plot)
     runner.run()
