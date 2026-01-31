@@ -55,7 +55,7 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("../../parameter_sets/water/freezing.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("../../data/kowalewski.png")
-data = np.load("../../data/water_freezing/checkpoint_234000_v3.npz")
+data = np.load("../../data/water_freezing_local/checkpoint_117000.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]

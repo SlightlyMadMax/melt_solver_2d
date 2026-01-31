@@ -60,7 +60,7 @@ if __name__ == "__main__":
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
         # top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
-        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
+        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=30),
         # right=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
         # right=const_neumann_condition(n_y, value=0.0),
         bottom=const_neumann_condition(n_x, value=0.0),
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         step_scheme=StepScheme.ERF,
-        delta_scheme=DeltaScheme.BOX,
+        delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
     )
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
         sf_max_iters=(n_y - 2) * (n_x - 2),
         sf_tolerance=1e-6,
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
-        penalty_term_form=PenaltyTermForm.TANH,
+        penalty_term_form=PenaltyTermForm.KOZENY_CARMAN,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.AMG,
         vorticity_bc_order=2,
