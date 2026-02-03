@@ -74,8 +74,6 @@ class BaseHeatSolver(BaseSolver, ABC):
         self._k_x = np.empty((n_y, n_x + 1))  # i = -1/2 ... n_x-1/2
         self._k_y = np.empty((n_y + 1, n_x))  # j = -1/2 ... n_y-1/2
 
-        self._h = np.empty((n_y, n_x))
-
     def compute_effective_properties(
         self,
         u: NDArray[np.float64],
