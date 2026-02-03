@@ -60,7 +60,7 @@ if __name__ == "__main__":
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
         # top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
-        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=30),
+        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
         # right=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
         # right=const_neumann_condition(n_y, value=0.0),
         bottom=const_neumann_condition(n_x, value=0.0),
@@ -78,13 +78,13 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    # u = init_temperature(
-    #     cfg=cfg,
-    #     bcs=u_bcs,
-    #     shape=DomainShape.UNIFORM_SOLID,
-    #     solid_temp=min_temp,
-    #     liquid_temp=max_temp,
-    # )
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_LIQUID,
+        liquid_temp=273.65,
+    )
+
     # u = init_temperature_icicle(
     #     cfg=cfg,
     #     liquid_temp=max_temp,
@@ -132,16 +132,6 @@ if __name__ == "__main__":
     #     solid_temp=min_temp,
     # )
 
-    # Initial stream function, vorticity and velocity fields
-    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geometry=geometry)
-    v_x, v_y = initialize_velocity(geometry=geometry)
-    data = np.load("../data/water_freezing/before_freezing_151x151.npz")
-    u = data["u"]
-    sf = data["sf"]
-    w = data["w"]
-    calculate_velocity_from_sf(sf, v_x=v_x, v_y=v_y, cfg=cfg)
-
     # dim_u = u * delta_u + u_ref
     # plot_temperature(
     #     u=dim_u,
@@ -150,6 +140,11 @@ if __name__ == "__main__":
     #     plot_boundary=True,
     #     show_graph=True,
     # )
+
+    # Initial stream function, vorticity and velocity fields
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -160,7 +155,7 @@ if __name__ == "__main__":
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
         convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
         step_scheme=StepScheme.ERF,
-        delta_scheme=DeltaScheme.BOX,
+        delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
     )
 
@@ -203,7 +198,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/water_freezing_local",
+        checkpoints_dir="../data/water_freezing_cold_start",
         logger=logger,
         save_at={int(2340 / dt)},
         log_at=log_at,
