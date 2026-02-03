@@ -74,6 +74,212 @@ class BaseHeatSolver(BaseSolver, ABC):
         self._k_x = np.empty((n_y, n_x + 1))  # i = -1/2 ... n_x-1/2
         self._k_y = np.empty((n_y + 1, n_x))  # j = -1/2 ... n_y-1/2
 
+        self._h = np.empty((n_y, n_x))
+        self._f_l = np.empty((n_y, n_x))
+
+    def calculate_liquid_fraction(self, u):
+        """
+        Vectorized implementation of liquid fraction calculation.
+        """
+        n_y, n_x = u.shape
+        f_l = self._f_l
+        h_x, h_y, _ = self.cfg.scaled_grid_steps
+
+        u_0 = self.cfg.u_pt_nd
+        # Create grid coordinates
+        x_centers = np.arange(n_x) * h_x
+        y_centers = np.arange(n_y) * h_y
+        X, Y = np.meshgrid(x_centers, y_centers)
+
+        # Control volume boundaries
+        X_left = X - h_x / 2
+        X_right = X + h_x / 2
+        Y_bottom = Y - h_y / 2
+        Y_top = Y + h_y / 2
+
+        # For interior nodes
+        for i in range(1, n_y - 1):
+            for j in range(1, n_x - 1):
+                u_center = u[i, j]
+
+                if u_center == u_0:
+                    f_l[i, j] = 0.5
+                    continue
+
+                # Check neighbors for interface crossing
+                neighbors = [(i - 1, j, 'north', Y[i, j]),  # north
+                             (i + 1, j, 'south', Y[i, j]),  # south
+                             (i, j - 1, 'west', X[i, j]),  # west
+                             (i, j + 1, 'east', X[i, j])]  # east
+
+                intersections = []
+
+                for ni, nj, direction, center_pos in neighbors:
+                    u_neighbor = u[ni, nj]
+
+                    if (u_center - u_0) * (u_neighbor - u_0) < 0:
+                        # Linear interpolation
+                        t = (u_0 - u_center) / (u_neighbor - u_center)
+
+                        if direction == 'north':
+                            x = X[i, j]
+                            y = Y[i, j] - t * h_y
+                            if Y_bottom[i, j] < y < Y_top[i, j]:
+                                intersections.append((x, y))
+
+                        elif direction == 'south':
+                            x = X[i, j]
+                            y = Y[i, j] + t * h_y
+                            if Y_bottom[i, j] < y < Y_top[i, j]:
+                                intersections.append((x, y))
+
+                        elif direction == 'west':
+                            x = X[i, j] - t * h_x
+                            y = Y[i, j]
+                            if X_left[i, j] < x < X_right[i, j]:
+                                intersections.append((x, y))
+
+                        elif direction == 'east':
+                            x = X[i, j] + t * h_x
+                            y = Y[i, j]
+                            if X_left[i, j] < x < X_right[i, j]:
+                                intersections.append((x, y))
+
+                # Calculate liquid fraction
+                if len(intersections) == 2:
+                    # Two intersections - interface crosses control volume
+                    liquid_area = self.calculate_liquid_area(
+                        intersections[0], intersections[1],
+                        (X_left[i, j], X_right[i, j], Y_bottom[i, j], Y_top[i, j]),
+                        u_center > u_0
+                    )
+                    f_l[i, j] = liquid_area / (h_x * h_y)
+
+                elif len(intersections) == 0:
+                    # No interface crossing
+                    f_l[i, j] = 1.0 if u_center > u_0 else 0.0
+
+                else:
+                    # 1 or more than 2 intersections
+                    # Use temperature at cell corners to estimate
+                    corner_u = [
+                        u[i, j], u[i - 1, j], u[i + 1, j], u[i, j - 1], u[i, j + 1],
+                        u[i - 1, j - 1], u[i - 1, j + 1], u[i + 1, j - 1], u[i + 1, j + 1]
+                    ]
+                    liquid_corners = np.sum([1 for val in corner_u if val > u_0])
+                    f_l[i, j] = liquid_corners / len(corner_u)
+
+    def calculate_liquid_area(self, p1, p2, cv_bounds, center_is_liquid):
+        x_left, x_right, y_bottom, y_top = cv_bounds
+
+        # Control volume corners
+        corners = [
+            (x_left, y_bottom),  # SW
+            (x_left, y_top),  # NW
+            (x_right, y_top),  # NE
+            (x_right, y_bottom)  # SE
+        ]
+
+        # Determine which corners are on the liquid side
+        # Using line equation through p1 and p2
+        x1, y1 = p1
+        x2, y2 = p2
+
+        # Line equation: (y2 - y1)(x - x1) - (x2 - x1)(y - y1) = 0
+        # Sign indicates which side of the line a point is on
+        liquid_corners = []
+
+        for corner in corners:
+            cx, cy = corner
+            value = (y2 - y1) * (cx - x1) - (x2 - x1) * (cy - y1)
+
+            # Determine if corner is liquid based on which side of the line
+            # and whether center is liquid
+            # This is a simplification - you might need to adjust based on your coordinate system
+            is_liquid = (value > 0) == center_is_liquid
+
+            if is_liquid:
+                liquid_corners.append(corner)
+
+        # Create polygon from liquid corners and intersection points
+        polygon_points = liquid_corners + [p1, p2]
+
+        # Remove duplicates and ensure proper order
+        polygon_points = list(dict.fromkeys(polygon_points))
+
+        if len(polygon_points) < 3:
+            # Degenerate case - use simple area calculation
+            if center_is_liquid:
+                return (x_right - x_left) * (y_top - y_bottom) / 2
+            else:
+                return (x_right - x_left) * (y_top - y_bottom) / 2
+
+        # Calculate polygon area using shoelace formula
+        area = 0
+        n = len(polygon_points)
+        for k in range(n):
+            x1, y1 = polygon_points[k]
+            x2, y2 = polygon_points[(k + 1) % n]
+            area += x1 * y2 - x2 * y1
+
+        return abs(area) / 2
+
+    @staticmethod
+    def _calculate_effective_heat_capacity(
+        c_eff,
+        h,
+        u,
+        u_0,
+        c_solid,
+        c_liquid,
+        dx,
+        dy,
+    ):
+        dT_dx = np.zeros_like(u)
+        dT_dx[:, 1:-1] = (u[:, 2:] - u[:, :-2]) / (2 * dx)
+        dT_dx[:, 0] = (u[:, 1] - u[:, 0]) / dx  # forward
+        dT_dx[:, -1] = (u[:, -1] - u[:, -2]) / dx  # backward
+
+        dT_dy = np.zeros_like(u)
+        dT_dy[1:-1, :] = (u[2:, :] - u[:-2, :]) / (2 * dy)
+        dT_dy[0, :] = (u[1, :] - u[0, :]) / dy  # forward
+        dT_dy[-1, :] = (u[-1, :] - u[-2, :]) / dy  # backward
+
+        dH_dx = np.zeros_like(h)
+        dH_dx[:, 1:-1] = (h[:, 2:] - h[:, :-2]) / (2 * dx)
+        dH_dx[:, 0] = (h[:, 1] - h[:, 0]) / dx
+        dH_dx[:, -1] = (h[:, -1] - h[:, -2]) / dx
+
+        dH_dy = np.zeros_like(h)
+        dH_dy[1:-1, :] = (h[2:, :] - h[:-2, :]) / (2 * dy)
+        dH_dy[0, :] = (h[1, :] - h[0, :]) / dy
+        dH_dy[-1, :] = (h[-1, :] - h[-2, :]) / dy
+
+        numerator = dH_dx ** 2 + dH_dy ** 2
+        denominator = dT_dx ** 2 + dT_dy ** 2
+        epsilon = 1e-12
+        denominator_safe = denominator + epsilon
+        c_eff[:] = np.sqrt(numerator / denominator_safe)
+
+        zero_grad_mask = denominator < epsilon
+        c_eff[zero_grad_mask] = np.where(
+            u[zero_grad_mask] < u_0,
+            c_solid,
+            c_liquid
+        )
+
+    def calculate_enthalpy(self, u: NDArray[np.float64]):
+        props = self.cfg.material_props
+        c_ref = self.cfg.volumetric_heat_capacity_ref
+
+        c_solid_nd = props.volumetric_heat_capacity_solid / c_ref
+        c_liquid_nd = props.volumetric_heat_capacity_liquid / c_ref
+        latent_heat_nd = 1.0 / self.cfg.stefan_number
+        dx, dy, _ = self.cfg.scaled_grid_steps
+
+        u_0 = self.cfg.u_pt_nd
+        self._h[:] = c_solid_nd * (u - u_0) + self._f_l * (latent_heat_nd + (c_liquid_nd - c_solid_nd) * (u - u_0))
+
     def compute_effective_properties(
         self,
         u: NDArray[np.float64],
