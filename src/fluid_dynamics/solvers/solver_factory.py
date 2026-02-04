@@ -24,7 +24,7 @@ class IterativeNavierStokesSolver:
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.MATRIX_SWEEP,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.UPWIND_FC,
-        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.LINEAR,
         sf_max_iters: int = 1000,
         sf_stopping_criteria: float = 1e-6,
         max_iters: int = 5,

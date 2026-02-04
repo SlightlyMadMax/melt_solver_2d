@@ -32,7 +32,7 @@ class BCCorrectionNVSolver:
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
         convective_term_form: ConvectiveTermForm = ConvectiveTermForm.DIVERGENT_CENTRAL,
-        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.LINEAR,
         vorticity_solver_name: VorticitySolverName = VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name: StreamFunctionSolverName = StreamFunctionSolverName.AMG,
         vorticity_bc_order: int = 1,

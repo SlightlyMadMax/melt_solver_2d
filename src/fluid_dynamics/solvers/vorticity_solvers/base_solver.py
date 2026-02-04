@@ -18,10 +18,9 @@ from src.parameters.config import ExperimentConfig
 
 class PenaltyTermForm(IntEnum):
     JUMP = 0
-    ERF = 1
-    TANH = 2
+    LINEAR = 1
+    QUADRATIC = 2
     KOZENY_CARMAN = 3
-    QUADRATIC = 4
 
 
 class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
@@ -89,12 +88,7 @@ class BaseVorticitySolver(BaseSolver, VorticityBCMixin, ABC):
         if self.penalty_term_form == PenaltyTermForm.JUMP:
             self.penalty_term[:, :] = np.where(u <= u_pt, c, 0.0)
 
-        elif self.penalty_term_form == PenaltyTermForm.ERF:
-            self.penalty_term[:, :] = (
-                c * 0.5 * (1.0 - erf(diff_u / (np.sqrt(2.0) * delta)))
-            )
-
-        elif self.penalty_term_form == PenaltyTermForm.TANH:
+        elif self.penalty_term_form == PenaltyTermForm.LINEAR:
             self.penalty_term[:, :] = c * 0.5 * (1.0 - np.tanh(diff_u / delta))
 
         elif self.penalty_term_form == PenaltyTermForm.QUADRATIC:

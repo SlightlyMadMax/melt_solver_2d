@@ -22,7 +22,7 @@ class FlowCorrectionNVSolver:
         sf_bcs: BoundaryConditions,
         sf_max_iters: int = 10000,
         sf_tolerance: float = 1e-6,
-        penalty_term_form: PenaltyTermForm = PenaltyTermForm.TANH,
+        penalty_term_form: PenaltyTermForm = PenaltyTermForm.LINEAR,
     ):
         self.cfg = cfg
         self.convective_operator = VorticityBasedConvectiveOperator(cfg=self.cfg)
