@@ -42,14 +42,14 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/horizontal_layer.json"
+        "../parameter_sets/water/freezing.json"
     )
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 268.15
-    max_temp = 278.15
+    min_temp = 263.15
+    max_temp = 283.15
 
     material_props: MaterialProperties = cfg.material_props
 
@@ -58,14 +58,14 @@ if __name__ == "__main__":
 
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
-        # top=const_neumann_condition(n_x, value=0.0),
-        top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
-        # right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
-        right=const_neumann_condition(n_y, value=0.0),
-        # bottom=const_neumann_condition(n_x, value=0.0),
-        bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
-        # left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
-        left=const_neumann_condition(n_y, value=0.0),
+        top=const_neumann_condition(n_x, value=0.0),
+        # top=const_dirichlet_condition(n_x, value=(max_temp - u_ref) / delta_u),
+        right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
+        # right=const_neumann_condition(n_y, value=0.0),
+        bottom=const_neumann_condition(n_x, value=0.0),
+        # bottom=const_dirichlet_condition(n_x, value=(min_temp - u_ref) / delta_u),
+        left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
+        # left=const_neumann_condition(n_y, value=0.0),
     )
 
     # Stream function boundary conditions
@@ -77,13 +77,13 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    u = init_temperature(
-        cfg=cfg,
-        bcs=u_bcs,
-        shape=DomainShape.UNIFORM_LIQUID,
-        solid_temp=min_temp,
-        liquid_temp=max_temp,
-    )
+    # u = init_temperature(
+    #     cfg=cfg,
+    #     bcs=u_bcs,
+    #     shape=DomainShape.UNIFORM_LIQUID,
+    #     solid_temp=min_temp,
+    #     liquid_temp=max_temp,
+    # )
 
     # u = init_temperature_icicle(
     #     cfg=cfg,
@@ -132,6 +132,13 @@ if __name__ == "__main__":
     #     solid_temp=min_temp,
     # )
 
+    data = np.load("../data/water_freezing/before_freezing_151x151.npz")
+    u = data["u"]
+    sf = data["sf"]
+    w = data["w"]
+    v_x, v_y = initialize_velocity(geometry=geometry)
+    calculate_velocity_from_sf(sf, v_x, v_y, cfg)
+
     # dim_u = u * delta_u + u_ref
     # plot_temperature(
     #     u=dim_u,
@@ -142,9 +149,9 @@ if __name__ == "__main__":
     # )
 
     # Initial stream function, vorticity and velocity fields
-    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    w = initialize_vorticity(geometry=geometry)
-    v_x, v_y = initialize_velocity(geometry=geometry)
+    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    # w = initialize_vorticity(geometry=geometry)
+    # v_x, v_y = initialize_velocity(geometry=geometry)
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -198,12 +205,12 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/wavy_surface/freezing",
+        checkpoints_dir="../data/water_freezing/correct_params",
         logger=logger,
-        save_at=save_at,
+        save_at={int(2340 / dt)},
         log_at=log_at,
         plot_at=set(),
-        calculate_velocity=False,
+        calculate_velocity=True,
     )
     # runner.register_callback(event="on_plot", fn=on_plot)
     runner.run()
