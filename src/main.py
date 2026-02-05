@@ -139,14 +139,14 @@ if __name__ == "__main__":
     # v_x, v_y = initialize_velocity(geometry=geometry)
     # calculate_velocity_from_sf(sf, v_x, v_y, cfg)
 
-    dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # dim_u = u * delta_u + u_ref
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     # Initial stream function, vorticity and velocity fields
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
