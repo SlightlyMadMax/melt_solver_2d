@@ -77,13 +77,13 @@ if __name__ == "__main__":
     )
 
     # Initial temperature distribution
-    # u = init_temperature(
-    #     cfg=cfg,
-    #     bcs=u_bcs,
-    #     shape=DomainShape.UNIFORM_LIQUID,
-    #     solid_temp=min_temp,
-    #     liquid_temp=max_temp,
-    # )
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_LIQUID,
+        solid_temp=min_temp,
+        liquid_temp=273.65,
+    )
 
     # u = init_temperature_icicle(
     #     cfg=cfg,
@@ -132,26 +132,26 @@ if __name__ == "__main__":
     #     solid_temp=min_temp,
     # )
 
-    data = np.load("../data/water_freezing/before_freezing_151x151.npz")
-    u = data["u"]
-    sf = data["sf"]
-    w = data["w"]
-    v_x, v_y = initialize_velocity(geometry=geometry)
-    calculate_velocity_from_sf(sf, v_x, v_y, cfg)
+    # data = np.load("../data/water_freezing/before_freezing_151x151.npz")
+    # u = data["u"]
+    # sf = data["sf"]
+    # w = data["w"]
+    # v_x, v_y = initialize_velocity(geometry=geometry)
+    # calculate_velocity_from_sf(sf, v_x, v_y, cfg)
 
-    # dim_u = u * delta_u + u_ref
-    # plot_temperature(
-    #     u=dim_u,
-    #     cfg=cfg,
-    #     graph_id=0,
-    #     plot_boundary=True,
-    #     show_graph=True,
-    # )
+    dim_u = u * delta_u + u_ref
+    plot_temperature(
+        u=dim_u,
+        cfg=cfg,
+        graph_id=0,
+        plot_boundary=True,
+        show_graph=True,
+    )
 
     # Initial stream function, vorticity and velocity fields
-    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geometry=geometry)
-    # v_x, v_y = initialize_velocity(geometry=geometry)
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/water_freezing/correct_params",
+        checkpoints_dir="../data/water_freezing/correct_params_cold_start",
         logger=logger,
         save_at={int(2340 / dt)},
         log_at=log_at,
