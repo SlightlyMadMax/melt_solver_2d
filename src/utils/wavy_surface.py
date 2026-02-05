@@ -27,13 +27,13 @@ geometry: DomainGeometry = cfg.geometry
 #     directory="../../graphs/temperature/",
 # )
 
-files_path_mask = "../../data/wavy_surface/5x20_4/checkpoint_*.npz"
+files_path_mask = "../../data/wavy_surface/freezing/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 
-pt_arr = [0.05]
+pt_arr = [0.0]
 for file_path in exp_paths:
     match = re.search(r"checkpoint_(\d+)\.npz", file_path)
     n = int(match.group(1))
@@ -45,20 +45,14 @@ for file_path in exp_paths:
 
     y_arr = []
     for i in range(geometry.n_x):
-        u0, u1, u2 = (
-            u[j, i],
-            u[j + 1, i],
-            u[j + 2, i],
-        )
-        y0 = j * geometry.dy
-        y1 = (j + 1) * geometry.dy
-        y2 = (j + 2) * geometry.dy
-        y = get_pt_quadratic(u0, u1, u2, u_pt, y0, y1, y2)
-        if y:
-            y_arr.append(y)
+        j = np.where(diff[:-1] * diff[1:] < 0)[0][0]
+        u0, up1 = (u[j, i], u[j + 1, i])
+        y0 = j * dy
+        s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
+        y_arr.append(s_lin)
 
     pt = np.mean(np.asarray(y_arr))
     print(n, pt)
     pt_arr.append(pt)
 
-np.savez("../../data/wavy_surface/convection_boundary.npz", b=np.asarray(pt_arr))
+np.savez("../../data/wavy_surface/boundary/freezing/convection_boundary.npz", b=np.asarray(pt_arr))

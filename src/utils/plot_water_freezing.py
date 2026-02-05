@@ -55,7 +55,7 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("../../parameter_sets/water/freezing.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("../../data/kowalewski.png")
-data = np.load("../../data/water_freezing_local/checkpoint_117000.npz")
+data = np.load("../../data/water_freezing/correct_params/checkpoint_234000.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
@@ -111,5 +111,5 @@ cbar.set_label(r"Температура, $^{\circ}\mathrm{C}$", rotation=270, la
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("../../graphs/velocity/bruh.jpg", dpi=300)
+plt.savefig("../../graphs/velocity/corrected_params.jpg", dpi=300)
 plt.show()

@@ -34,20 +34,18 @@ def plot_temperature_from_npz(
             max_temp=max_temp + ABS_ZERO,
             actual_temp_units=TemperatureUnit.KELVIN,
             display_temp_units=TemperatureUnit.CELSIUS,
-            directory="../../graphs/icicle/5pt6c_v3/",
-            x_min=0.3,
-            x_max=0.5,
+            directory="../../graphs/wavy_surface/freezing/",
         )
 
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/icicle/5pt6c.json"
+    "../../parameter_sets/water/horizontal_layer.json"
 )
 plot_temperature_from_npz(
     cfg=cfg,
-    min_temp=273.15,
-    max_temp=278.75,
-    files_path_mask="../../data/icicle/5pt6c_v3/checkpoint_*.npz",
+    min_temp=268.15,
+    max_temp=278.15,
+    files_path_mask="../../data/wavy_surface/freezing/checkpoint_*.npz",
 )
 
 # from src.heat_transfer.plotting import create_gif_from_images
