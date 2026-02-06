@@ -33,7 +33,7 @@ exp_paths = sorted(
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 
-pt_arr = [0.0]
+pt_arr = [0.05]
 for file_path in exp_paths:
     match = re.search(r"checkpoint_(\d+)\.npz", file_path)
     n = int(match.group(1))
