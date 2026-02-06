@@ -27,7 +27,7 @@ geometry: DomainGeometry = cfg.geometry
 #     directory="../../graphs/temperature/",
 # )
 
-files_path_mask = "../../data/wavy_surface/freezing/checkpoint_*.npz"
+files_path_mask = "../../data/wavy_surface/melting/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -55,4 +55,4 @@ for file_path in exp_paths:
     print(n, pt)
     pt_arr.append(pt)
 
-np.savez("../../data/wavy_surface/boundary/freezing/convection_boundary.npz", b=np.asarray(pt_arr))
+np.savez("../../data/wavy_surface/boundary/melting/convection_boundary.npz", b=np.asarray(pt_arr))
