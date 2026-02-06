@@ -60,7 +60,7 @@ cfg = ExperimentConfig(
     u_ref=0.5 * (min_temp + max_temp),
     delta_u=0.5 * (max_temp - min_temp),
     l=0.05,
-    delta=0.1,
+    delta=0.05,
     epsilon=1e-6,
 )
 n_x, n_y = geometry.n_x, geometry.n_y
@@ -117,7 +117,7 @@ bcs = BoundaryConditions(
 u = init_temperature(
     cfg=cfg,
     bcs=bcs,
-    shape=DomainShape.UNIFORM_LIQUID,
+    shape=DomainShape.UNIFORM_SOLID,
     solid_temp=min_temp,
     liquid_temp=max_temp,
 )
@@ -144,7 +144,7 @@ heat_transfer_solver = HeatTransferSolver(
     post_correction=False,
 )
 
-pt_arr = [0.0]
+pt_arr = [0.05]
 
 start_time = time.perf_counter()
 
@@ -170,7 +170,7 @@ for n in range(1, geometry.n_t + 1):
         s_lin = y0 + dy * (u_pt - u0) / (up1 - u0)
         pt_arr.append(s_lin)
 
-np.savez("../../../../data/wavy_surface/boundary/freezing/stefan_boundary.npz", b=np.asarray(pt_arr))
+np.savez("../../../../data/wavy_surface/boundary/melting/stefan_boundary.npz", b=np.asarray(pt_arr))
 pt_a = (1.0 - b_lim) * geometry.height
 pt_num = pt_arr[-1]
 print(f"Calculated final location of the boundary: {pt_num}")
