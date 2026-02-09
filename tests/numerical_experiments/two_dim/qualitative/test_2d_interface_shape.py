@@ -33,10 +33,10 @@ reference_temperature = 0.5 * (min_temp + max_temp)
 geometry = DomainGeometry(
     width=0.2,
     height=0.05,
-    end_time=60.0 * 60.0 * 20.0,
+    end_time=60.0 * 60.0 * 24.0,
     n_x=401,
     n_y=101,
-    n_t=60 * 60 * 20,
+    n_t=60 * 60 * 24,
 )
 
 print(geometry)
