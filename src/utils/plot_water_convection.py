@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+from src.fluid_dynamics.init_values import initialize_velocity
+from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.parameters.config import ExperimentConfig
 from src.utils.water_convection_benchmark import calculate_T_profile_Y05
 
@@ -14,6 +16,12 @@ mpl.rcParams.update(
         "xtick.labelsize": 11,
         "ytick.labelsize": 11,
         "legend.fontsize": 11,
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Times New Roman",
+        "mathtext.it": "Times New Roman:italic",
+        "mathtext.bf": "Times New Roman:bold",
     }
 )
 
@@ -24,7 +32,7 @@ mpl.rcParams.update(
 def add_subfigure_label(ax, label):
     circle = patches.Circle(
         (0.06, 0.94),
-        0.045,
+        0.035,
         transform=ax.transAxes,
         facecolor="white",
         edgecolor="black",
@@ -50,9 +58,12 @@ def add_subfigure_label(ax, label):
 # -----------------------------
 cfg = ExperimentConfig.load_from_file("../../parameter_sets/water/convection.json")
 
-data = np.load("../../data/water_convection/conv.npz")
+data = np.load("../../data/water_convection/checkpoint_7200.npz")
 u = data["u"]
-v_x, v_y = data["v_x"], data["v_y"]
+# v_x, v_y = data["v_x"], data["v_y"]
+sf = data["sf"]
+v_x, v_y = initialize_velocity(geometry=cfg.geometry)
+calculate_velocity_from_sf(sf, v_x, v_y, cfg)
 
 n_x, n_y = u.shape[1], u.shape[0]
 x = np.linspace(0, 1, n_x)
@@ -80,13 +91,13 @@ ax0.quiver(
 
 ax0.set_xlim(0, 1)
 ax0.set_ylim(0, 1)
-ax0.set_xlabel("X")
-ax0.set_ylabel("Y")
+ax0.set_xlabel(r"$X$")
+ax0.set_ylabel(r"$Y$")
 ax0.set_aspect("equal", adjustable="box")
 
 cbar = fig.colorbar(contour, ax=ax0, fraction=0.046, pad=0.04)
 cbar.set_ticks(np.linspace(0, 1, 6))
-cbar.set_label(r"$\theta$", rotation=270, labelpad=15)
+cbar.set_label("Безразмерная температура", rotation=270, labelpad=15)
 
 add_subfigure_label(ax0, "а")
 
@@ -99,9 +110,8 @@ ax1.plot(x, u_mid, "--", label="Численное решение", linewidth=2)
 
 ax1.set_xlim(0, 1)
 ax1.set_ylim(0, 1)
-ax1.set_xlabel("X")
-ax1.set_ylabel(r"$\theta$")
-ax1.grid(True, linestyle="--", alpha=0.6)
+ax1.set_xlabel(r"$X$")
+ax1.set_ylabel("Θ")
 ax1.set_aspect("equal", adjustable="box")
 ax1.legend()
 
