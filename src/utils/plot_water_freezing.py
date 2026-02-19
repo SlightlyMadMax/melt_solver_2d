@@ -15,9 +15,15 @@ mpl.rcParams.update(
         "font.size": 12,
         "axes.labelsize": 12,
         "axes.titlesize": 12,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "legend.fontsize": 11,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Times New Roman",
+        "mathtext.it": "Times New Roman:italic",
+        "mathtext.bf": "Times New Roman:bold",
     }
 )
 
@@ -28,7 +34,7 @@ mpl.rcParams.update(
 def add_subfigure_label(ax, label):
     circle = patches.Circle(
         (0.06, 0.94),
-        0.045,
+        0.035,
         transform=ax.transAxes,
         facecolor="white",
         edgecolor="black",
@@ -55,7 +61,7 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("../../parameter_sets/water/freezing.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("../../data/kowalewski.png")
-data = np.load("../../data/water_freezing/correct_params/checkpoint_234000.npz")
+data = np.load("../../data/water_freezing/after_freezing.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
@@ -79,8 +85,8 @@ X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
 ax0.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2, label="Численное решение")
 ax0.legend()
 
-ax0.set_xlabel("x, м")
-ax0.set_ylabel("y, м")
+ax0.set_xlabel(r"$x$, м")
+ax0.set_ylabel(r"$y$, м")
 ax0.set_aspect("equal", adjustable="box")
 
 add_subfigure_label(ax0, "а")
@@ -100,8 +106,8 @@ ax1.quiver(
 
 ax1.plot(X_b, Y_b, linestyle="--", color="k", linewidth=1.5)
 
-ax1.set_xlabel("x, м")
-ax1.set_ylabel("y, м")
+ax1.set_xlabel(r"$x$, м")
+ax1.set_ylabel(r"$y$, м")
 ax1.set_aspect("equal", adjustable="box")
 
 cbar = fig.colorbar(contour, ax=ax1, fraction=0.046, pad=0.04)
