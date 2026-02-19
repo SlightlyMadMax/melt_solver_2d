@@ -12,9 +12,15 @@ mpl.rcParams.update(
         "font.size": 12,
         "axes.labelsize": 12,
         "axes.titlesize": 12,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "legend.fontsize": 11,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Times New Roman",
+        "mathtext.it": "Times New Roman:italic",
+        "mathtext.bf": "Times New Roman:bold",
     }
 )
 
@@ -96,8 +102,8 @@ for i, step in enumerate(melting_steps):
     ax.scatter(X_b, Y_b, s=1.0, color="black")
 
     # Оформление
-    ax.set_xlabel("x, см")
-    ax.set_ylabel("y, см")
+    ax.set_xlabel(r"$x$, см")
+    ax.set_ylabel(r"$y$, см")
     ax.set_xlim(0, geometry.width * 100)
     ax.set_ylim(0, geometry.height * 100)
     ax.set_aspect("equal")
@@ -139,8 +145,8 @@ for i, step in enumerate(freezing_steps):
     ax.scatter(X_b, Y_b, s=1.0, color="black")
 
     # Оформление
-    ax.set_xlabel("x, см")
-    ax.set_ylabel("y, см")
+    ax.set_xlabel(r"$x$, см")
+    ax.set_ylabel(r"$y$, см")
     ax.set_xlim(0, geometry.width * 100)
     ax.set_ylim(0, geometry.height * 100)
     ax.set_aspect("equal")
