@@ -8,9 +8,15 @@ mpl.rcParams.update(
         "font.size": 12,
         "axes.labelsize": 12,
         "axes.titlesize": 12,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "legend.fontsize": 11,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Times New Roman",
+        "mathtext.it": "Times New Roman:italic",
+        "mathtext.bf": "Times New Roman:bold",
     }
 )
 
@@ -20,7 +26,7 @@ mpl.rcParams.update(
 # -----------------------------
 def add_subfigure_label(ax, label):
     circle = patches.Circle(
-        (0.1, 0.92),
+        (0.12, 0.92),
         0.035,
         transform=ax.transAxes,
         facecolor="white",
@@ -31,7 +37,7 @@ def add_subfigure_label(ax, label):
     ax.add_patch(circle)
 
     ax.text(
-        0.1,
+        0.12,
         0.92,
         label,
         transform=ax.transAxes,
@@ -83,6 +89,7 @@ ax0.plot(t, b_stef_melt[0:1441:10], "--", linewidth=2, label="Без учёта 
 
 ax0.set_xlabel("Время, ч")
 ax0.set_ylabel("Среднее положение границы, м")
+ax0.set_ylim(0, 0.05)
 ax0.legend()
 
 add_subfigure_label(ax0, "а")
@@ -94,6 +101,7 @@ ax1.plot(t, b_stef_freeze[0:1441:10], "--", linewidth=2, label="Без учёт�
 
 ax1.set_xlabel("Время, ч")
 ax1.set_ylabel("Среднее положение границы, м")
+ax1.set_ylim(0, 0.05)
 ax1.legend()
 
 add_subfigure_label(ax1, "б")
