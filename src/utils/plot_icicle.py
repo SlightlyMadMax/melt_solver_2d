@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
@@ -6,6 +7,23 @@ from matplotlib.ticker import FormatStrFormatter
 from src.core.constants import ABS_ZERO
 from src.parameters.config import ExperimentConfig
 
+
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "axes.labelsize": 12,
+        "axes.titlesize": 12,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Times New Roman",
+        "mathtext.it": "Times New Roman:italic",
+        "mathtext.bf": "Times New Roman:bold",
+    }
+)
 
 # --------------------------------------------------
 # Загрузка конфигураций
@@ -36,7 +54,7 @@ data_4c = np.load("../../data/icicle/4c/checkpoint_1800.npz")
 u_4c = data_4c["u"]
 u_4c_dim = u_4c * cfg_4c.delta_u + cfg_4c.u_ref + ABS_ZERO
 
-data_5pt6c = np.load("../../data/icicle/5pt6c_v4/checkpoint_9000.npz")
+data_5pt6c = np.load("../../data/icicle/5pt6c_thin/checkpoint_9000.npz")
 u_5pt6c = data_5pt6c["u"]
 u_5pt6c_dim = u_5pt6c * cfg_5pt6c.delta_u + cfg_5pt6c.u_ref + ABS_ZERO
 
@@ -68,7 +86,7 @@ def prepare_field(u_dim, geometry, x_min, x_max):
 
 X4, Y4, u4 = prepare_field(u_4c_dim, cfg_4c.geometry, 0.3, 0.5)
 
-X56, Y56, u56 = prepare_field(u_5pt6c_dim, cfg_5pt6c.geometry, 0.2, 0.4)
+X56, Y56, u56 = prepare_field(u_5pt6c_dim, cfg_5pt6c.geometry, 0.3, 0.5)
 
 X8, Y8, u8 = prepare_field(u_8c_dim, cfg_8c.geometry, 0.3, 0.5)
 
