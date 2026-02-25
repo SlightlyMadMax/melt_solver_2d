@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         # top=const_neumann_condition(n_x, value=0.0),
-        top=air_temp(n_x, u_base=(max_temp + 2.0 - u_ref) / delta_u, u_amp=2.0 / delta_u),
+        top=air_temp(n_x, u_base=(max_temp + 2.5 - u_ref) / delta_u, u_amp=2.5 / delta_u),
         # right=linear_dirichlet_ramp(n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10),
         right=const_neumann_condition(n_y, value=0.0),
         # bottom=const_neumann_condition(n_x, value=0.0),
