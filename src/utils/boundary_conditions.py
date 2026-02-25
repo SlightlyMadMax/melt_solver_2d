@@ -5,13 +5,17 @@ import numpy as np
 from src.core.boundary_conditions import BoundaryCondition, BoundaryConditionType
 
 
-def t_air(t: float, n: int) -> np.ndarray:
+def air_temp(
+    n: int,
+    time: float,
+    u_base: float,
+    u_ref: float,
+    u_amp: float,
+    delta_u: float,
+) -> np.ndarray:
     arr = np.zeros(n)
-    arr[:] = (
-        275.15
-        + 2.0 * math.sin(2 * math.pi * t / (24.0 * 3600.0) - math.pi / 2)
-        - 273.15
-    ) / 4.0
+    current_temp = u_base + u_amp * math.sin(2 * math.pi * time / (24.0 * 3600.0) - math.pi / 2)
+    arr[:] = (current_temp - u_ref) / delta_u  # nondimensionalized
     return arr
 
 
