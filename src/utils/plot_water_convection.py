@@ -10,12 +10,12 @@ from src.utils.water_convection_benchmark import calculate_T_profile_Y05
 
 mpl.rcParams.update(
     {
-        "font.size": 12,
-        "axes.labelsize": 12,
-        "axes.titlesize": 12,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-        "legend.fontsize": 12,
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "axes.titlesize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 14,
         "font.family": "serif",
         "font.serif": ["Times New Roman"],
         "mathtext.fontset": "custom",
@@ -48,7 +48,7 @@ def add_subfigure_label(ax, label):
         transform=ax.transAxes,
         ha="center",
         va="center",
-        fontsize=12,
+        fontsize=14,
         zorder=11,
     )
 
@@ -118,5 +118,5 @@ ax1.legend()
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("../../graphs/velocity/validation_combined.tif", dpi=300)
+plt.savefig("../../graphs/velocity/validation_combined_2.tif", dpi=300)
 plt.show()

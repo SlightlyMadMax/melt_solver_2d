@@ -9,12 +9,12 @@ from src.parameters.config import ExperimentConfig
 # Настройка шрифтов
 mpl.rcParams.update(
     {
-        "font.size": 12,
-        "axes.labelsize": 12,
-        "axes.titlesize": 12,
-        "xtick.labelsize": 12,
-        "ytick.labelsize": 12,
-        "legend.fontsize": 12,
+        "font.size": 14,
+        "axes.labelsize": 14,
+        "axes.titlesize": 14,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 14,
         "font.family": "serif",
         "font.serif": ["Times New Roman"],
         "mathtext.fontset": "custom",
@@ -37,7 +37,7 @@ def add_subfigure_label(ax, label):
         xycoords='axes fraction',
         ha="center",
         va="center",
-        fontsize=12,
+        fontsize=14,
         zorder=11,
         bbox=dict(
             boxstyle='circle,pad=0.3',
