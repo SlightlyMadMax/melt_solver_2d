@@ -118,5 +118,5 @@ ax1.legend()
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("../../graphs/velocity/validation_combined.jpg", dpi=300)
+plt.savefig("../../graphs/velocity/validation_combined.tif", dpi=300)
 plt.show()

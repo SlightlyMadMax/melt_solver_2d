@@ -168,5 +168,5 @@ cbar = fig.colorbar(contours[-1], cax=cbar_ax)
 cbar.set_ticks(np.linspace(-5, 5, 11))
 cbar.set_label("Температура, °C")
 
-plt.savefig("../../graphs/wavy_surface/boundary_evolution.jpg", dpi=300, bbox_inches="tight")
+plt.savefig("../../graphs/wavy_surface/boundary_evolution.tif", dpi=300, bbox_inches="tight")
 plt.show()

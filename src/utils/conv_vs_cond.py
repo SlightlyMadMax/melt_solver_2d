@@ -108,5 +108,5 @@ add_subfigure_label(ax1, "б")
 
 
 # -----------------------------
-plt.savefig("../../graphs/wavy_surface/boundary_vs_time.jpg", dpi=300)
+plt.savefig("../../graphs/wavy_surface/boundary_vs_time.tif", dpi=300)
 plt.show()

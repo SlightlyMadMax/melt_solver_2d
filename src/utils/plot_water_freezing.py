@@ -117,5 +117,5 @@ cbar.set_label(r"Температура, $^{\circ}\mathrm{C}$", rotation=270, la
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("../../graphs/velocity/corrected_params.jpg", dpi=300)
+plt.savefig("../../graphs/velocity/corrected_params.tif", dpi=300)
 plt.show()

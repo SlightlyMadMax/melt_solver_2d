@@ -178,5 +178,5 @@ cbar.ax.tick_params(labelsize=10)
 # Сохранение
 # --------------------------------------------------
 
-plt.savefig("../../graphs/icicle/melting_regimes_v2.jpg", dpi=300)
+plt.savefig("../../graphs/icicle/melting_regimes_v2.tif", dpi=300)
 plt.show()
