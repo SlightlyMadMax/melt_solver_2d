@@ -1,10 +1,10 @@
 {
   "geometry": {
-    "width": 0.4,
-    "height": 0.5,
+    "width": 0.2,
+    "height": 0.26,
     "end_time": 259200,
-    "n_x": 801,
-    "n_y": 1001,
+    "n_x": 401,
+    "n_y": 521,
     "n_t": 2592000
   },
   "material_props": {
@@ -28,7 +28,7 @@
   },
   "u_ref": 273.15,
   "delta_u": 5.0,
-  "l": 0.03,
+  "l": 0.01,
   "delta": 0.05,
   "delta_flow": 0.05,
   "epsilon": 0.001

@@ -95,8 +95,8 @@ if __name__ == "__main__":
     # )
 
     water_thickness = 0.01
-    crevasse_width = 0.03
-    crevasse_depth = 0.3
+    crevasse_width = 0.01
+    crevasse_depth = 0.15
     f = np.empty(n_x)
 
     # angle_rad = np.deg2rad(15.0)
@@ -132,14 +132,14 @@ if __name__ == "__main__":
         solid_temp=min_temp,
     )
 
-    dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # dim_u = u * delta_u + u_ref
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     # Initial stream function, vorticity and velocity fields
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
@@ -173,9 +173,9 @@ if __name__ == "__main__":
 
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
-    log_interval = 60
+    log_interval = 900
     plot_interval = 60
-    save_interval = 900
+    save_interval = 600
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
-        checkpoints_dir="../data/crevasse/try1",
+        checkpoints_dir="../data/crevasse/try2",
         logger=logger,
         save_at=save_at,
         log_at=log_at,
