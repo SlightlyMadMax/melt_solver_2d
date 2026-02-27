@@ -125,13 +125,13 @@ for i, (ax, (X, Y, u, title, letter, cfg)) in enumerate(zip(axes, datasets)):
     ax.set_xticks([0.0, 0.1, 0.2])
     ax.set_yticks(np.linspace(0.0, cfg.geometry.height, 5))
 
-    ax.set_xlabel(r"$x$, м", fontsize=12)
+    ax.set_xlabel(r"$x$, м", fontsize=14)
     if i == 0:
-        ax.set_ylabel(r"$y$, м", fontsize=12)
+        ax.set_ylabel(r"$y$, м", fontsize=14)
     else:
         ax.set_ylabel("")
 
-    ax.set_title(title, fontsize=12)
+    ax.set_title(title, fontsize=14)
     ax.tick_params(labelsize=10)
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
     ax.xaxis.set_major_formatter(FormatStrFormatter("%.2f"))
@@ -168,7 +168,7 @@ for i, (ax, (X, Y, u, title, letter, cfg)) in enumerate(zip(axes, datasets)):
 
 cbar = fig.colorbar(cf, ax=axes, fraction=0.025, pad=0.02)
 cbar.set_label(
-    r"Температура, $^\circ\mathrm{C}$", fontsize=12, rotation=270, labelpad=15
+    r"Температура, $^\circ\mathrm{C}$", fontsize=14, rotation=270, labelpad=15
 )
 cbar.set_ticks(ticks)
 cbar.ax.tick_params(labelsize=10)
