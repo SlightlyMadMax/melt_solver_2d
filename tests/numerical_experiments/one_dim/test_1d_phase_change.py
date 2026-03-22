@@ -111,7 +111,6 @@ heat_transfer_solver = HeatTransferSolver(
     step_scheme=StepScheme.ERF,
     delta_scheme=DeltaScheme.GAUSS,
     k_face_method=KFaceMethod.FROM_TEMP,
-    post_correction=True,
 )
 
 if s_0 == 0.0:
