@@ -2,7 +2,6 @@ from typing import Optional
 
 import numpy as np
 
-from scipy.ndimage import distance_transform_edt as edt
 from src.core.geometry import DomainGeometry
 from src.parameters.config import ExperimentConfig
 

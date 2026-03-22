@@ -31,7 +31,7 @@ from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition, linear_dirichlet_ramp, air_temp
 )
-from src.utils.icicle import init_temperature_icicle
+from src.utils.init_icicle import init_temperature_icicle
 
 logging.basicConfig(
     level=logging.INFO,
