@@ -5,7 +5,6 @@ import numpy as np
 
 
 from src.core.constants import ABS_ZERO
-from src.convective_operators import ConvectiveTermForm
 from src.core.boundary_conditions import BoundaryConditions
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.init_values import (
@@ -13,8 +12,7 @@ from src.heat_transfer.init_values import (
     DomainShape,
     init_temperature,
 )
-from src.heat_transfer.plotting import plot_temperature, create_gif_from_images
-from src.heat_transfer.pt_boundary import get_pt_quadratic
+from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.heat_transfer.utils import TemperatureUnit
@@ -95,7 +93,7 @@ print(f"Theoretical terminal boundary position: {(1.0 - b_lim) * geometry.height
 #     + 0.2 * math.exp(-((i * geometry.dx - geometry.width / 1.5) ** 2) / 0.005)
 #     for i in range(geometry.n_x)
 # ]
-
+#
 # f = [geometry.height / 2 for i in range(geometry.n_x)]
 # f = np.array(f)
 #

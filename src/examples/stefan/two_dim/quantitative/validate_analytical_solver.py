@@ -1,4 +1,4 @@
-from tests.numerical_experiments.two_dim.quantitative.analytical_solver import (
+from src.examples.stefan.two_dim.quantitative.analytical_solver import (
     StefanCornerSolver,
     StefanParameters,
 )

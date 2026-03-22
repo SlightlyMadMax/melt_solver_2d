@@ -4,7 +4,7 @@ import numpy as np
 from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.parameters.config import ExperimentConfig
-from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
+from src.examples.stefan.one_dim.analytic_solution_1d_2ph import (
     get_analytical_solution,
 )
 

@@ -19,11 +19,11 @@ from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
 )
-from tests.numerical_experiments.one_dim.analytic_solution_1d_2ph import (
+from src.examples.stefan.one_dim.analytic_solution_1d_2ph import (
     calculate_gamma,
     get_analytical_solution,
 )
-from tests.numerical_experiments.one_dim.compare_solution import (
+from src.examples.stefan.one_dim.compare_solution import (
     calculate_and_plot_interface_error,
     calculate_and_plot_temperature_error,
 )
