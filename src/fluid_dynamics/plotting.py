@@ -19,7 +19,7 @@ def plot_velocity_field(
     graph_id: int,
     show_graph: bool = True,
     plot_boundary: bool = True,
-    directory: str = "../graphs/velocity/",
+    directory: str = "./graphs/velocity/",
     equal_aspect: Optional[bool] = True,
     stride: int = 8,
 ):
@@ -87,7 +87,7 @@ def plot_stream_function(
     cfg: ExperimentConfig,
     graph_id: int,
     show_graph: bool = True,
-    directory: str = "../graphs/stream_function/",
+    directory: str = "./graphs/stream_function/",
     equal_aspect: Optional[bool] = True,
 ):
     geometry: DomainGeometry = cfg.geometry
