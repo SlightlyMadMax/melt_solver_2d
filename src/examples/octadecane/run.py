@@ -37,6 +37,55 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def nusselt_correlation(tau, Ra, c1=0.27, c2=0.0275, n=-2):
+    """
+    Compute the average Nusselt number using the Jany & Bejan (1988) correlation.
+
+    Nu(τ) = 1/√(2τ) + [c₁·Ra^(1/4) - 1/√(2τ)]·[1 + (c₂·Ra^(3/4)·τ^(3/2))^n]^(1/n)
+
+    Parameters
+    ----------
+    tau : float or np.ndarray
+        Dimensionless time τ = Fo·Ste (Fourier·Stefan)
+    Ra : float
+        Rayleigh number
+    c1 : float, optional (default 0.27)
+        Constant c₁ from the correlation
+    c2 : float, optional (default 0.0275)
+        Constant c₂ from the correlation
+    n : float, optional (default -2)
+        Exponent n from the correlation
+
+    Returns
+    -------
+    Nu : float or np.ndarray
+        Average Nusselt number at the hot wall
+    """
+    # Convert to array if not scalar
+    tau = np.asarray(tau) if not np.isscalar(tau) else tau
+
+    # Check for non-positive tau
+    if np.any(tau <= 0):
+        raise ValueError("tau must be positive")
+
+    # Pure conduction term (Neumann solution)
+    nu_conduction = 1.0 / np.sqrt(2.0 * tau)
+
+    # Pure convection limit
+    nu_convection = c1 * np.power(Ra, 1.0 / 4.0)
+
+    # Correlation factor for transition regime
+    correlation_factor = np.power(
+        1.0 + np.power(c2 * np.power(Ra, 3.0 / 4.0) * np.power(tau, 3.0 / 2.0), n),
+        1.0 / n,
+    )
+
+    # Full formula
+    Nu = nu_conduction + (nu_convection - nu_conduction) * correlation_factor
+
+    return Nu
+
+
 if __name__ == "__main__":
     cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
     logger.info(cfg)
@@ -140,7 +189,9 @@ if __name__ == "__main__":
             "T_max, °C": lambda s: np.max(s.u * cfg.delta_u + cfg.u_ref + ABS_ZERO),
             "T_min, °C": lambda s: np.min(s.u * cfg.delta_u + cfg.u_ref + ABS_ZERO),
         },
-        step_callback=lambda s: nu_history.append((s.t, calculate_nusselt(s.u, cfg))),
+        step_callback=lambda s: nu_history.append(
+            (s.t, calculate_nusselt(s.u, cfg, order=2))
+        ),
     )
     runner.run()
 
@@ -148,15 +199,21 @@ if __name__ == "__main__":
     import numpy as np
 
     # Распаковка данных
-    times, nu_values = zip(*nu_history)  # или: times = [t for t, _ in nu_history]
+    times, nu_values = zip(*nu_history)
+
+    dim_times = [
+        t * cfg.stefan_number * cfg.thermal_diffusivity_ref / cfg.l**2 for t in times
+    ]
+    nu_pred = nusselt_correlation(dim_times, Ra=cfg.rayleigh_number)
 
     plt.figure(figsize=(8, 5))
-    plt.plot(times, nu_values, "b-", linewidth=1.5, label="Nu(t)")
+    plt.plot(dim_times[1000:], nu_values[1000:], linewidth=1.5, label="Nu(t)")
+    plt.plot(dim_times[1000:], nu_pred[1000:], linewidth=1.5, label="Prediction")
+
     plt.xlabel(r"Безразмерное время $\tau = Fo \cdot Ste$")
     plt.ylabel(r"Среднее число Нуссельта $\overline{Nu}$")
     plt.title("Эволюция теплопередачи на горячей стенке")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("./graphs/nusselt_evolution.png", dpi=300)
-    plt.show()
+    plt.savefig("./graphs/nusselt_evolution_3.png", dpi=300)
