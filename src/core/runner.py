@@ -300,33 +300,31 @@ class ExperimentRunner:
         t = n * self.geometry.dt
 
         try:
-            delta = self.cfg.delta_nd or get_mushy_zone_temperature_range(
-                self.state.u, self.cfg.u_pt_nd, n_nodes=1
+            s = self.state
+            cfg = self.cfg
+            delta = cfg.delta_nd or get_mushy_zone_temperature_range(
+                s.u, cfg.u_pt_nd, n_nodes=1
             )
-            self.state.u[:, :] = self.heat_solver.solve(
-                u=self.state.u, sf=self.state.sf, delta=delta, time=t
-            )
+            s.u[:, :] = self.heat_solver.solve(u=s.u, sf=s.sf, delta=delta, time=t)
 
-            delta_flow = self.cfg.delta_flow_nd or get_mushy_zone_temperature_range(
-                self.state.u, self.cfg.u_pt_nd, n_nodes=1
+            delta_flow = cfg.delta_flow_nd or get_mushy_zone_temperature_range(
+                s.u, cfg.u_pt_nd, n_nodes=1
             )
             sf_new, w_new = self.navier_solver.solve(
-                w=self.state.w,
-                sf=self.state.sf,
-                u=self.state.u,
+                w=s.w,
+                sf=s.sf,
+                u=s.u,
                 delta=delta_flow,
                 time=t,
             )
-            self.state.sf[:, :] = sf_new
-            self.state.w[:, :] = w_new
+            s.sf[:, :] = sf_new
+            s.w[:, :] = w_new
 
             if self.calculate_velocity:
-                calculate_velocity_from_sf(
-                    self.state.sf, self.state.v_x, self.state.v_y, self.cfg
-                )
+                calculate_velocity_from_sf(s.sf, s.v_x, s.v_y, cfg)
 
-            self.state.n = n
-            self.state.t = t
+            s.n = n
+            s.t = t
 
         except Exception:
             self.logger.exception("Error during solver step")
