@@ -390,7 +390,7 @@ class ExperimentRunner:
 
         for name, fn in self.metrics.items():
             try:
-                self.logger.info("  %s = %s", name, fn(self.state))
+                self.logger.info("  %s = %.4g", name, fn(self.state))
             except Exception:
                 self.logger.warning("Metric '%s' failed", name)
 
