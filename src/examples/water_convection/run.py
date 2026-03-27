@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-        "../parameter_sets/water/convection.json"
-    )
+    cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
