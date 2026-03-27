@@ -3,7 +3,6 @@ from enum import IntEnum
 from typing import Optional
 
 import numpy as np
-from scipy.special import erf
 
 from src.convective_operators import (
     BaseConvectiveOperator,
