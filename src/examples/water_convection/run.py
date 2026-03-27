@@ -15,12 +15,9 @@ from src.fluid_dynamics.init_values import (
 )
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
-from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
-from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
-from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
