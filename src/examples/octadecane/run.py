@@ -27,6 +27,7 @@ from src.utils.boundary_conditions import (
     const_dirichlet_condition,
     const_neumann_condition,
 )
+from src.utils.nusselt import calculate_nusselt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -122,6 +123,8 @@ if __name__ == "__main__":
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     save_at = {int(800 / dt), int(1575 / dt)}
 
+    nu_history = []
+
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
@@ -137,5 +140,23 @@ if __name__ == "__main__":
             "T_max, °C": lambda s: np.max(s.u * cfg.delta_u + cfg.u_ref + ABS_ZERO),
             "T_min, °C": lambda s: np.min(s.u * cfg.delta_u + cfg.u_ref + ABS_ZERO),
         },
+        step_callback=lambda s: nu_history.append((s.t, calculate_nusselt(s.u, cfg))),
     )
     runner.run()
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # Распаковка данных
+    times, nu_values = zip(*nu_history)  # или: times = [t for t, _ in nu_history]
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(times, nu_values, "b-", linewidth=1.5, label="Nu(t)")
+    plt.xlabel(r"Безразмерное время $\tau = Fo \cdot Ste$")
+    plt.ylabel(r"Среднее число Нуссельта $\overline{Nu}$")
+    plt.title("Эволюция теплопередачи на горячей стенке")
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("./graphs/nusselt_evolution.png", dpi=300)
+    plt.show()

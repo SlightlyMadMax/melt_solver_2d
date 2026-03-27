@@ -3,7 +3,7 @@ import numpy as np
 from src.parameters.config import ExperimentConfig
 
 
-def nusselt(
+def calculate_nusselt(
     u: np.ndarray, cfg: ExperimentConfig, wall: str = "left", order: int = 2
 ) -> float:
     """
