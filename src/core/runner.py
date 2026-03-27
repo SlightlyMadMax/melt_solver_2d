@@ -184,6 +184,7 @@ class ExperimentRunner:
         log_at: Optional[set[int]] = None,
         metrics: Optional[Dict[str, MetricFn]] = None,
         step_callback: Optional[StepCallback] = None,
+        stop_criterion: Optional[Callable[[SimulationState], bool]] = None,
     ) -> None:
         self.cfg = cfg
         self.geometry: DomainGeometry = cfg.geometry
@@ -200,6 +201,7 @@ class ExperimentRunner:
         self.log_at = log_at or set()
         self.metrics = metrics or {}
         self.step_callback = step_callback
+        self.stop_criterion = stop_criterion
 
         if self.calculate_velocity and (
             self.state.v_x is None or self.state.v_y is None
@@ -226,6 +228,7 @@ class ExperimentRunner:
         log_at: Optional[set[int]] = None,
         metrics: Optional[Dict[str, MetricFn]] = None,
         step_callback: Optional[StepCallback] = None,
+        stop_criterion: Optional[Callable[[SimulationState], bool]] = None,
     ) -> "ExperimentRunner":
         data = load_checkpoint(checkpoint_path)
 
@@ -254,6 +257,7 @@ class ExperimentRunner:
             log_at=log_at,
             metrics=metrics,
             step_callback=step_callback,
+            stop_criterion=stop_criterion,
         )
         runner.logger.info(f"Initialized runner from checkpoint: {checkpoint_path}")
         return runner
@@ -267,6 +271,18 @@ class ExperimentRunner:
                 self._handle_save()
                 self._handle_plot()
                 self._handle_log(start_time)
+
+                if self.stop_criterion is not None:
+                    try:
+                        if self.stop_criterion(self.state):
+                            self.logger.info(
+                                "Stop criterion met at step %d (t = %.2f s); terminating early",
+                                self.state.n,
+                                self.state.t,
+                            )
+                            break
+                    except Exception:
+                        self.logger.exception("stop_criterion failed; continuing")
 
         except Exception as exc:
             self.logger.exception("Exception during simulation run: %s", exc)
