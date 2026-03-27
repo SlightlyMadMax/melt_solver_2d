@@ -41,7 +41,7 @@ def plot_temperature(
     plot_boundary: bool = False,
     show_graph: bool = True,
     show_grid: bool = False,
-    directory: str = "../graphs/temperature/",
+    directory: str = "./graphs/temperature/",
     min_temp: Optional[float] = None,
     max_temp: Optional[float] = None,
     equal_aspect: Optional[bool] = True,
