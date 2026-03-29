@@ -24,6 +24,7 @@ from src.utils.boundary_conditions import (
     const_neumann_condition,
     const_dirichlet_condition,
 )
+from src.utils.nusselt import calculate_nusselt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -104,7 +105,7 @@ if __name__ == "__main__":
         convective_term_form=ConvectiveTermForm.DIVERGENT_CENTRAL,
         vorticity_solver_name=VorticitySolverName.PEACEMAN_RACHFORD,
         stream_function_solver_name=StreamFunctionSolverName.AMG,
-        vorticity_bc_order=2,
+        vorticity_bc_order=1,
     )
 
     state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
@@ -136,6 +137,7 @@ if __name__ == "__main__":
             "v_min": lambda s: np.min(s.v_x) * new_vel_scale,
             "u_max": lambda s: np.max(s.v_y) * new_vel_scale,
             "u_min": lambda s: np.min(s.v_y) * new_vel_scale,
+            "Nu": lambda s: calculate_nusselt(u=s.u, cfg=cfg, wall="right"),
         },
     )
     runner.run()
