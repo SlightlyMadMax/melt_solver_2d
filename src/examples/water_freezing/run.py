@@ -69,14 +69,14 @@ if __name__ == "__main__":
     w = data["w"]
     v_x, v_y = data["v_x"], data["v_y"]
 
-    dim_u = u * delta_u + u_ref
-    plot_temperature(
-        u=dim_u,
-        cfg=cfg,
-        graph_id=0,
-        plot_boundary=True,
-        show_graph=True,
-    )
+    # dim_u = u * delta_u + u_ref
+    # plot_temperature(
+    #     u=dim_u,
+    #     cfg=cfg,
+    #     graph_id=0,
+    #     plot_boundary=True,
+    #     show_graph=True,
+    # )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
