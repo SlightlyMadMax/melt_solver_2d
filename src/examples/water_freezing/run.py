@@ -119,7 +119,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"./data/run",
+        checkpoints_dir=f"data/hot_start_ramp_up",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,

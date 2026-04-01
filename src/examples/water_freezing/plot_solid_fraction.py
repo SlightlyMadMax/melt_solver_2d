@@ -9,7 +9,7 @@ from src.parameters.config import ExperimentConfig
 solid_fraction_history = []
 times = []
 
-files_path_mask= "./data/run/checkpoint_*.npz"
+files_path_mask= "data/hot_start_ramp_up/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
