@@ -9,14 +9,12 @@ from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
 paths = sorted(
-    glob.glob("../../data/gallium/test/checkpoint_*.npz"),
+    glob.glob("./data/run/checkpoint_*.npz"),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
-img = plt.imread("../../data/gau.png")
+img = plt.imread("./data/gau.png")
 
-cfg: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/gallium/config.json"
-)
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 geometry: DomainGeometry = cfg.geometry
 
 min_temp = 301.45
