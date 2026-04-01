@@ -30,7 +30,7 @@ dim_times = [
     t * cfg.stefan_number * cfg.thermal_diffusivity_ref / cfg.l**2 for t in times
 ]
 plt.figure(figsize=(8, 5))
-plt.plot(dim_times, nusselt_history, linewidth=1.5, label="Nu(t)")
+plt.plot(dim_times[10:-10], nusselt_history[10:-10], linewidth=1.5, label="Nu(t)")
 
 plt.xlabel(r"Безразмерное время $\tau = Fo \cdot Ste$")
 plt.ylabel(r"Среднее число Нуссельта $\overline{Nu}$")

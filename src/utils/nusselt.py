@@ -52,7 +52,7 @@ def calculate_nusselt(
             "grad_axis": 1,
             "idx": [-1, -2, -3],
             "step": dy,
-            "nu_sign": 1,
+            "nu_sign": -1,
             "int_step": dx,
         },
     }
