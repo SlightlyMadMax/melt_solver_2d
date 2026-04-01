@@ -8,10 +8,12 @@ from src.core.boundary_conditions import BoundaryConditions
 from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.core.runner import ExperimentRunner, SimulationState
+from src.fluid_dynamics.init_values import initialize_stream_function, initialize_vorticity, initialize_velocity
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
+from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.plotting import plot_temperature
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
@@ -63,11 +65,23 @@ if __name__ == "__main__":
         left=const_dirichlet_condition(n_y, value=0.0),
     )
 
-    data = np.load("./data/initial_distribution.npz")
-    u = data["u"]
-    sf = data["sf"]
-    w = data["w"]
-    v_x, v_y = data["v_x"], data["v_y"]
+    # data = np.load("./data/initial_distribution.npz")
+    # u = data["u"]
+    # sf = data["sf"]
+    # w = data["w"]
+    # v_x, v_y = data["v_x"], data["v_y"]
+
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
+
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_LIQUID,
+        solid_temp=min_temp,
+        liquid_temp=max_temp,
+    )
 
     # dim_u = u * delta_u + u_ref
     # plot_temperature(
@@ -119,7 +133,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/hot_start_ramp_up",
+        checkpoints_dir=f"data/cold_start_ramp_up",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
