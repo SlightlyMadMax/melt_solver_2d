@@ -55,7 +55,7 @@ if __name__ == "__main__":
     geometry: DomainGeometry = cfg.geometry
 
     n_x, n_y = geometry.n_x, geometry.n_y
-    max_temp = 273.2
+    max_temp = 273.25
     min_temp = 268.15
 
     bcs = BoundaryConditions(
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     u[:, 0] = min_temp
     u = (u - cfg.u_ref) / cfg.delta_u
 
-    save_interval = 1440
+    save_interval = 60
     start_time = time.perf_counter()
     for n in range(1, geometry.n_t + 1):
         t = n * geometry.dt
