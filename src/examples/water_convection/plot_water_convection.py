@@ -6,7 +6,7 @@ import matplotlib.patches as patches
 from src.fluid_dynamics.init_values import initialize_velocity
 from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.parameters.config import ExperimentConfig
-from src.utils.water_convection_benchmark import calculate_T_profile_Y05
+from src.examples.water_convection.benchmark_solution import calculate_T_profile_Y05
 
 mpl.rcParams.update(
     {
@@ -56,14 +56,11 @@ def add_subfigure_label(ax, label):
 # -----------------------------
 # load data
 # -----------------------------
-cfg = ExperimentConfig.load_from_file("../../parameter_sets/water/convection.json")
+cfg = ExperimentConfig.load_from_file("./config.json")
 
-data = np.load("../../data/water_convection/checkpoint_7200.npz")
+data = np.load("./data/151x151/checkpoint_7200.npz")
 u = data["u"]
-# v_x, v_y = data["v_x"], data["v_y"]
-sf = data["sf"]
-v_x, v_y = initialize_velocity(geometry=cfg.geometry)
-calculate_velocity_from_sf(sf, v_x, v_y, cfg)
+v_x, v_y = data["v_x"], data["v_y"]
 
 n_x, n_y = u.shape[1], u.shape[0]
 x = np.linspace(0, 1, n_x)
@@ -118,5 +115,5 @@ ax1.legend()
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("../../graphs/velocity/validation_combined_2.tif", dpi=300)
+plt.savefig("./graphs/compared.tif", dpi=300)
 plt.show()
