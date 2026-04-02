@@ -50,9 +50,10 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
-        right=linear_dirichlet_ramp(
-            n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10
-        ),
+        # right=linear_dirichlet_ramp(
+        #     n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10
+        # ),
+        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
         bottom=const_neumann_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
     )
@@ -133,7 +134,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/cold_start_ramp_up",
+        checkpoints_dir=f"data/cold_start_no_ramp_up",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
