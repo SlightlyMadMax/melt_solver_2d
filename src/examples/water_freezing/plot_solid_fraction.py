@@ -9,7 +9,7 @@ from src.parameters.config import ExperimentConfig
 solid_fraction_history = []
 times = []
 
-files_path_mask = "data/hot_start_ramp_up/checkpoint_*.npz"
+files_path_mask = "data/cold_start_no_ramp_up/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -36,4 +36,4 @@ plt.title("Изменение доли льда")
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig("./graphs/solid_fraction.png", dpi=300)
+plt.savefig("./graphs/ice_fraction/cold_start_no_ramp_up.png", dpi=300)
