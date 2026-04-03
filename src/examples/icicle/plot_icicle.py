@@ -29,32 +29,26 @@ mpl.rcParams.update(
 # Загрузка конфигураций
 # --------------------------------------------------
 
-cfg_8c: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/icicle/8с.json"
-)
+cfg_8c: ExperimentConfig = ExperimentConfig.load_from_file("parameters/8c.json")
 
-cfg_4c: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/icicle/4c.json"
-)
+cfg_4c: ExperimentConfig = ExperimentConfig.load_from_file("./parameters/4c.json")
 
-cfg_5pt6c: ExperimentConfig = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/icicle/5pt6c.json"
-)
+cfg_5pt6c: ExperimentConfig = ExperimentConfig.load_from_file("./parameters/5pt6c.json")
 
 
 # --------------------------------------------------
 # Загрузка данных и перевод температуры в размерный вид
 # --------------------------------------------------
 
-data_8c = np.load("../../data/icicle/8c/checkpoint_750.npz")
+data_8c = np.load("./data/8c/checkpoint_750.npz")
 u_8c = data_8c["u"]
 u_8c_dim = u_8c * cfg_8c.delta_u + cfg_8c.u_ref + ABS_ZERO
 
-data_4c = np.load("../../data/icicle/4c/checkpoint_1800.npz")
+data_4c = np.load("./data/4c/checkpoint_1800.npz")
 u_4c = data_4c["u"]
 u_4c_dim = u_4c * cfg_4c.delta_u + cfg_4c.u_ref + ABS_ZERO
 
-data_5pt6c = np.load("../../data/icicle/5pt6c_thin/checkpoint_9000.npz")
+data_5pt6c = np.load("./data/5pt6c_thin/checkpoint_9000.npz")
 u_5pt6c = data_5pt6c["u"]
 u_5pt6c_dim = u_5pt6c * cfg_5pt6c.delta_u + cfg_5pt6c.u_ref + ABS_ZERO
 
@@ -178,5 +172,5 @@ cbar.ax.tick_params(labelsize=10)
 # Сохранение
 # --------------------------------------------------
 
-plt.savefig("../../graphs/icicle/melting_regimes_v2.tif", dpi=300)
+plt.savefig("./graphs/melting_regimes_v2.tif", dpi=300)
 plt.show()
