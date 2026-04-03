@@ -10,7 +10,7 @@ from src.utils.nusselt import calculate_nusselt
 nusselt_history = []
 times = []
 
-files_path_mask = "data/hot_start_ramp_up/checkpoint_*.npz"
+files_path_mask = "data/cold_start_no_ramp_up/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -38,4 +38,4 @@ plt.title("Эволюция теплопередачи на холодной с�
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig("./graphs/nusselt_evolution.png", dpi=300)
+plt.savefig("./graphs/nusselt/nu_cold_start_no_ramp_up.png", dpi=300)
