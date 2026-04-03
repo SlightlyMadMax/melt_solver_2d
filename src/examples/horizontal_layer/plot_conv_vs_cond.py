@@ -51,25 +51,17 @@ def add_subfigure_label(ax, label):
 # -----------------------------
 # load data: MELTING
 # -----------------------------
-b_conv_melt = np.load(
-    "../../data/wavy_surface/boundary/melting/convection_boundary.npz"
-)["b"]
+b_conv_melt = np.load("./data/boundary/melting/convection_boundary.npz")["b"]
 
-b_stef_melt = np.load(
-    "../../data/wavy_surface/boundary/melting/stefan_boundary.npz"
-)["b"]
+b_stef_melt = np.load("./data/boundary/melting/stefan_boundary.npz")["b"]
 
 
 # -----------------------------
 # load data: FREEZING
 # -----------------------------
-b_conv_freeze = np.load(
-    "../../data/wavy_surface/boundary/freezing/convection_boundary.npz"
-)["b"]
+b_conv_freeze = np.load("./data/boundary/freezing/convection_boundary.npz")["b"]
 
-b_stef_freeze = np.load(
-    "../../data/wavy_surface/boundary/freezing/stefan_boundary.npz"
-)["b"]
+b_stef_freeze = np.load("./data/boundary/freezing/stefan_boundary.npz")["b"]
 
 
 # -----------------------------
@@ -108,5 +100,5 @@ add_subfigure_label(ax1, "б")
 
 
 # -----------------------------
-plt.savefig("../../graphs/wavy_surface/boundary_vs_time.tif", dpi=300)
+plt.savefig("./graphs/boundary_vs_time.tif", dpi=300)
 plt.show()

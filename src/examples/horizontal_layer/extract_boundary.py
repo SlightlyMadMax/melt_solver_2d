@@ -10,24 +10,10 @@ from src.heat_transfer.pt_boundary import get_pt_quadratic
 from src.heat_transfer.utils import TemperatureUnit
 from src.parameters.config import ExperimentConfig
 
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("../../parameter_sets/water/horizontal_layer.json")
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 geometry: DomainGeometry = cfg.geometry
 
-# u = np.load("../../data/wavy_surface/5x20_3/checkpoint_86400.npz")["u"]
-# plot_temperature(
-#     u=u * cfg.delta_u + cfg.u_ref,
-#     cfg=cfg,
-#     graph_id=0,
-#     plot_boundary=True,
-#     show_graph=False,
-#     min_temp=-5,
-#     max_temp=5,
-#     actual_temp_units=TemperatureUnit.KELVIN,
-#     display_temp_units=TemperatureUnit.CELSIUS,
-#     directory="../../graphs/temperature/",
-# )
-
-files_path_mask = "../../data/wavy_surface/melting/checkpoint_*.npz"
+files_path_mask = "./data/melting/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -55,4 +41,4 @@ for file_path in exp_paths:
     print(n, pt)
     pt_arr.append(pt)
 
-np.savez("../../data/wavy_surface/boundary/melting/convection_boundary.npz", b=np.asarray(pt_arr))
+np.savez("./data/boundary/melting/convection_boundary.npz", b=np.asarray(pt_arr))

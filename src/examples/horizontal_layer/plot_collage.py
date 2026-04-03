@@ -6,6 +6,7 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from src.heat_transfer.pt_boundary import get_phase_trans_boundary
 from src.parameters.config import ExperimentConfig
 
+
 # Настройка шрифтов
 mpl.rcParams.update(
     {
@@ -34,24 +35,22 @@ def add_subfigure_label(ax, label):
     ax.annotate(
         label,
         xy=(0.06, 0.8),
-        xycoords='axes fraction',
+        xycoords="axes fraction",
         ha="center",
         va="center",
         fontsize=14,
         zorder=11,
         bbox=dict(
-            boxstyle='circle,pad=0.3',
-            facecolor='white',
-            edgecolor='black',
-            linewidth=1.2
-        )
+            boxstyle="circle,pad=0.3",
+            facecolor="white",
+            edgecolor="black",
+            linewidth=1.2,
+        ),
     )
 
 
 # Загрузка конфигурации
-cfg = ExperimentConfig.load_from_file(
-    "../../parameter_sets/water/horizontal_layer.json"
-)
+cfg = ExperimentConfig.load_from_file("./config.json")
 
 geometry = cfg.geometry
 
@@ -75,7 +74,7 @@ for i, step in enumerate(melting_steps):
     ax = axes[i, 0]
 
     # Загрузка данных
-    data_melting = np.load(f"../../data/wavy_surface/melting/checkpoint_{step}.npz")
+    data_melting = np.load(f"./data/melting/checkpoint_{step}.npz")
     u_melting = data_melting["u"]
 
     # Размерная температура
@@ -110,16 +109,16 @@ for i, step in enumerate(melting_steps):
 
     # Настройка осей
     ax.xaxis.set_major_locator(MultipleLocator(5))
-    ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+    ax.xaxis.set_major_formatter(FormatStrFormatter("%g"))
     ax.yaxis.set_major_locator(MultipleLocator(2.5))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%g"))
 
 # Правый столбец - намерзание
 for i, step in enumerate(freezing_steps):
     ax = axes[i, 1]
 
     # Загрузка данных
-    data_freezing = np.load(f"../../data/wavy_surface/freezing/checkpoint_{step}.npz")
+    data_freezing = np.load(f"./data/freezing/checkpoint_{step}.npz")
     u_freezing = data_freezing["u"]
 
     # Размерная температура
@@ -153,13 +152,13 @@ for i, step in enumerate(freezing_steps):
 
     # Настройка осей
     ax.xaxis.set_major_locator(MultipleLocator(5))
-    ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+    ax.xaxis.set_major_formatter(FormatStrFormatter("%g"))
     ax.yaxis.set_major_locator(MultipleLocator(2.5))
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%g"))
 
 # Рисуем кружочки после того, как графики готовы
 for i in range(3):
-    add_subfigure_label(axes[i, 0], labels[i])      # левый столбец: а, б, в
+    add_subfigure_label(axes[i, 0], labels[i])  # левый столбец: а, б, в
     add_subfigure_label(axes[i, 1], labels[i + 3])
 
 # Общий вертикальный colorbar справа
@@ -168,5 +167,5 @@ cbar = fig.colorbar(contours[-1], cax=cbar_ax)
 cbar.set_ticks(np.linspace(-5, 5, 11))
 cbar.set_label("Температура, °C")
 
-plt.savefig("../../graphs/wavy_surface/boundary_evolution.tif", dpi=300, bbox_inches="tight")
+plt.savefig("./graphs/boundary_evolution.tif", dpi=300, bbox_inches="tight")
 plt.show()
