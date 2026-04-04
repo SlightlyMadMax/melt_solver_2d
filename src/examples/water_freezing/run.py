@@ -8,7 +8,11 @@ from src.core.boundary_conditions import BoundaryConditions
 from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.core.runner import ExperimentRunner, SimulationState
-from src.fluid_dynamics.init_values import initialize_stream_function, initialize_vorticity, initialize_velocity
+from src.fluid_dynamics.init_values import (
+    initialize_stream_function,
+    initialize_vorticity,
+    initialize_velocity,
+)
 from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolverName
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
@@ -22,7 +26,6 @@ from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
     const_neumann_condition,
     const_dirichlet_condition,
-    linear_dirichlet_ramp,
 )
 
 logging.basicConfig(
@@ -50,9 +53,6 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
-        # right=linear_dirichlet_ramp(
-        #     n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10
-        # ),
         right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
         bottom=const_neumann_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
@@ -65,12 +65,6 @@ if __name__ == "__main__":
         bottom=const_dirichlet_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=0.0),
     )
-
-    # data = np.load("./data/initial_distribution.npz")
-    # u = data["u"]
-    # sf = data["sf"]
-    # w = data["w"]
-    # v_x, v_y = data["v_x"], data["v_y"]
 
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
     w = initialize_vorticity(geometry=geometry)
@@ -134,7 +128,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/cold_start_no_ramp_up",
+        checkpoints_dir=f"data/cold_start_bigger_c",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
