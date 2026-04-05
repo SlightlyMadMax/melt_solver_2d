@@ -61,7 +61,7 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("./data/kowalewski.png")
-data = np.load("data/cold_start_bigger_c/checkpoint_468000.npz")
+data = np.load("data/cold_start_bigger_eps/checkpoint_234000.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
@@ -83,7 +83,6 @@ fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
 ax0.imshow(img, extent=[0, geometry.width, 0, geometry.height])
 X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
 ax0.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2, label="Численное решение")
-ax0.legend()
 
 ax0.set_xlabel(r"$x$, м")
 ax0.set_ylabel(r"$y$, м")
