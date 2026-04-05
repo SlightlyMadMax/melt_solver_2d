@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from src.fluid_dynamics.init_values import initialize_velocity
-from src.fluid_dynamics.utils import calculate_velocity_from_sf
 from src.parameters.config import ExperimentConfig
 from src.examples.water_convection.benchmark_solution import calculate_T_profile_Y05
 
@@ -58,7 +56,7 @@ def add_subfigure_label(ax, label):
 # -----------------------------
 cfg = ExperimentConfig.load_from_file("./config.json")
 
-data = np.load("./data/151x151/checkpoint_7200.npz")
+data = np.load("./data/1st_order_bc/151x151/checkpoint_7200.npz")
 u = data["u"]
 v_x, v_y = data["v_x"], data["v_y"]
 

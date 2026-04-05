@@ -125,7 +125,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"./data/{geometry.n_x}x{geometry.n_y}",
+        checkpoints_dir=f"./data/1st_order_bc/{geometry.n_x}x{geometry.n_y}",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
