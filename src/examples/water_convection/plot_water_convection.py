@@ -100,15 +100,30 @@ add_subfigure_label(ax0, "а")
 u_true = calculate_T_profile_Y05(x)
 u_mid = u[n_y // 2, :]
 
-ax1.plot(x, u_true, label="Michalek et al., 2005", linewidth=2)
-ax1.plot(x, u_mid, "--", label="Численное решение", linewidth=2)
+ax1.plot(x, u_true, linewidth=4)
+ax1.plot(x, u_mid, "--", linewidth=2)
+
+
+# короткие линии одинаковой длины
+L = 0.08
+
+# линия 1 (вправо, чуть ниже)
+i1 = int(0.7 * (n_x - 1))
+x1, y1 = x[i1], u_true[i1] - 0.02
+ax1.plot([x1 + 0.01, x1 + 0.01 + L], [y1, y1], color="black")
+ax1.text(x1 + 0.01 + L + 0.01, y1, "2", va="center")
+
+# линия 2 (вверх, чуть левее)
+i2 = int(0.4 * (n_x - 1))
+x2, y2 = x[i2] - 0.035, u_mid[i2] - 0.005
+ax1.plot([x2, x2], [y2 + 0.01, y2 + 0.01 + L], color="black")
+ax1.text(x2, y2 + 0.01 + L + 0.01, "1", ha="center")
 
 ax1.set_xlim(0, 1)
 ax1.set_ylim(0, 1)
 ax1.set_xlabel(r"$X$")
 ax1.set_ylabel("Θ")
 ax1.set_aspect("equal", adjustable="box")
-ax1.legend()
 
 add_subfigure_label(ax1, "б")
 
