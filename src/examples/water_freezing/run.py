@@ -74,18 +74,18 @@ if __name__ == "__main__":
         cfg=cfg,
         bcs=u_bcs,
         shape=DomainShape.UNIFORM_LIQUID,
-        solid_temp=min_temp,
-        liquid_temp=max_temp,
+        # solid_temp=min_temp,
+        liquid_temp=273.55,
     )
 
-    # dim_u = u * delta_u + u_ref
-    # plot_temperature(
-    #     u=dim_u,
-    #     cfg=cfg,
-    #     graph_id=0,
-    #     plot_boundary=True,
-    #     show_graph=True,
-    # )
+    dim_u = u * delta_u + u_ref
+    plot_temperature(
+        u=dim_u,
+        cfg=cfg,
+        graph_id=0,
+        plot_boundary=True,
+        show_graph=True,
+    )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/cold_start_bigger_c",
+        checkpoints_dir=f"data/real_cold_start",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,

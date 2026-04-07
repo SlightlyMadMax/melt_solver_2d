@@ -100,8 +100,8 @@ add_subfigure_label(ax0, "а")
 u_true = calculate_T_profile_Y05(x)
 u_mid = u[n_y // 2, :]
 
-ax1.plot(x, u_true, linewidth=4)
-ax1.plot(x, u_mid, "--", linewidth=2)
+ax1.plot(x, u_true, linewidth=10, color="b")
+ax1.plot(x, u_mid,  "--", linewidth=4, color="y")
 
 
 # короткие линии одинаковой длины

@@ -21,9 +21,6 @@ mpl.rcParams.update(
 )
 
 
-# -----------------------------
-# helper for subfigure labels
-# -----------------------------
 def add_subfigure_label(ax, label):
     circle = patches.Circle(
         (0.12, 0.92),
@@ -49,26 +46,15 @@ def add_subfigure_label(ax, label):
 
 
 # -----------------------------
-# load data: MELTING
+# load data
 # -----------------------------
 b_conv_melt = np.load("./data/boundary/melting/convection_boundary.npz")["b"]
-
 b_stef_melt = np.load("./data/boundary/melting/stefan_boundary.npz")["b"]
 
-
-# -----------------------------
-# load data: FREEZING
-# -----------------------------
 b_conv_freeze = np.load("./data/boundary/freezing/convection_boundary.npz")["b"]
-
 b_stef_freeze = np.load("./data/boundary/freezing/stefan_boundary.npz")["b"]
 
-
-# -----------------------------
-# time axis (index → time step)
-# -----------------------------
 t = np.arange(0, len(b_stef_melt), 10) / 60
-
 
 # -----------------------------
 # figure
@@ -76,25 +62,51 @@ t = np.arange(0, len(b_stef_melt), 10) / 60
 fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
 
 # -------- (а) melting ----------
-ax0.plot(t, b_conv_melt[0:1441:10], linewidth=2, label="С учётом конвекции")
-ax0.plot(t, b_stef_melt[0:1441:10], "--", linewidth=2, label="Без учёта конвекции")
+y1m = b_conv_melt[0:1441:10]
+y2m = b_stef_melt[0:1441:10]
+
+ax0.plot(t, y1m, linewidth=2)
+ax0.plot(t, y2m, "--", linewidth=2)
 
 ax0.set_xlabel("Время, ч")
 ax0.set_ylabel("Среднее положение границы, м")
 ax0.set_ylim(0, 0.05)
-ax0.legend()
+
+L = 0.08
+
+i1 = int(0.7 * (len(t) - 1))
+x1, y1 = t[i1], y1m[i1] - 0.002
+ax0.plot([x1 + 0.02, x1 + 0.02 + L], [y1, y1], color="black")
+ax0.text(x1 + 0.02 + L + 0.005, y1, "1", va="center")
+
+i2 = int(0.4 * (len(t) - 1))
+x2, y2 = t[i2] - 0.05, y2m[i2]
+ax0.plot([x2, x2], [y2 + 0.002, y2 + 0.002 + L * 0.03], color="black")
+ax0.text(x2, y2 + 0.002 + L * 0.03 + 0.002, "2", ha="center")
 
 add_subfigure_label(ax0, "а")
 
 
 # -------- (б) freezing ----------
-ax1.plot(t, b_conv_freeze[0:1441:10], linewidth=2, label="С учётом конвекции")
-ax1.plot(t, b_stef_freeze[0:1441:10], "--", linewidth=2, label="Без учёта конвекции")
+y1f = b_conv_freeze[0:1441:10]
+y2f = b_stef_freeze[0:1441:10]
+
+ax1.plot(t, y1f, linewidth=2)
+ax1.plot(t, y2f, "--", linewidth=2)
 
 ax1.set_xlabel("Время, ч")
 ax1.set_ylabel("Среднее положение границы, м")
 ax1.set_ylim(0, 0.05)
-ax1.legend()
+
+i1 = int(0.7 * (len(t) - 1))
+x1, y1 = t[i1], y1f[i1] - 0.002
+ax1.plot([x1 + 0.02, x1 + 0.02 + L], [y1, y1], color="black")
+ax1.text(x1 + 0.02 + L + 0.005, y1, "1", va="center")
+
+i2 = int(0.4 * (len(t) - 1))
+x2, y2 = t[i2] - 0.05, y2f[i2]
+ax1.plot([x2, x2], [y2 + 0.002, y2 + 0.002 + L * 0.03], color="black")
+ax1.text(x2, y2 + 0.002 + L * 0.03 + 0.002, "2", ha="center")
 
 add_subfigure_label(ax1, "б")
 
