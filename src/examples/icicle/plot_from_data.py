@@ -34,14 +34,14 @@ def plot_temperature_from_npz(
             max_temp=max_temp + ABS_ZERO,
             actual_temp_units=TemperatureUnit.KELVIN,
             display_temp_units=TemperatureUnit.CELSIUS,
-            directory="./graphs/8c/",
+            directory="./graphs/5pt6c/",
         )
 
 
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("./parameters/8c.json")
+cfg: ExperimentConfig = ExperimentConfig.load_from_file("./parameters/5pt6c.json")
 plot_temperature_from_npz(
     cfg=cfg,
     min_temp=273.15,
-    max_temp=281.15,
-    files_path_mask="./data/8c/checkpoint_*.npz",
+    max_temp=278.75,
+    files_path_mask="./data/5pt6c/checkpoint_*.npz",
 )

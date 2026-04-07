@@ -32,7 +32,7 @@ nu_cold_start = []
 nu_warm_start = []
 times = []
 
-cold_start_mask = "data/cold_start_no_ramp_up/checkpoint_*.npz"
+cold_start_mask = "data/real_cold_start/checkpoint_*.npz"
 cold_start_paths = sorted(
     glob.glob(cold_start_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -70,5 +70,5 @@ plt.ylabel(r"Среднее число Нуссельта")
 plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
-plt.savefig("./graphs/nusselt/nu_cold_and_warm_start.png", dpi=300)
+plt.savefig("./graphs/nusselt/real_cold_start_and_warm_start.png", dpi=300)
 plt.show()
