@@ -128,7 +128,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/real_cold_start",
+        checkpoints_dir=f"data/real_cold_start_c_0pt0005_eps_0pt1",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
