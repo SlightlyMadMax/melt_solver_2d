@@ -32,13 +32,13 @@ s_f_cold_start = []
 s_f_warm_start = []
 times = []
 
-cold_start_mask = "data/real_cold_start/checkpoint_*.npz"
+cold_start_mask = "data/real_cold_start_eps_0pt1_full_time/checkpoint_*.npz"
 cold_start_paths = sorted(
     glob.glob(cold_start_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 
-warm_start_mask = "data/warm_start_ramp_up/checkpoint_*.npz"
+warm_start_mask = "data/warm_start_full_time/checkpoint_*.npz"
 warm_start_paths = sorted(
     glob.glob(warm_start_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -59,8 +59,9 @@ for file_path in warm_start_paths:
     s_f_warm_start.append(np.mean(u < cfg.u_pt_nd))
 
 plt.figure(figsize=(8, 5))
-plt.plot(times[:39], s_f_cold_start[:39], linewidth=1.5, label=r"Холодный старт")
-plt.plot(times[:39], s_f_warm_start[:39], linewidth=1.5, label=r"Горячий старт")
+plt.plot(times, s_f_cold_start, linewidth=1.5, label=r"Холодный старт")
+plt.plot(times, s_f_warm_start, linewidth=1.5, label=r"Горячий старт")
+plt.axvline(x=2340, linestyle='--', color='gray', alpha=0.7, label=r'$t = 2340$ с')
 
 plt.xlabel(r"Время, с")
 plt.ylabel(r"Доля льда")

@@ -32,13 +32,13 @@ nu_cold_start = []
 nu_warm_start = []
 times = []
 
-cold_start_mask = "data/real_cold_start/checkpoint_*.npz"
+cold_start_mask = "data/real_cold_start_eps_0pt1/checkpoint_*.npz"
 cold_start_paths = sorted(
     glob.glob(cold_start_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
 )
 
-warm_start_mask = "data/warm_start_ramp_up/checkpoint_*.npz"
+warm_start_mask = "data/warm_start_full_time/checkpoint_*.npz"
 warm_start_paths = sorted(
     glob.glob(warm_start_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
