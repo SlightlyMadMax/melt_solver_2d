@@ -31,5 +31,5 @@
   "l": 0.038,
   "delta": 0.1,
   "delta_flow": 0.05,
-  "epsilon": 0.0005
+  "epsilon": 0.001
 }
