@@ -66,28 +66,28 @@ if __name__ == "__main__":
         left=const_dirichlet_condition(n_y, value=0.0),
     )
 
-    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geometry=geometry)
-    # v_x, v_y = initialize_velocity(geometry=geometry)
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
 
-    # u = init_temperature_icicle(
-    #     cfg=cfg,
-    #     liquid_temp=max_temp,
-    #     solid_temp=min_temp,
-    #     rect_width=0.09,
-    #     rect_height=0.12,
-    #     location="top",
-    # )
+    u = init_temperature_icicle(
+        cfg=cfg,
+        liquid_temp=max_temp,
+        solid_temp=min_temp,
+        rect_width=0.09,
+        rect_height=0.12,
+        location="top",
+    )
 
-    # dim_u = u * delta_u + u_ref
-    # plot_temperature(
-    #     u=dim_u,
-    #     cfg=cfg,
-    #     graph_id=0,
-    #     plot_boundary=True,
-    #     show_graph=True,
-    #     directory="./graphs/5pt6c/v4/"
-    # )
+    dim_u = u * delta_u + u_ref
+    plot_temperature(
+        u=dim_u,
+        cfg=cfg,
+        graph_id=0,
+        plot_boundary=True,
+        show_graph=True,
+        directory="./graphs/5pt6c/latest_sim/"
+    )
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -114,24 +114,23 @@ if __name__ == "__main__":
         vorticity_bc_order=2,
     )
 
-    # state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
+    state = SimulationState(u=u, sf=sf, w=w, v_x=v_x, v_y=v_y)
 
     log_interval = 60
     plot_interval = 60
-    save_interval = 1
+    save_interval = 60
 
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     save_at = set([n for n in range(0, n_t + 1) if n * dt % save_interval == 0])
 
-    ExperimentRunner.from_checkpoint("./data/5pt6c/5pt6c_v4/checkpoint_12300.npz")
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/5pt6c/5pt6c_v4",
+        checkpoints_dir=f"data/5pt6c/latest_sim",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,

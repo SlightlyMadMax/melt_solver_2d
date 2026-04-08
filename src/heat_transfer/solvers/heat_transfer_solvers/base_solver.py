@@ -87,7 +87,9 @@ class BaseHeatSolver(BaseSolver, ABC):
 
         c_solid_nd = props.volumetric_heat_capacity_solid / c_ref
         c_liquid_nd = props.volumetric_heat_capacity_liquid / c_ref
-        latent_heat_nd = 1.0 / self.cfg.stefan_number
+        ste = 2.5
+        # latent_heat_nd = 1.0 / self.cfg.stefan_number
+        latent_heat_nd = 1.0 / ste
         k_solid_nd = props.thermal_conductivity_solid / k_ref
         k_liquid_nd = props.thermal_conductivity_liquid / k_ref
 
