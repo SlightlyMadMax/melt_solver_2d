@@ -52,9 +52,10 @@ if __name__ == "__main__":
     # Temperature boundary conditions
     u_bcs = BoundaryConditions(
         top=const_neumann_condition(n_x, value=0.0),
-        right=linear_dirichlet_ramp(
-            n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10
-        ),
+        # right=linear_dirichlet_ramp(
+        #     n_y, start_value=0, end_value=(min_temp - u_ref) / delta_u, duration=10
+        # ),
+        right=const_dirichlet_condition(n_y, value=(min_temp - u_ref) / delta_u),
         bottom=const_neumann_condition(n_x, value=0.0),
         left=const_dirichlet_condition(n_y, value=(max_temp - u_ref) / delta_u),
     )
@@ -67,22 +68,22 @@ if __name__ == "__main__":
         left=const_dirichlet_condition(n_y, value=0.0),
     )
 
-    data = np.load("./data/initial_distribution.npz")
-    u = data["u"]
-    sf = data["sf"]
-    w = data["w"]
-    v_x, v_y = data["v_x"], data["v_y"]
+    # data = np.load("./data/initial_distribution.npz")
+    # u = data["u"]
+    # sf = data["sf"]
+    # w = data["w"]
+    # v_x, v_y = data["v_x"], data["v_y"]
 
-    # sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
-    # w = initialize_vorticity(geometry=geometry)
-    # v_x, v_y = initialize_velocity(geometry=geometry)
+    sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
+    w = initialize_vorticity(geometry=geometry)
+    v_x, v_y = initialize_velocity(geometry=geometry)
 
-    # u = init_temperature(
-    #     cfg=cfg,
-    #     bcs=u_bcs,
-    #     shape=DomainShape.UNIFORM_LIQUID,
-    #     liquid_temp=273.55,
-    # )
+    u = init_temperature(
+        cfg=cfg,
+        bcs=u_bcs,
+        shape=DomainShape.UNIFORM_LIQUID,
+        liquid_temp=273.55,
+    )
 
     # dim_u = u * delta_u + u_ref
     # plot_temperature(
@@ -134,7 +135,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/warm_start_full_time",
+        checkpoints_dir=f"data/real_cold_start_eps_0pt1_full_time",
         calculate_velocity=True,
         save_final=True,
         plot_at=plot_at,
