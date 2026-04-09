@@ -61,7 +61,7 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("./data/kowalewski.png")
-data = np.load("data/warm_start_full_time/checkpoint_234000.npz")
+data = np.load("data/old_data/after_freezing_151x151.npz")
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
@@ -113,10 +113,10 @@ L = 0.003
 dx_label = 0.0008
 dy_label = -0.0005
 
-i2 = int(0.1 * (len(X_b) - 1))
-x2, y2 = X_b[i2], Y_b[i2]
-ax0.plot([x2, x2 + L], [y2, y2], color="black")
-ax0.text(x2 + L + dx_label, y2 + dy_label, "1", ha="center")
+# i2 = int(0.71 * (len(X_b) - 1))
+# x2, y2 = X_b[i2], Y_b[i2]
+# ax0.plot([x2, x2 + L], [y2, y2], color="black")
+# ax0.text(x2 + L + dx_label, y2 + dy_label, "1", ha="center")
 
 cbar = fig.colorbar(contour, ax=ax1, fraction=0.046, pad=0.04)
 cbar.set_ticks(np.linspace(-10, 10, 9))
@@ -125,5 +125,5 @@ cbar.set_label(r"Температура, $^{\circ}\mathrm{C}$", rotation=270, la
 add_subfigure_label(ax1, "б")
 
 # -----------------------------
-plt.savefig("./graphs/warm_start_eps_0pt1.tif", dpi=300)
+plt.savefig("./graphs/water_freezing_upd.tif", dpi=300)
 plt.show()

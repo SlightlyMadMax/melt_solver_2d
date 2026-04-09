@@ -22,26 +22,20 @@ mpl.rcParams.update(
 
 
 def add_subfigure_label(ax, label):
-    circle = patches.Circle(
-        (0.12, 0.92),
-        0.03,
-        transform=ax.transAxes,
-        facecolor="white",
-        edgecolor="black",
-        linewidth=1.2,
-        zorder=10,
-    )
-    ax.add_patch(circle)
-
     ax.text(
-        0.12,
-        0.92,
+        0.92, 0.92,
         label,
         transform=ax.transAxes,
         ha="center",
         va="center",
         fontsize=14,
-        zorder=11,
+        zorder=10,
+        bbox=dict(
+            boxstyle="circle,pad=0.35",
+            facecolor="white",
+            edgecolor="black",
+            linewidth=1.2,
+        )
     )
 
 

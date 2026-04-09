@@ -67,7 +67,6 @@ plt.plot(times[:39], nu_warm_start[:39], linewidth=1.5, label="Горячий с
 
 plt.xlabel(r"Время, с")
 plt.ylabel(r"Среднее число Нуссельта")
-plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
 plt.savefig("./graphs/nusselt/cold_start_vs_warm_start.png", dpi=300)

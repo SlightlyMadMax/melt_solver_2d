@@ -1,4 +1,3 @@
-import matplotlib as mpl
 import glob
 import re
 
@@ -7,23 +6,6 @@ from matplotlib import pyplot as plt
 
 from src.parameters.config import ExperimentConfig
 
-
-mpl.rcParams.update(
-    {
-        "font.size": 14,
-        "axes.labelsize": 14,
-        "axes.titlesize": 14,
-        "xtick.labelsize": 14,
-        "ytick.labelsize": 14,
-        "legend.fontsize": 14,
-        "font.family": "serif",
-        "font.serif": ["Times New Roman"],
-        "mathtext.fontset": "custom",
-        "mathtext.rm": "Times New Roman",
-        "mathtext.it": "Times New Roman:italic",
-        "mathtext.bf": "Times New Roman:bold",
-    }
-)
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 
@@ -65,7 +47,6 @@ plt.axvline(x=2340, linestyle='--', color='gray', alpha=0.7, label=r'$t = 2340$ 
 
 plt.xlabel(r"Время, с")
 plt.ylabel(r"Доля льда")
-plt.grid(True, alpha=0.3)
 plt.legend()
 plt.tight_layout()
 plt.savefig("./graphs/ice_fraction/cold_start_vs_warm_start.png", dpi=300)
