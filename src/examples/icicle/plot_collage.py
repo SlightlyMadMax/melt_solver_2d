@@ -75,9 +75,9 @@ experiments = {
     "5pt6c": {
         "cfg": cfg_5pt6c,
         "paths": [
-            "./data/5pt6c/5pt6c_v4/checkpoint_0.npz",
-            "./data/5pt6c/5pt6c_v4/checkpoint_9000.npz",
-            "./data/5pt6c/5pt6c_v4/checkpoint_12300.npz",
+            "./data/5pt6c/5pt6c_thin/checkpoint_0.npz",
+            "./data/5pt6c/5pt6c_thin/checkpoint_9000.npz",
+            "./data/5pt6c/5pt6c_v2/checkpoint_28800.npz",
         ],
         "title": r"$T_\infty = 5.6^\circ\mathrm{C}$",
     },

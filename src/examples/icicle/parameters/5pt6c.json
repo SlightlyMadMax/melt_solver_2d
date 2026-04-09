@@ -1,9 +1,9 @@
 {
   "geometry": {
-    "width": 0.8,
+    "width": 0.6,
     "height": 0.2,
     "end_time": 7200,
-    "n_x": 2001,
+    "n_x": 1501,
     "n_y": 501,
     "n_t": 72000
   },

@@ -48,7 +48,7 @@ data_4c = np.load("./data/4c/checkpoint_1800.npz")
 u_4c = data_4c["u"]
 u_4c_dim = u_4c * cfg_4c.delta_u + cfg_4c.u_ref + ABS_ZERO
 
-data_5pt6c = np.load("./data/5pt6c_thin/checkpoint_9000.npz")
+data_5pt6c = np.load("./data/5pt6c/5pt6c_thin/checkpoint_9000.npz")
 u_5pt6c = data_5pt6c["u"]
 u_5pt6c_dim = u_5pt6c * cfg_5pt6c.delta_u + cfg_5pt6c.u_ref + ABS_ZERO
 
@@ -172,5 +172,5 @@ cbar.ax.tick_params(labelsize=10)
 # Сохранение
 # --------------------------------------------------
 
-plt.savefig("./graphs/melting_regimes_v2.tif", dpi=300)
+plt.savefig("./graphs/melting_regimes_v3.tif", dpi=300)
 plt.show()
