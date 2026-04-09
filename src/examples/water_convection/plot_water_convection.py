@@ -99,25 +99,33 @@ add_subfigure_label(ax0, "а")
 # -------- (б) profile --------
 u_true = calculate_T_profile_Y05(x)
 u_mid = u[n_y // 2, :]
+MARKER_STEP = 5
 
-ax1.plot(x, u_true, linewidth=10, color="b")
-ax1.plot(x, u_mid,  "--", linewidth=4, color="y")
+ax1.plot(x, u_true, linewidth=2.5, color="#0072BD")
+ax1.plot(
+    x[::MARKER_STEP],
+    u_mid[::MARKER_STEP],
+    marker="o",
+    markersize=7,
+    markerfacecolor="#D95319",
+    markeredgecolor="white",
+    markeredgewidth=1.5,
+    linestyle="",
+)
 
-
-# короткие линии одинаковой длины
 L = 0.08
-
-# линия 1 (вправо, чуть ниже)
-i1 = int(0.7 * (n_x - 1))
+i1 = int(0.05 * (n_x - 1))
 x1, y1 = x[i1], u_true[i1] - 0.02
 ax1.plot([x1 + 0.01, x1 + 0.01 + L], [y1, y1], color="black")
-ax1.text(x1 + 0.01 + L + 0.01, y1, "2", va="center")
+ax1.text(x1 + 0.01 + L + 0.01, y1, "1", va="center", fontsize=14)
 
-# линия 2 (вверх, чуть левее)
-i2 = int(0.4 * (n_x - 1))
-x2, y2 = x[i2] - 0.0125, u_mid[i2] - 0.005
+target_x = 0.5
+base_idx = int(target_x * (n_x - 1))
+marker_idx = (base_idx // MARKER_STEP) * MARKER_STEP
+
+x2, y2 = x[marker_idx], u_mid[marker_idx]
 ax1.plot([x2, x2], [y2 + 0.01, y2 + 0.01 + L], color="black")
-ax1.text(x2, y2 + 0.01 + L + 0.01, "1", ha="center")
+ax1.text(x2, y2 + 0.01 + L + 0.01, "2", ha="center", fontsize=14)
 
 ax1.set_xlim(0, 1)
 ax1.set_ylim(0, 1)
