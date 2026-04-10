@@ -29,7 +29,8 @@ mpl.rcParams.update(
 
 def add_subfigure_label(ax, label):
     ax.text(
-        0.06, 0.94,
+        0.06,
+        0.94,
         label,
         transform=ax.transAxes,
         ha="center",
@@ -41,7 +42,7 @@ def add_subfigure_label(ax, label):
             facecolor="white",
             edgecolor="black",
             linewidth=1.2,
-        )
+        ),
     )
 
 
@@ -111,15 +112,36 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11, 4.5))
 ax1.plot(t_cold_nu, nu_cold, linewidth=1.5, color="tab:blue")
 ax1.plot(t_warm_nu, nu_warm, linewidth=1.5, color="tab:orange")
 ax1.set_xlabel(r"Время, с")
-ax1.set_ylabel(r"Число Нуссельта")
+ax1.set_ylabel(r"Среднее число Нуссельта")
+
+L = 0.5
+i1 = int(0.2 * (len(t_cold_nu) - 1))
+x1, y1 = t_cold_nu[i1], nu_cold[i1]
+ax1.plot([x1, x1], [y1, y1 + L], color="black")
+ax1.text(x1 - 30.0, y1 + L + 0.2, "1", va="center", fontsize=14)
+
+L = 0.5
+i1 = int(0.2 * (len(t_cold_nu) - 1))
+x1, y1 = t_cold_nu[i1], nu_warm[i1]
+ax1.plot([x1, x1 + 100], [y1, y1 - 0.4], color="black")
+ax1.text(x1 + 100, y1 - 0.6, "2", va="center", fontsize=14)
 
 add_subfigure_label(ax1, "а")
 
 ax2.plot(t_cold_ice, ice_fraction_cold, linewidth=1.5, color="tab:blue")
 ax2.plot(t_warm_ice, ice_fraction_warm, linewidth=1.5, color="tab:orange")
-ax2.axvline(x=2340, linestyle="--", color="gray", alpha=0.7)
 ax2.set_xlabel(r"Время, с")
 ax2.set_ylabel(r"Доля льда")
+
+i1 = int(0.15 * (len(t_cold_ice) - 1))
+x1, y1 = t_cold_ice[i1], ice_fraction_cold[i1]
+ax2.plot([x1, x1 - 50.0], [y1, y1 + 0.04], color="black")
+ax2.text(x1 - 130.0, y1 + 0.05, "1", va="center", fontsize=14)
+
+i1 = int(0.2 * (len(t_cold_ice) - 1))
+x1, y1 = t_cold_ice[i1], ice_fraction_warm[i1]
+ax2.plot([x1, x1 + 100], [y1, y1 - 0.04], color="black")
+ax2.text(x1 + 50, y1 - 0.055, "2", va="center", fontsize=14)
 
 add_subfigure_label(ax2, "б")
 
