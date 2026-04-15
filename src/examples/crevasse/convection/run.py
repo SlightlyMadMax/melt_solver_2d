@@ -143,21 +143,21 @@ if __name__ == "__main__":
 
     log_interval = 60
     plot_interval = 60
-    save_interval = 60
+    save_interval = 600
     log_at = set([n for n in range(1, n_t + 1) if n * dt % log_interval == 0])
     plot_at = set([n for n in range(1, n_t + 1) if n * dt % plot_interval == 0])
     save_at = set([n for n in range(1, n_t + 1) if n * dt % save_interval == 0])
 
-    runner = ExperimentRunner(
+    runner = ExperimentRunner.from_checkpoint(
+        checkpoint_path="./data/width_2pt5_depth_15/checkpoint_132600.npz",
         cfg=cfg,
-        state=state,
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/width_2pt5_depth_15",
+        checkpoints_dir=f"data/width_2pt5_depth_15_continue",
         calculate_velocity=True,
         save_final=True,
-        plot_at=plot_at,
+        plot_at=None,
         log_at=log_at,
         save_at=save_at,
         metrics={
