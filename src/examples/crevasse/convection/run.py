@@ -47,7 +47,7 @@ if __name__ == "__main__":
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 263.15
+    min_temp = 266.15
     max_temp = 278.15
 
     material_props: MaterialProperties = cfg.material_props
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/colder_bottom",
+        checkpoints_dir=f"data/colder_bottom_7",
         calculate_velocity=True,
         save_final=True,
         plot_at=None,
