@@ -11,7 +11,7 @@ from src.parameters.config import ExperimentConfig
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("../config.json")
 
-files_path_mask = "./data/width_2pt5_depth_15/checkpoint_*.npz"
+files_path_mask = "./data/width_2pt5_depth_15_continue/checkpoint_*.npz"
 min_temp = 268.15
 max_temp = 278.15
 
