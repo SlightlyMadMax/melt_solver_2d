@@ -11,8 +11,8 @@ from src.parameters.config import ExperimentConfig
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("../config.json")
 
-files_path_mask = "./data/width_2pt5_depth_15/checkpoint_*.npz"
-min_temp = 268.15
+files_path_mask = "./data/colder_bottom/checkpoint_*.npz"
+min_temp = 263.15
 max_temp = 278.15
 
 exp_paths = sorted(
@@ -34,14 +34,14 @@ for file_path in exp_paths:
         max_temp=max_temp + ABS_ZERO,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
-        directory="./graphs/temperature/",
+        directory="./graphs/temperature_colder/",
     )
 
 from src.heat_transfer.plotting import create_gif_from_images
 
 create_gif_from_images(
-    output_filename="crevasse",
-    source_directory="./graphs/temperature/",
+    output_filename="crevasse_continue",
+    source_directory="./graphs/temperature_colder/",
     output_directory="./graphs/animations/",
     duration=200,
 )
