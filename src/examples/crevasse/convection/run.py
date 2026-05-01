@@ -42,12 +42,12 @@ logger = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    cfg: ExperimentConfig = ExperimentConfig.load_from_file("../config.json")
+    cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
     logger.info(cfg)
     geometry: DomainGeometry = cfg.geometry
     dt = geometry.dt
     n_x, n_y, n_t = geometry.n_x, geometry.n_y, geometry.n_t
-    min_temp = 266.15
+    min_temp = 263.15
     max_temp = 278.15
 
     material_props: MaterialProperties = cfg.material_props
