@@ -9,7 +9,6 @@ from src.core.constants import ABS_ZERO
 from src.core.geometry import DomainGeometry
 from src.heat_transfer.coefficient_smoothing.coefficients import StepScheme, DeltaScheme
 from src.heat_transfer.init_values import (
-    init_temperature,
     init_temperature_with_interface,
 )
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
@@ -133,24 +132,25 @@ if __name__ == "__main__":
         u[:, :] = heat_transfer_solver.solve(
             u, sf=np.zeros_like(u), time=t, delta=cfg.delta_nd
         )
-        if n % 900 == 0:
+        if n % 600 == 0:
             print(
                 f"ВРЕМЯ ВЫПОЛНЕНИЯ: {(time.perf_counter() - start_time) / 60:.2f} мин., "
                 f"ОСТАЛОСЬ: {get_remaining_time(n=n, n_t=geometry.n_t, start_time=start_time) / 60:.2f} мин."
             )
-            plot_temperature(
-                u=u * cfg.delta_u + cfg.u_ref,
-                cfg=cfg,
-                graph_id=n,
-                plot_boundary=True,
-                show_graph=False,
-                min_temp=min_temp + ABS_ZERO,
-                max_temp=max_temp + ABS_ZERO,
-                invert_yaxis=False,
-                actual_temp_units=TemperatureUnit.KELVIN,
-                display_temp_units=TemperatureUnit.CELSIUS,
-                directory="./graphs/temperature/",
-            )
+            np.savez_compressed(f"./data/temp_{n}.npz", u=u)
+            # plot_temperature(
+            #     u=u * cfg.delta_u + cfg.u_ref,
+            #     cfg=cfg,
+            #     graph_id=n,
+            #     plot_boundary=True,
+            #     show_graph=False,
+            #     min_temp=min_temp + ABS_ZERO,
+            #     max_temp=max_temp + ABS_ZERO,
+            #     invert_yaxis=False,
+            #     actual_temp_units=TemperatureUnit.KELVIN,
+            #     display_temp_units=TemperatureUnit.CELSIUS,
+            #     directory="./graphs/temperature/",
+            # )
 
     pt_a = (1.0 - b_lim) * geometry.height
     pt_num = pt_arr[-1]
