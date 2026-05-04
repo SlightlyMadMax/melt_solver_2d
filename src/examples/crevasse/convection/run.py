@@ -29,7 +29,7 @@ from src.parameters.config import ExperimentConfig
 from src.parameters.material_properties import MaterialProperties
 from src.utils.boundary_conditions import (
     const_dirichlet_condition,
-    const_neumann_condition
+    const_neumann_condition,
 )
 
 
@@ -71,15 +71,7 @@ if __name__ == "__main__":
         left=const_dirichlet_condition(n_y, value=0.0),
     )
 
-    # Initial temperature distribution
-    u = init_temperature(
-        cfg=cfg,
-        bcs=u_bcs,
-        shape=DomainShape.UNIFORM_SOLID,
-        solid_temp=min_temp,
-        liquid_temp=max_temp,
-    )
-
+    # Crevasse geometry
     water_thickness = 0.025
     crevasse_width = 0.025
     crevasse_depth = 0.15
@@ -92,6 +84,7 @@ if __name__ == "__main__":
         else:
             f[i] = geometry.height - water_thickness
 
+    # Initial temperature distribution
     u = init_temperature_with_interface(
         cfg=cfg,
         f=f,
@@ -113,6 +106,12 @@ if __name__ == "__main__":
     sf = initialize_stream_function(geometry=geometry, bcs=sf_bcs)
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
+
+    data = np.load("../data/convection/colder_bottom/checkpoint_3456000.npz")
+    u = data["u"]
+    sf = data["sf"]
+    w = data["w"]
+    v_x, v_y = data["v_x"], data["v_y"]
 
     heat_solver = HeatTransferSolver(
         cfg=cfg,
@@ -154,8 +153,8 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/colder_bottom_7",
-        calculate_velocity=True,
+        checkpoints_dir=f"data/colder_bottom_continue",
+        calculate_velocity=False,
         save_final=True,
         plot_at=None,
         log_at=log_at,
