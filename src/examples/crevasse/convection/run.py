@@ -107,7 +107,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    data = np.load("data/convection/colder_bottom_continue/checkpoint_1728000.npz")
+    data = np.load("data/colder_bottom_continue/checkpoint_1728000.npz")
     u = data["u"]
     sf = data["sf"]
     w = data["w"]
