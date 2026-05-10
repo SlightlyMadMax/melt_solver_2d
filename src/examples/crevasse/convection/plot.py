@@ -11,7 +11,7 @@ from src.parameters.config import ExperimentConfig
 
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 
-files_path_mask = "../data/convection/colder_bottom/checkpoint_*.npz"
+files_path_mask = "../data/convection/colder_bottom_continue/checkpoint_*.npz"
 min_temp = 263.15
 max_temp = 278.15
 
@@ -34,7 +34,7 @@ for file_path in exp_paths:
         max_temp=max_temp + ABS_ZERO,
         actual_temp_units=TemperatureUnit.KELVIN,
         display_temp_units=TemperatureUnit.CELSIUS,
-        directory="../graphs/convection/temperature_colder/",
+        directory="../graphs/convection/temperature_colder_continue/",
     )
 
 # from src.heat_transfer.plotting import create_gif_from_images
