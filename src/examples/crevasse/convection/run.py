@@ -107,7 +107,7 @@ if __name__ == "__main__":
     w = initialize_vorticity(geometry=geometry)
     v_x, v_y = initialize_velocity(geometry=geometry)
 
-    data = np.load("data/colder_bottom/checkpoint_3456000.npz")
+    data = np.load("data/convection/colder_bottom_continue/checkpoint_1728000.npz")
     u = data["u"]
     sf = data["sf"]
     w = data["w"]
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         heat_solver=heat_solver,
         navier_solver=navier_solver,
         logger=logger,
-        checkpoints_dir=f"data/colder_bottom_continue",
+        checkpoints_dir=f"data/colder_bottom_continue_2",
         calculate_velocity=False,
         save_final=True,
         plot_at=None,
