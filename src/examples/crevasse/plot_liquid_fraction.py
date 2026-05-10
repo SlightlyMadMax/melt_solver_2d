@@ -47,12 +47,12 @@ for file_path in cond_paths:
     times_cond.append(n * cfg_cond.geometry.dt)
 
 plt.figure(figsize=(8, 5))
-plt.plot(times_cond, s_f_conv, linewidth=1.5, label=r"Convection")
+plt.plot(times_conv, s_f_conv, linewidth=1.5, label=r"Convection")
 plt.plot(times_cond, s_f_cond, linewidth=1.5, label=r"Pure conduction")
 
 plt.xlabel(r"Time, s")
 plt.ylabel(r"Ice fraction")
 plt.legend()
 plt.tight_layout()
-plt.savefig("./graphs/ice_fraction.jpg", dpi=300)
+plt.savefig("./graphs/ice_fraction_continue.jpg", dpi=300)
 plt.show()
