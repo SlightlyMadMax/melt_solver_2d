@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 from pathlib import Path
-
 from src.parameters.config import ExperimentConfig
 from src.core.constants import ABS_ZERO
 
@@ -25,26 +24,26 @@ mpl.rcParams.update(
     }
 )
 
-# ── Config ────────────────────────────────────────────────────────────────────
-cfg: ExperimentConfig = ExperimentConfig.load_from_file("./convection/config.json")
-
-X, Y = cfg.geometry.mesh_grid  # в метрах
+# ── Load Configs ──────────────────────────────────────────────────────────────
+cfg_cond = ExperimentConfig.load_from_file("./conduction/config.json")
+cfg_conv = ExperimentConfig.load_from_file("./convection/config.json")
 
 CASES = {
     "Conduction": {
+        "cfg": cfg_cond,
         "folder": "./data/conduction",
-        "checkpoints": [600, 15000, 33000, 165000],
+        "checkpoints": [600, 14400, 36000, 86400],
     },
     "Convection": {
+        "cfg": cfg_conv,
         "folder": "./data/convection/colder_bottom",
-        "checkpoints": [12000, 300000, 1080000, 3120000],
+        "checkpoints": [12000, 288000, 720000, 1728000],
     },
 }
 
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def load_u_celsius(folder: str, checkpoint: int) -> np.ndarray:
+def load_u_celsius(folder: str, checkpoint: int, cfg: ExperimentConfig) -> np.ndarray:
     path = Path(folder) / f"checkpoint_{checkpoint}.npz"
     u = np.load(path)["u"]
     u_dim = u * cfg.delta_u + cfg.u_ref
@@ -59,7 +58,8 @@ def find_clim(*arrays: np.ndarray):
 data = {}
 for label, cfg_case in CASES.items():
     data[label] = [
-        load_u_celsius(cfg_case["folder"], ck) for ck in cfg_case["checkpoints"]
+        load_u_celsius(cfg_case["folder"], ck, cfg_case["cfg"])
+        for ck in cfg_case["checkpoints"]
     ]
 
 all_arrays = [arr for arrays in data.values() for arr in arrays]
@@ -72,11 +72,14 @@ fig, axes = plt.subplots(
     figsize=(16, 7),
     constrained_layout=True,
 )
-
 cmap = "Blues"
 
-for row_idx, (label, arrays) in enumerate(data.items()):
-    for col_idx, arr in enumerate(arrays):
+for row_idx, (label, cfg_case) in enumerate(CASES.items()):
+    cfg = cfg_case["cfg"]
+    X, Y = cfg.geometry.mesh_grid
+    arrays = data[label]
+
+    for col_idx, (arr, step) in enumerate(zip(arrays, cfg_case["checkpoints"])):
         ax = axes[row_idx, col_idx]
 
         im = ax.pcolormesh(
@@ -99,9 +102,22 @@ for row_idx, (label, arrays) in enumerate(data.items()):
         ax.xaxis.set_major_locator(ticker.FixedLocator(axis_ticks))
         ax.yaxis.set_major_locator(ticker.FixedLocator(axis_ticks))
 
-# Colorbar с явными тиками, включая vmin и vmax
-cbar_ticks = np.linspace(vmin, vmax, 6)  # 6 равномерных меток от min до max
+        # ── Формирование подписи времени ──
+        t_sec = cfg.geometry.dt * step  # Физическое время в секундах
 
+        if t_sec >= 3600:
+            time_val = int(round(t_sec / 3600))
+            time_str = rf"$t = {time_val}$ h"
+        elif t_sec >= 60:
+            time_val = int(round(t_sec / 60))
+            time_str = rf"$t = {time_val}$ min"
+        else:
+            time_val = int(round(t_sec))
+            time_str = rf"$t = {time_val}$ s"
+
+        ax.set_title(time_str, fontsize=13, pad=6)
+
+cbar_ticks = np.linspace(vmin, vmax, 6)
 cbar = fig.colorbar(
     im,
     ax=axes,
