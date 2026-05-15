@@ -1,0 +1,3 @@
+from .base_convective_operator import BaseConvectiveOperator, ConvectiveTermForm
+from .sf_based import StreamFunctionBasedConvectiveOperator
+from .vorticity_based import VorticityBasedConvectiveOperator

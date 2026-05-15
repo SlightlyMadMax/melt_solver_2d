@@ -1,0 +1,239 @@
+import numpy as np
+
+from enum import Enum
+from numpy.typing import NDArray
+from typing import Tuple, Optional
+
+from src.core.boundary_conditions import BoundaryConditions, BoundaryConditionType
+from src.core.geometry import DomainGeometry
+from src.parameters.config import ExperimentConfig
+
+
+class DomainShape(Enum):
+    LINEAR = "linear"
+    CIRCLE = "circle"
+    DOUBLE_CIRCLE = "double_circle"
+    PACMAN = "pacman"
+    RECTANGLE = "rectangle"
+    UNIFORM_LIQUID = "uniform_liquid"
+    UNIFORM_SOLID = "uniform_solid"
+
+
+def init_temperature_with_interface(
+    cfg: ExperimentConfig,
+    f: NDArray[np.float64],
+    liquid_region_height: float,
+    liquid_temp: float,
+    solid_temp: float,
+) -> NDArray[np.float64]:
+    """
+    Initializes the temperature field based on the given interface f.
+
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
+    :param f: 1D array representing the interface position for the phase transition.
+    :param liquid_region_height: Height of the liquid region.
+    :param liquid_temp: Temperature of the liquid phase.
+    :param solid_temp: Temperature of the solid phase.
+    :return: A 2D array of nondimensionilized temperatures initialized based on the interface.
+    """
+    n_y, n_x = cfg.geometry.n_y, cfg.geometry.n_x
+    dy = cfg.geometry.dy
+    height = cfg.geometry.height
+    u = np.empty((n_y, n_x))
+
+    for i in range(n_x):
+        for j in range(n_y):
+            if j * dy < f[i]:
+                u[j, i] = solid_temp + j * dy * (
+                    cfg.material_props.u_pt - solid_temp
+                ) / (height - liquid_region_height)
+            elif j * dy > f[i]:
+                u[j, i] = liquid_temp
+            else:
+                u[j, i] = cfg.material_props.u_pt
+
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
+
+    return u
+
+
+def init_temperature(
+    cfg: ExperimentConfig,
+    bcs: BoundaryConditions,
+    shape: DomainShape,
+    liquid_temp: Optional[float] = None,
+    solid_temp: Optional[float] = None,
+    radius: float = 0.25,
+    small_radius: float = 0.1,
+    eye_radius: float = 0.05,
+    eye_offset: float = 0.6,
+    rect_width: float = 0.04,
+    rect_height: float = 0.12,
+) -> NDArray[np.float64]:
+    """
+    Initializes the temperature field based on a specified domain shape.
+
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
+    :param bcs: Boundary conditions.
+    :param shape: The shape of the temperature distribution.
+    :param liquid_temp: The temperature assigned to water regions.
+    :param solid_temp: The temperature assigned to ice regions.
+    :param radius: The radius used for circular shapes (default: 0.25).
+    :param small_radius: A smaller radius for additional features in shapes (default: 0.1).
+    :param eye_radius: The radius of the eye in the Pacman shape (default: 0.05).
+    :param eye_offset: The offset for positioning the eye in the Pacman shape (default: 0.6).
+    :param rect_width: The width of the rectangle filled with solid phase (default: 0.02).
+    :param rect_height: The height of the rectangle filled with solid phase (default: 0.12).
+    :return: A 2D array of nondimensionilized initialized based on the specified shape of the domain.
+    """
+    geometry: DomainGeometry = cfg.geometry
+    n_y, n_x = geometry.n_y, geometry.n_x
+    dy, dx = geometry.dy, geometry.dx
+    height, width = geometry.height, geometry.width
+    u = np.full((n_y, n_x), solid_temp)
+
+    X, Y = geometry.mesh_grid
+
+    if shape == DomainShape.UNIFORM_LIQUID:
+        assert (
+            liquid_temp is not None
+        ), f"liquid_temp must be specified when shape = {shape}."
+
+    elif shape == DomainShape.UNIFORM_SOLID:
+        assert (
+            solid_temp is not None
+        ), f"solid_temp must be specified when shape = {shape}."
+
+    else:
+        assert (
+            liquid_temp is not None and solid_temp is not None
+        ), f"Both liquid_temp and solid_temp must be specified when shape = {shape}."
+
+    if shape == DomainShape.LINEAR:
+        # Linear temperature gradient from left (liquid phase) to right (solid phase)
+        u[:, :] = np.linspace(liquid_temp, solid_temp, n_x).reshape(1, -1)
+
+    elif shape == DomainShape.CIRCLE:
+        # Single circle centered at domain center with radius threshold
+        mask = (X - width / 2) ** 2 + (Y - height / 2) ** 2 < radius**2
+        u[mask] = liquid_temp
+
+    elif shape == DomainShape.DOUBLE_CIRCLE:
+        # Two circles centered vertically with specified radius
+        mask1 = (X - width / 2) ** 2 + (Y - 0.75 * height) ** 2 < small_radius**2
+        mask2 = (X - width / 2) ** 2 + (Y - 0.25 * height) ** 2 < small_radius**2
+        u[mask1 | mask2] = liquid_temp
+
+    elif shape == DomainShape.PACMAN:
+        for i in range(n_x):
+            for j in range(n_y):
+                if (i * dx - width / 2.0) ** 2 + (
+                    j * dy - height / 2.0
+                ) ** 2 < radius**2:
+                    if i * dx <= j * dy <= -i * dx + 1:
+                        u[j, i] = solid_temp  # Pacman's mouth
+                    elif (i * dx - eye_offset) ** 2 + (
+                        j * dy - eye_offset
+                    ) ** 2 < eye_radius**2:
+                        u[j, i] = solid_temp  # Pacman's eye
+                    else:
+                        u[j, i] = liquid_temp  # Pacman's body
+                else:
+                    u[j, i] = solid_temp
+
+    elif shape == DomainShape.RECTANGLE:
+        center_x = width / 2
+        center_y = height / 2
+        half_width = rect_width / 2
+        half_height = rect_height / 2
+
+        # Rectangle part
+        rect_mask = (np.abs(X - center_x) < half_width) & (
+            np.abs(Y - center_y) < half_height
+        )
+
+        u[rect_mask] = liquid_temp
+
+    elif shape == DomainShape.UNIFORM_LIQUID:
+        u = np.ones(u.shape) * liquid_temp
+
+    elif shape == DomainShape.UNIFORM_SOLID:
+        u = np.ones(u.shape) * solid_temp
+
+    else:
+        raise Exception("Unknown shape")
+
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
+
+    # apply bcs
+    if bcs.left.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[:, 0] = bcs.left.get_value(t=0.0)
+    if bcs.top.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[-1, :] = bcs.top.get_value(t=0.0)
+    if bcs.right.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[:, -1] = bcs.right.get_value(t=0.0)
+    if bcs.bottom.boundary_type == BoundaryConditionType.DIRICHLET:
+        u[0, :] = bcs.bottom.get_value(t=0.0)
+
+    return u
+
+
+def init_temperature_lake(
+    cfg: ExperimentConfig,
+    lake_data: Tuple[NDArray[np.float64], NDArray[np.float64]],
+    water_temp: float,
+    ice_temp: float,
+) -> NDArray[np.float64]:
+    """
+    Initialize temperature for a lake profile using preloaded thickness data.
+
+    :param cfg: An object containing experiment parameters (geometry, material properties, etc.).
+    :param lake_data: Preloaded water and ice thickness grids.
+    :param water_temp: The water temperature.
+    :param ice_temp: The ice temperature.
+    :return: A 2D nondimensionilized temperature field array.
+    """
+    geom: DomainGeometry = cfg.geometry
+    water_th_grid, ice_th_grid = lake_data
+
+    grid_x = water_th_grid[0]
+    grid_step = grid_x[1] - grid_x[0]
+    print(f"Grid step: {grid_step}")
+
+    lake_width = grid_x[-1]
+    print(f"Lake width: {lake_width}")
+
+    new_x = [i * geom.dx for i in range(int(lake_width / geom.dx + 1))]
+    print(new_x[-1], len(new_x))
+
+    water_th_interp = np.interp(new_x, grid_x, water_th_grid[1])
+
+    ice_th_interp = np.interp(new_x, grid_x, ice_th_grid[1])
+
+    print(f"Max lake thickness {max(water_th_interp)}")
+
+    u = np.empty((geom.n_y, geom.n_x))
+
+    for i in range(geom.n_x):
+        x = i * geom.dx
+        ice_th_at_x, water_th_at_x = 0.0, 0.0
+
+        if (geom.width - lake_width) / 2.0 <= x <= (geom.width + lake_width) / 2.0:
+            water_th_at_x = water_th_interp[i + int((len(new_x) - geom.n_x) / 2)]
+            ice_th_at_x = ice_th_interp[i + int((len(new_x) - geom.n_x) / 2)]
+
+        for j in range(geom.n_y):
+            y = geom.height - j * geom.dy
+            if water_th_at_x > 0.0 and ice_th_at_x <= y <= ice_th_at_x + water_th_at_x:
+                u[j, i] = water_temp
+            else:
+                u[j, i] = ice_temp + (j / geom.n_y) * (
+                    cfg.material_props.u_pt - ice_temp
+                )
+
+    # nondimensionalize
+    u = (u - cfg.u_ref) / cfg.delta_u
+
+    return u
