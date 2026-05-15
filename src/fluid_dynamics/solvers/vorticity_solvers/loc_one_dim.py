@@ -101,7 +101,7 @@ class LODNavierStokesScheme(ADIVorticitySolver):
             for i in range(1, n_x - 1):
                 a[i, j] = dt * (conv_y[j, i, 0] - inv_re * inv_dy2)
 
-                b[i, j] = 1.0 + 2.0 * dt * (conv_y[j, i, 1] + inv_re * inv_dy2)
+                b[i, j] = 1.0 + dt * (conv_y[j, i, 1] + 2.0 * inv_re * inv_dy2)
 
                 c[i, j] = dt * (conv_y[j, i, 2] - inv_re * inv_dy2)
 
