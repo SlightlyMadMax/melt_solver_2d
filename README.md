@@ -6,26 +6,33 @@ equations with the effective heat capacity method for phase-change heat transfer
 
 ## Physical model
 
-The dimensionless governing equations are:
+The velocity field is recovered from the stream function:
+$v_x = \partial\psi/\partial y$, $v_y = -\partial\psi/\partial x$.
 
-- **Vorticity transport** (with fictitious domain / penalty term for the solid):
+All equations are written in dimensionless form using the characteristic length $L$,
+the buoyancy velocity $V = \sqrt{g|\beta|\Delta T\, L}$, and the dimensionless
+temperature $\theta = (T - T_\text{ref})/\Delta T$.
 
-$$\frac{\partial \omega}{\partial t} + (\mathbf{v} \cdot \nabla)\omega = \frac{1}{Re}\nabla^2\omega + \frac{Gr}{Re^2}\frac{\partial \tilde{u}}{\partial x} - C(f_l)\,\omega$$
+- **Vorticity transport** (with Brinkman / fictitious-domain penalty term $S$ for the solid):
 
-- **Stream function Poisson equation** (coupled to vorticity):
+$$\frac{\partial \omega}{\partial t} + \frac{\partial}{\partial x}\!\left(\omega \frac{\partial \psi}{\partial y}\right) - \frac{\partial}{\partial y}\!\left(\omega \frac{\partial \psi}{\partial x}\right) = \frac{1}{Re}\,\nabla^2\omega + \frac{Gr}{Re^2}\,\frac{\partial\theta}{\partial x} - \nabla \cdot (S\,\nabla\psi)$$
+
+- **Stream function Poisson equation**:
 
 $$\nabla^2\psi = -\omega$$
 
 - **Energy equation** (effective heat capacity method):
 
-$$c_\text{eff}(\tilde{u})\frac{\partial \tilde{u}}{\partial t} + Pe\,(\mathbf{v} \cdot \nabla)\tilde{u} = \nabla \cdot \left(k_\text{eff}(\tilde{u})\,\nabla \tilde{u}\right)$$
+$$c_\text{eff}(\theta)\left(\frac{\partial\theta}{\partial t} + \frac{\partial(v_x\,\theta)}{\partial x} + \frac{\partial(v_y\,\theta)}{\partial y}\right) = \frac{1}{Pe}\,\nabla\cdot\!\left(k_\text{eff}(\theta)\,\nabla\theta\right)$$
 
-The velocity field is recovered from the stream function: $v_x = \partial\psi/\partial y$, $v_y = -\partial\psi/\partial x$.
+where the effective heat capacity absorbs the latent heat release:
 
-Phase change is handled by smooth approximations of the Heaviside step function and
-the Dirac delta, which smear the solid–liquid interface over a thin mushy zone of
-half-width $\Delta$ (in dimensionless temperature units). The penalty coefficient
-$C(f_l)$ drives the velocity to zero in the solid phase.
+$$c_\text{eff}(\theta) = \frac{\tilde{c}(\theta)}{c_\text{ref}} + \frac{\delta_\Delta(\theta - \theta_m)}{Ste}$$
+
+$\delta_\Delta$ is a smooth approximation of the Dirac delta that smears the
+solid–liquid interface over a mushy zone of half-width $\Delta$ (in dimensionless
+temperature units). The penalty $S$ is a smooth function of $\theta$ that drives the
+velocity to zero in the solid phase.
 
 ## Project structure
 
