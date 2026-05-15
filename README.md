@@ -10,7 +10,7 @@ The velocity field is recovered from the stream function:
 $v_x = \partial\psi/\partial y$, $v_y = -\partial\psi/\partial x$.
 
 All equations are written in dimensionless form using the characteristic length $L$,
-the buoyancy velocity $V = \sqrt{g\lvert\beta\rvert\Delta T L}$, and the dimensionless
+the buoyancy velocity $V = \sqrt{g \beta \Delta T L}$, and the dimensionless
 temperature $\theta = (T - T_\text{ref})/\Delta T$.
 
 - **Vorticity transport** (with Brinkman / fictitious-domain penalty term $S$ for the solid):
