@@ -114,8 +114,8 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_x[jm, im, 1] = (v_x_p - v_x_m) * inv_dx  # phi[i]
         result_x[jm, im, 2] = -v_x_p * inv_dx  # phi[i-1]
 
-        v_y_p = 0.5 * (v_y[jm, im] + np.abs(v_y[jm, im]))  # max(v_y, 0)
-        v_y_m = 0.5 * (v_y[jm, im] - np.abs(v_y[jm, im]))  # min(v_y, 0)
+        v_y_p = np.maximum(v_y[jm, im], 0.0)
+        v_y_m = np.minimum(v_y[jm, im], 0.0)
 
         result_y[jm, im, 0] = v_y_m * inv_dy  # phi[j+1, i]
         result_y[jm, im, 1] = (v_y_p - v_y_m) * inv_dy  # phi[j, i]
