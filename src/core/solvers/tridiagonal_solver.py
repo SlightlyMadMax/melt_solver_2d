@@ -11,12 +11,18 @@ def solve_tridiagonal(
     result: np.ndarray,
 ) -> None:
     """
-    Thomas solver for a full tridiagonal system A u = f.
-    :param a: sub-diagonal of A (length n). Elements a[0] to a[n-2] are the sub-diagonal entries; a[n-1] is unused.
-    :param b: diagonal of A (length n), elements b[0..n-1].
-    :param c: super-diagonal of A (length n). Elements c[1] to c[n-1] are the super-diagonal entries; c[0] is unused.
-    :param f: right-hand side (length n).
-    :param result: output array (length n) where the solution u is stored.
+    Solve a tridiagonal system Ax = f using the Thomas algorithm.
+
+    NOTE: `a` is the SUPER-diagonal (coefficient of x[j+1]) and `c` is the
+    SUB-diagonal (coefficient of x[j-1]). Each row j satisfies:
+        a[j]*x[j+1] + b[j]*x[j] + c[j]*x[j-1] = f[j]
+    a[n-1] and c[0] are unused.
+
+    :param a: super-diagonal coefficients (length n); a[n-1] unused.
+    :param b: main diagonal coefficients (length n).
+    :param c: sub-diagonal coefficients (length n); c[0] unused.
+    :param f: right-hand side vector (length n).
+    :param result: output array (length n) where the solution x is stored.
     :return: None.
     """
     n = f.shape[0]
