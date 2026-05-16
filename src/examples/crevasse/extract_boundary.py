@@ -9,7 +9,7 @@ from src.parameters.config import ExperimentConfig
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./convection/config.json")
 geometry: DomainGeometry = cfg.geometry
 
-files_path_mask = "./data/convection/colder_bottom/checkpoint_*.npz"
+files_path_mask = "./data/convection/96_144_hrs/checkpoint_*.npz"
 exp_paths = sorted(
     glob.glob(files_path_mask),
     key=lambda f: int(re.search(r"checkpoint_(\d+)", f).group(1)),
@@ -37,4 +37,4 @@ for file_path in exp_paths:
     print(n, pt)
     pt_arr.append(pt)
 
-np.savez("./data/convection_boundary.npz", b=np.asarray(pt_arr))
+np.savez("./data/convection_boundary_96_144_hrs.npz", b=np.asarray(pt_arr))
