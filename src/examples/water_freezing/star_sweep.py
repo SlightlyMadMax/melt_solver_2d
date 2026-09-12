@@ -22,9 +22,13 @@ Example
 import argparse
 import csv
 import json
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -66,6 +70,26 @@ def parse_args(argv=None) -> argparse.Namespace:
     run.add_argument("--vorticity-bc-order", type=int, choices=(1, 2), default=2)
     run.add_argument("--timeout", type=float, default=None, help="per run [s]")
     run.add_argument("--dry-run", action="store_true")
+    run.add_argument(
+        "--log-interval", type=float, default=60.0,
+        help="how often each run logs its step, in seconds of model time",
+    )
+    run.add_argument(
+        "--progress-interval", type=float, default=120.0,
+        help="how often the sweep prints where its running cases have got to, "
+        "in seconds of wall clock; 0 turns the heartbeat off",
+    )
+    run.add_argument(
+        "--smoke-time", type=float, default=0.0,
+        help="before the real sweep, run every case for this many seconds of "
+        "model time in a throwaway directory and abort unless all of them "
+        "survive. A warm start that is going to blow up does so in its first "
+        "steps, so a couple of minutes here buys back hours",
+    )
+    run.add_argument(
+        "--smoke-only", action="store_true",
+        help="stop after the smoke test instead of starting the real sweep",
+    )
     run.add_argument(
         "--amg-rebuild-warmup", type=int, default=0,
         help="rebuild the AMG hierarchy on every one of the first N steps of each run",
@@ -114,27 +138,58 @@ def build_cases(a: argparse.Namespace) -> list[dict]:
     return cases
 
 
-def case_dir(c: dict) -> Path:
-    return OUT_ROOT / (
+# Cases currently in flight, so the heartbeat knows what to look at
+_RUNNING: dict[str, Path] = {}
+_RUNNING_LOCK = threading.Lock()
+_STEP_RE = re.compile(r"^Step (\d+) / (\d+):.*?est remaining = ([\d.]+)", re.M)
+
+
+def last_step(log: Path) -> str:
+    """Where a case has got to, from the tail of its own log."""
+    try:
+        tail = log.read_text(encoding="utf-8", errors="replace")[-4000:]
+    except OSError:
+        return "no log yet"
+    hits = _STEP_RE.findall(tail)
+    if not hits:
+        return "starting"
+    n, total, rem = hits[-1]
+    return f"{int(n):>7}/{total:<7} {float(rem) / 60:5.1f} min left"
+
+
+def heartbeat(interval: float, stop: threading.Event) -> None:
+    while not stop.wait(interval):
+        with _RUNNING_LOCK:
+            snapshot = sorted(_RUNNING.items())
+        if not snapshot:
+            continue
+        print(f"  --- {len(snapshot)} running ---", flush=True)
+        for label, log in snapshot:
+            print(f"      {label}  {last_step(log)}", flush=True)
+
+
+def case_dir(c: dict, root: Path | None = None) -> Path:
+    return (root or OUT_ROOT) / (
         f"{c['grid']}x{c['grid']}_dt{c['dt']:g}"
         f"_e{c['eps']:g}_ef{c['eps_flow']:g}_C{c['c']:.0e}"
     )
 
 
-def run_case(c: dict, a: argparse.Namespace) -> dict:
-    d = case_dir(c)
+def run_case(c: dict, a: argparse.Namespace, end_time: float | None = None,
+             root: Path | None = None) -> dict:
+    d = case_dir(c, root)
     cmd = [
         sys.executable, "-u", "-m", "src.examples.water_freezing.run",
         "--nx", str(c["grid"]), "--ny", str(c["grid"]),
         "--dt", str(c["dt"]),
-        "--end-time", str(a.end_time),
+        "--end-time", str(a.end_time if end_time is None else end_time),
         "--start", a.start,
         "--eps-t", str(c["eps"]),
         "--eps-flow", str(c["eps_flow"]),
         "--penalty-c", str(c["c"]),
         "--vorticity-bc-order", str(a.vorticity_bc_order),
         "--amg-rebuild-every", str(a.amg_rebuild_every),
-        "--quiet",
+        "--log-interval", str(a.log_interval),
         "--outdir", str(d),
         "--summary-csv", str(d / "row.csv"),
     ]
@@ -154,16 +209,26 @@ def run_case(c: dict, a: argparse.Namespace) -> dict:
         return {**c, "ok": True, "detail": "dry-run"}
 
     print(f"  START {label}", flush=True)
+    d.mkdir(parents=True, exist_ok=True)
+    log = d / "run.log"
+    with _RUNNING_LOCK:
+        _RUNNING[label] = log
     t0 = time.perf_counter()
     try:
-        proc = subprocess.run(cmd, cwd=REPO, timeout=a.timeout, capture_output=True,
-                              text=True, encoding="utf-8", errors="replace")
+        with open(log, "w", encoding="utf-8") as fh:
+            proc = subprocess.run(cmd, cwd=REPO, timeout=a.timeout, stdout=fh,
+                                  stderr=subprocess.STDOUT)
     except subprocess.TimeoutExpired:
+        with _RUNNING_LOCK:
+            _RUNNING.pop(label, None)
         print(f"  TIMEOUT {label}", flush=True)
         return {**c, "ok": False, "detail": "timeout"}
+    finally:
+        with _RUNNING_LOCK:
+            _RUNNING.pop(label, None)
     el = time.perf_counter() - t0
     if proc.returncode != 0:
-        blob = (proc.stderr or "") + (proc.stdout or "")
+        blob = log.read_text(encoding="utf-8", errors="replace")
         detail = "diverged" if "FloatingPointError" in blob else (
             (blob.strip().splitlines() or ["failed"])[-1][:70])
         print(f"  FAIL  {label}  [{el/60:.1f} m] {detail}", flush=True)
@@ -203,9 +268,50 @@ def main(argv=None) -> None:
           f"end_time={a.end_time:g} s, {a.jobs} in parallel")
     print(f"baseline: {a.grid}x{a.grid} dt={a.dt:g} eps={a.eps:g} C={a.penalty_c:.0e}\n")
 
+    if a.smoke_time > 0 and not a.dry_run:
+        print(f"=== smoke test: {a.smoke_time:g} s of model time per case ===")
+        smoke_root = Path(tempfile.mkdtemp(prefix="star_smoke_"))
+        try:
+            with ThreadPoolExecutor(max_workers=a.jobs) as pool:
+                smoke = list(pool.map(
+                    lambda c: run_case(c, a, a.smoke_time, smoke_root), cases))
+            bad = [r for r in smoke if not r["ok"]]
+            if bad:
+                print(f"\n{len(bad)} case(s) failed the smoke test; "
+                      "not starting the sweep")
+                for r in bad:
+                    print(f"  {r['axis']:<10} {r['grid']}x{r['grid']} "
+                          f"dt={r['dt']:g} eps={r['eps']:g}/{r['eps_flow']:g} "
+                          f"C={r['c']:.0e}   {r['detail']}")
+                raise SystemExit(1)
+            print("all cases survived\n")
+        finally:
+            shutil.rmtree(smoke_root, ignore_errors=True)
+        if a.smoke_only:
+            return
+
+    # Cheapest first, with the baseline ahead of everything because every other
+    # case is measured against it. Cost goes as steps times cells, so the long
+    # time steps and the coarse grids land while the finest grid is still on its
+    # first thousand steps. The axes that are cheap to compute are also the ones
+    # worth looking at first, so this is not only about finishing sooner.
+    cases.sort(key=lambda c: (c["axis"] != "baseline",
+                              (a.end_time / c["dt"]) * c["grid"] ** 2))
+
     t0 = time.perf_counter()
-    with ThreadPoolExecutor(max_workers=a.jobs) as pool:
-        results = list(pool.map(lambda c: run_case(c, a), cases))
+    stop = threading.Event()
+    pulse = None
+    if a.progress_interval > 0 and not a.dry_run:
+        pulse = threading.Thread(target=heartbeat, args=(a.progress_interval, stop),
+                                 daemon=True)
+        pulse.start()
+    try:
+        with ThreadPoolExecutor(max_workers=a.jobs) as pool:
+            results = list(pool.map(lambda c: run_case(c, a), cases))
+    finally:
+        stop.set()
+        if pulse is not None:
+            pulse.join(timeout=2.0)
     el = time.perf_counter() - t0
 
     print("\n" + "=" * 74)
