@@ -215,7 +215,7 @@ def main(argv=None) -> None:
     )
     if not args.keep_phase_change:
         navier_solver.vorticity_solver._calculate_penalty_term_coeff = (
-            lambda u, delta: None
+            lambda *a, **kw: None
         )
 
     monitor = SteadyStateMonitor(tol=args.steady_tol, dt=dt)
