@@ -103,6 +103,15 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="precursor field for --start warm; run.py resolves it by grid otherwise",
     )
     run.add_argument(
+        "--energy-budget", action="store_true",
+        help="have every run keep its domain energy budget, passed to run.py",
+    )
+    run.add_argument(
+        "--save-interval", type=float, default=0.0,
+        help="checkpoint the fields every this many seconds of model time, "
+        "passed to run.py; 0 keeps only the final state",
+    )
+    run.add_argument(
         "--out-root", type=Path, default=OUT_ROOT,
         help="directory for the run subdirectories and the merged summary",
     )
@@ -201,6 +210,10 @@ def run_case(c: dict, a: argparse.Namespace, end_time: float | None = None,
         cmd += ["--amg-rebuild-warmup", str(a.amg_rebuild_warmup)]
     if a.warm_start_file is not None:
         cmd += ["--warm-start-file", str(a.warm_start_file)]
+    if a.energy_budget:
+        cmd += ["--energy-budget"]
+    if a.save_interval > 0:
+        cmd += ["--save-interval", str(a.save_interval)]
 
     label = (f"{c['axis']:<10} {c['grid']}x{c['grid']} dt={c['dt']:<6g} "
              f"eps={c['eps']:<5g}/{c['eps_flow']:<5g} C={c['c']:.0e}")

@@ -51,6 +51,7 @@ from src.fluid_dynamics.solvers import VorticitySolverName, StreamFunctionSolver
 from src.fluid_dynamics.solvers.bc_correction_solver_factory import BCCorrectionNVSolver
 from src.fluid_dynamics.solvers.vorticity_solvers.base_solver import PenaltyTermForm
 from src.heat_transfer.coefficient_smoothing.coefficients import DeltaScheme, StepScheme
+from src.heat_transfer.energy_ledger import EnergyLedger
 from src.heat_transfer.init_values import init_temperature, DomainShape
 from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
@@ -217,6 +218,13 @@ def parse_args(argv=None) -> argparse.Namespace:
         "collects every throwaway probe alongside the production runs, and telling "
         "them apart afterwards is guesswork. The per-run summary.json is always "
         "written to the output directory regardless",
+    )
+
+    out.add_argument(
+        "--energy-budget",
+        action="store_true",
+        help="keep a per-step domain energy budget (wall heat, sensible and latent "
+        "enthalpy, defect) and write it to <outdir>/energy_budget.npz",
     )
 
     num = p.add_argument_group("linear solver")
@@ -599,6 +607,20 @@ def run(args: argparse.Namespace) -> dict:
         penalty_ramp_mode=args.penalty_ramp_mode,
     )
 
+    ledger = None
+    step_callback = None
+    save_at = steps_at_interval(args.save_interval, dt, n_t)
+    if args.energy_budget:
+        ledger = EnergyLedger(cfg, heat_solver)
+        ledger.prime(state.u)
+
+        def step_callback(s: SimulationState) -> None:
+            ledger.record(s.u, s.t)
+            # The runner writes the fields right after this; writing the budget
+            # alongside them leaves both at the same step if the run dies later
+            if s.n in save_at:
+                ledger.save(outdir / "energy_budget.npz")
+
     runner = ExperimentRunner(
         cfg=cfg,
         state=state,
@@ -608,7 +630,7 @@ def run(args: argparse.Namespace) -> dict:
         checkpoints_dir=outdir,
         calculate_velocity=True,
         save_final=not args.no_save_final,
-        save_at=steps_at_interval(args.save_interval, dt, n_t),
+        save_at=save_at,
         plot_at=steps_at_interval(args.plot_interval, dt, n_t),
         log_at=steps_at_interval(args.log_interval, dt, n_t),
         metrics={
@@ -617,6 +639,7 @@ def run(args: argparse.Namespace) -> dict:
             "ice_fraction": lambda s: ice_area_fraction(s.u, cfg.u_pt_nd),
             "Nu_hot": lambda s: calculate_nusselt(u=s.u, cfg=cfg, wall="left"),
         },
+        step_callback=step_callback,
     )
 
     wall_t0 = time.perf_counter()
@@ -658,6 +681,11 @@ def run(args: argparse.Namespace) -> dict:
         "s_per_step": wall / n_t,
         "outdir": str(outdir),
     }
+
+    if ledger is not None:
+        # Kept out of the summary so the CSV header stays the same across runs
+        budget_path = ledger.save(outdir / "energy_budget.npz")
+        logger.info("Energy budget: %s -> %s", ledger.summary(), budget_path)
 
     with open(outdir / "summary.json", "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
