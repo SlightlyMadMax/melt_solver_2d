@@ -45,6 +45,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         k_face_method: KFaceMethod,
         post_correction: bool,
         bcs: Optional[BoundaryConditions] = None,
+        latent_convection: bool = True,
         *args,
         **kwargs,
     ):
@@ -59,6 +60,12 @@ class BaseHeatSolver(BaseSolver, ABC):
         self.delta_scheme = delta_scheme
         self.k_face_method = k_face_method
         self.post_correction = post_correction
+        # False takes the latent heat out of the capacity multiplying the convective
+        # term: (c + lambda*delta) u_t + c V(v)u = div(k grad u) instead of
+        # (c + lambda*delta)(u_t + V(v)u) = div(k grad u). The flow then carries
+        # sensible heat only; the total enthalpy is still conserved by the continuous
+        # equation, because the dropped term is v.grad(H_lat) and integrates to zero.
+        self.latent_convection = latent_convection
         n_y, n_x = self.cfg.geometry.n_y, self.cfg.geometry.n_x
 
         # Pre-allocate some arrays that will be used in the calculations
@@ -69,6 +76,7 @@ class BaseHeatSolver(BaseSolver, ABC):
         self._correction_y: NDArray[np.float64] = np.zeros((n_y, n_x))
         self._c_eff = np.empty((n_y, n_x))
         self._k_eff = np.empty((n_y, n_x))
+        self._conv_ratio = np.ones((n_y, n_x))
 
         # Effective conductivity at faces
         self._k_x = np.empty((n_y, n_x + 1))  # i = -1/2 ... n_x-1/2
@@ -105,6 +113,18 @@ class BaseHeatSolver(BaseSolver, ABC):
             step_fn=step_fn,
             delta_fn=delta_fn,
         )
+
+        if not self.latent_convection:
+            self._compute_convection_ratio(
+                ratio=self._conv_ratio,
+                c_eff=self._c_eff,
+                u=u,
+                u_0=self.cfg.u_pt_nd,
+                c_solid=c_solid_nd,
+                c_liquid=c_liquid_nd,
+                delta=delta,
+                step_fn=step_fn,
+            )
 
         self._compute_face_conductivities(
             u=u,
@@ -152,6 +172,29 @@ class BaseHeatSolver(BaseSolver, ABC):
                 for i in range(n_x):
                     c_eff[j, i] = c_solid if u[j, i] <= u_0 else c_liquid
                     k_eff[j, i] = k_solid if u[j, i] <= u_0 else k_liquid
+
+    @staticmethod
+    @njit
+    def _compute_convection_ratio(
+        ratio: NDArray[np.float64],
+        c_eff: NDArray[np.float64],
+        u: NDArray[np.float64],
+        u_0: float,
+        c_solid: float,
+        c_liquid: float,
+        delta: float,
+        step_fn: Callable,
+    ) -> None:
+        """Share of c_eff that is not latent heat, node by node."""
+        n_y, n_x = u.shape
+        c_diff = c_liquid - c_solid
+        for j in range(n_y):
+            for i in range(n_x):
+                if delta > 0:
+                    c_sens = c_solid + c_diff * step_fn(u[j, i], u_0, delta)
+                else:
+                    c_sens = c_solid if u[j, i] <= u_0 else c_liquid
+                ratio[j, i] = c_sens / c_eff[j, i]
 
     @staticmethod
     @njit
@@ -257,6 +300,7 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
             convected_quantity=u,
             sf=sf,
         )
+        self._scale_convection()
         self._u_new[:, :] = u
 
         self._execute_adi_step(
@@ -267,6 +311,16 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
         )
 
         return self._u_new
+
+    def _scale_convection(self) -> None:
+        """Multiply the convective coefficients by c / c_eff when latent heat is not convected."""
+        if self.latent_convection:
+            return
+        r = self._conv_ratio
+        self._conv_x *= r[:, :, None]
+        self._conv_y *= r[:, :, None]
+        self._correction_x *= r
+        self._correction_y *= r
 
     def _after_first_sweep(self, result: NDArray[np.float64], **kwargs) -> None:
         """
@@ -286,6 +340,7 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
                 sf=sf,
                 recalculate_velocity=False,
             )
+            self._scale_convection()
 
     def _apply_boundary_conditions_x(self, time: float) -> None:
         self._apply_standard_bc(

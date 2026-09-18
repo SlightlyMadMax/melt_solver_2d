@@ -470,9 +470,14 @@ def _annotate(ax, sel: list[dict]) -> None:
             for r in sel
         }
     )
-    ax.set_title(
-        f"{'/'.join(starts)} start, {'/'.join(schemes)} penalty", fontsize=9, pad=13
-    )
+    head = f"{'/'.join(starts)} start, {'/'.join(schemes)} penalty"
+    # Name non-default energy-equation convection only when every run shares it, so
+    # the figure cannot be taken for the published scheme
+    if all(r.get("heat_convection", "deferred") == "central-div" for r in sel):
+        head += ", central divergent convection"
+    if all(not r.get("latent_convection", True) for r in sel):
+        head += r", no $\lambda\delta$ in convection"
+    ax.set_title(head, fontsize=9, pad=13)
     fixed = [f for f in MATCH_FIELDS if len({r[f] for r in sel}) == 1]
     # The paper carries a single smoothing width, so print one unless the figure is
     # precisely the one that separates the two

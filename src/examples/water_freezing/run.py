@@ -147,6 +147,26 @@ def parse_args(argv=None) -> argparse.Namespace:
         "stream-function operator. 'implicit' drops the explicit half and gives the "
         "elliptic operator the full tau, i.e. backward Euler on the drag",
     )
+    phys.add_argument(
+        "--heat-convection",
+        choices=("deferred", "central-div"),
+        default="deferred",
+        help="convective term of the heat equation: first-order upwind with limited "
+        "deferred correction, or central differences in divergent form d(v u)/dx",
+    )
+    phys.add_argument(
+        "--no-latent-convection",
+        action="store_true",
+        help="multiply the convective term of the heat equation by c instead of "
+        "c + lambda*delta, so that the flow carries sensible heat only",
+    )
+    phys.add_argument(
+        "--no-latent-heat",
+        action="store_true",
+        help="verification: zero latent heat and give the solid the density, heat "
+        "capacity and conductivity of the liquid, so that c_eff is constant; the "
+        "penalty still stops the flow below T_m",
+    )
 
     ic = p.add_argument_group("initial condition")
     ic.add_argument(
@@ -311,6 +331,13 @@ def build_config(args: argparse.Namespace) -> ExperimentConfig:
         # The solver builds the dimensionless penalty as l / (epsilon**2 * v),
         # which corresponds to a dimensional C = 1 / epsilon**2 [1/s].
         data["epsilon"] = 1.0 / math.sqrt(args.penalty_c)
+
+    if args.no_latent_heat:
+        props = data["material_props"]
+        props["specific_latent_heat"] = 1e-16
+        props["density_solid"] = props["density_liquid"]
+        props["specific_heat_solid"] = props["specific_heat_liquid"]
+        props["thermal_conductivity_solid"] = props["thermal_conductivity_liquid"]
 
     return ExperimentConfig.model_validate(data)
 
@@ -582,10 +609,15 @@ def run(args: argparse.Namespace) -> dict:
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
+        convective_term_form=(
+            ConvectiveTermForm.DIVERGENT_CENTRAL
+            if args.heat_convection == "central-div"
+            else ConvectiveTermForm.DEFERRED_CORRECTION
+        ),
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
+        latent_convection=not args.no_latent_convection,
     )
 
     navier_solver = BCCorrectionNVSolver(
@@ -662,6 +694,9 @@ def run(args: argparse.Namespace) -> dict:
         "penalty_time_scheme": args.penalty_time_scheme,
         "penalty_ramp": args.penalty_ramp,
         "penalty_ramp_mode": args.penalty_ramp_mode,
+        "heat_convection": args.heat_convection,
+        "latent_convection": not args.no_latent_convection,
+        "no_latent_heat": args.no_latent_heat,
         "vorticity_bc_order": args.vorticity_bc_order,
         "sf_tolerance": args.sf_tolerance,
         "Ra": cfg.rayleigh_number,

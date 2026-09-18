@@ -27,6 +27,7 @@ class HeatTransferSolver:
         delta_scheme: DeltaScheme = DeltaScheme.GAUSS,
         k_face_method: KFaceMethod = KFaceMethod.ARITHMETIC,
         post_correction: bool = True,
+        latent_convection: bool = True,
     ):
         if bc_order not in (1, 2):
             raise NotImplementedError(
@@ -51,6 +52,7 @@ class HeatTransferSolver:
             delta_scheme=delta_scheme,
             k_face_method=k_face_method,
             post_correction=post_correction,
+            latent_convection=latent_convection,
         )
 
     def solve(

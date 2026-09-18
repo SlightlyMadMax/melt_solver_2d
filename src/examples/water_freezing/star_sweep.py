@@ -95,6 +95,14 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="rebuild the AMG hierarchy on every one of the first N steps of each run",
     )
     run.add_argument(
+        "--heat-convection", choices=("deferred", "central-div"), default="deferred",
+        help="convective term of the heat equation, passed to run.py",
+    )
+    run.add_argument(
+        "--no-latent-convection", action="store_true",
+        help="multiply the convective term by c instead of c + lambda*delta",
+    )
+    run.add_argument(
         "--penalty-time-scheme", choices=("cn", "dr", "implicit"), default="cn",
         help="time discretisation of the penalty term, passed to run.py",
     )
@@ -206,6 +214,10 @@ def run_case(c: dict, a: argparse.Namespace, end_time: float | None = None,
         cmd += ["--cold-wall-ramp", str(a.cold_wall_ramp)]
     if a.penalty_time_scheme != "cn":
         cmd += ["--penalty-time-scheme", a.penalty_time_scheme]
+    if a.heat_convection != "deferred":
+        cmd += ["--heat-convection", a.heat_convection]
+    if a.no_latent_convection:
+        cmd += ["--no-latent-convection"]
     if a.amg_rebuild_warmup > 0:
         cmd += ["--amg-rebuild-warmup", str(a.amg_rebuild_warmup)]
     if a.warm_start_file is not None:

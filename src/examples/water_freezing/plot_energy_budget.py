@@ -68,6 +68,12 @@ def log_sample(n: int, points: int, head: int = 200) -> np.ndarray:
 def title_of(s: dict) -> tuple[str, str]:
     scheme = SCHEME_NAMES.get(s.get("penalty_time_scheme", "cn"), s.get("penalty_time_scheme"))
     head = f"{s['start']} start, {scheme} penalty"
+    # Non-default energy-equation convection is named so the figure cannot be taken
+    # for the published scheme; runs made before these fields existed get no suffix
+    if s.get("heat_convection", "deferred") == "central-div":
+        head += ", central divergent convection"
+    if not s.get("latent_convection", True):
+        head += r", no $\lambda\delta$ in convection"
     eps = (rf"$\varepsilon = {s['eps_T']:g}$ K" if s["eps_T"] == s["eps_flow"]
            else rf"$\varepsilon_T = {s['eps_T']:g}$ K, "
                 rf"$\varepsilon_\mathrm{{flow}} = {s['eps_flow']:g}$ K")
