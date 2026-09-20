@@ -42,6 +42,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 PIV_CURVE = HERE / "data" / "inputs" / "piv_boundary.npz"
+# The front has one point per image row (~55 um); every 12th gives ~0.7 mm spacing
+PIV_STRIDE = 12
 
 mpl.rcParams.update(
     {
@@ -260,16 +262,16 @@ def _draw_piv(ax, path: Path | None, over_image: bool) -> int:
         )
     with np.load(path) as d:
         x, y = d["x"], d["y"]
-    ax.plot(
-        x,
-        y,
-        color="white" if over_image else "black",
-        lw=1.2,
-        ls="--",
-        label="exp.",
-        zorder=5,
-    )
+    ax.plot(x[::PIV_STRIDE], y[::PIV_STRIDE], label="exp.",
+            **_piv_style(over_image))
     return 1
+
+
+def _piv_style(over_image: bool) -> dict:
+    """Open markers: a line through pixel-spaced points shows the pixel staircase."""
+    color = "white" if over_image else "black"
+    return dict(ls="none", marker="o", ms=2.2, mfc="none", mec=color, mew=0.6,
+                zorder=5)
 
 
 def _legend(ax, n_entries: int, over_image: bool, two_columns_ok: bool = True):
@@ -381,8 +383,8 @@ def _add_spread_inset(
         axins.plot(xb, yb, color=col, linewidth=1.2)
     if piv is not None:
         over_image = getattr(args, "piv_background", None) is not None
-        axins.plot(piv[0], piv[1], color="white" if over_image else "black",
-                   lw=1.2, ls="--", zorder=5)
+        stride = max(1, PIV_STRIDE // 2)
+        axins.plot(piv[0][::stride], piv[1][::stride], **_piv_style(over_image))
 
     axins.set_xlim(x_lo, x_hi)
     axins.set_ylim(lo, hi)
