@@ -49,6 +49,13 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
                 result_y=correction_y,
                 convected_quantity=convected_quantity,
             )
+        elif self.form == ConvectiveTermForm.DEFERRED_CORRECTION_DIV:
+            self._compute_rusanov_div_components(result_x=conv_x, result_y=conv_y)
+            self._compute_div_correction(
+                result_x=correction_x,
+                result_y=correction_y,
+                convected_quantity=convected_quantity,
+            )
         else:
             raise NotImplementedError(f"ConvectiveTermForm {self.form} not supported")
 
@@ -222,6 +229,110 @@ class StreamFunctionBasedConvectiveOperator(BaseConvectiveOperator):
         result_y[jm, im, 0] = inv_2dy * v_y[jp, im]  # v_y[j+1, i]
         result_y[jm, im, 1] = 0.0
         result_y[jm, im, 2] = -inv_2dy * v_y[jm2, im]  # -v_y[j-1, i]
+
+    @staticmethod
+    def _face_dissipation(v: np.ndarray, axis: int) -> np.ndarray:
+        """
+        Upwind dissipation coefficient max(|v_i|, |v_i+1|) on the faces along `axis`.
+
+        Faces that touch a wall node carry none: the wall velocity is zero, so the face
+        stays exactly the central one, which keeps the flux through the wall zero.
+        """
+        speed = np.abs(v)
+        if axis == 1:
+            alpha = np.maximum(speed[:, :-1], speed[:, 1:])
+            alpha[:, 0] = 0.0
+            alpha[:, -1] = 0.0
+        else:
+            alpha = np.maximum(speed[:-1, :], speed[1:, :])
+            alpha[0, :] = 0.0
+            alpha[-1, :] = 0.0
+        return alpha
+
+    def _compute_rusanov_div_components(
+        self, result_x: np.ndarray, result_y: np.ndarray
+    ) -> None:
+        """
+        Implicit part of the divergent deferred correction: d(v phi)/dx with face fluxes
+
+            F_i+1/2 = (v_i phi_i + v_i+1 phi_i+1) / 2 - alpha_i+1/2 (phi_i+1 - phi_i) / 2,
+
+        alpha = max(|v_i|, |v_i+1|). The first term is exactly the divergent central
+        flux, so the fluxes telescope over the domain; the second is the upwind
+        dissipation, which also keeps every off-diagonal coefficient non-positive.
+        """
+        dx, dy, _ = self.cfg.scaled_grid_steps
+        v_x, v_y = self._v_x, self._v_y
+        jm, im = slice(1, -1), slice(1, -1)
+
+        a_x = self._face_dissipation(v_x, axis=1)  # (n_y, n_x - 1)
+        a_e = a_x[jm, 1:]  # face i+1/2 of node i, i = 1..n_x-2
+        a_w = a_x[jm, :-1]  # face i-1/2
+        half_inv_dx = 0.5 / dx
+        result_x[jm, im, 0] = half_inv_dx * (v_x[jm, 2:] - a_e)
+        result_x[jm, im, 1] = half_inv_dx * (a_e + a_w)
+        result_x[jm, im, 2] = -half_inv_dx * (v_x[jm, :-2] + a_w)
+
+        a_y = self._face_dissipation(v_y, axis=0)  # (n_y - 1, n_x)
+        a_n = a_y[1:, im]  # face j+1/2 of node j
+        a_s = a_y[:-1, im]  # face j-1/2
+        half_inv_dy = 0.5 / dy
+        result_y[jm, im, 0] = half_inv_dy * (v_y[2:, im] - a_n)
+        result_y[jm, im, 1] = half_inv_dy * (a_n + a_s)
+        result_y[jm, im, 2] = -half_inv_dy * (v_y[:-2, im] + a_s)
+
+    @staticmethod
+    def _limited_face_correction(
+        q: np.ndarray, v: np.ndarray, alpha: np.ndarray, axis: int
+    ) -> np.ndarray:
+        """
+        Face correction alpha * psi(r) * (phi_i+1 - phi_i) / 2 that takes the upwind flux
+        back towards the central one; psi = 1 recovers it exactly.
+
+        psi is the minmod limiter of r, the ratio of the jump across the next face
+        upstream to the jump across this one. Where that face does not exist, psi = 0.
+        """
+        if axis == 0:
+            q, v, alpha = q.T, v.T, alpha.T
+
+        jump = q[:, 1:] - q[:, :-1]  # across face i+1/2
+        upstream = np.zeros_like(jump)
+        upstream[:, 1:] = jump[:, :-1]  # phi_i - phi_i-1, used when the flow is +
+        downstream = np.zeros_like(jump)
+        downstream[:, :-1] = jump[:, 1:]  # phi_i+2 - phi_i+1, used when it is -
+
+        face_v = 0.5 * (v[:, :-1] + v[:, 1:])
+        upwind_jump = np.where(face_v >= 0.0, upstream, downstream)
+        # r = upwind_jump / jump, set to 0 where the face jump vanishes
+        r = upwind_jump * jump / (jump * jump + 1e-300)
+        psi = np.clip(r, 0.0, 1.0)
+        corr = 0.5 * alpha * psi * jump
+
+        return corr.T if axis == 0 else corr
+
+    def _compute_div_correction(
+        self, result_x: np.ndarray, result_y: np.ndarray, convected_quantity: np.ndarray
+    ) -> None:
+        """
+        Explicit part of the divergent deferred correction, as a difference of face
+        corrections so that it telescopes over the domain like the fluxes themselves.
+        """
+        q = convected_quantity
+        dx, dy, _ = self.cfg.scaled_grid_steps
+        v_x, v_y = self._v_x, self._v_y
+        jm, im = slice(1, -1), slice(1, -1)
+
+        c_x = self._limited_face_correction(
+            q, v_x, self._face_dissipation(v_x, axis=1), axis=1
+        )
+        result_x[:, :] = 0.0
+        result_x[jm, im] = (c_x[jm, 1:] - c_x[jm, :-1]) / dx
+
+        c_y = self._limited_face_correction(
+            q, v_y, self._face_dissipation(v_y, axis=0), axis=0
+        )
+        result_y[:, :] = 0.0
+        result_y[jm, im] = (c_y[1:, im] - c_y[:-1, im]) / dy
 
     def _compute_non_div_components(
         self, result_x: np.ndarray, result_y: np.ndarray

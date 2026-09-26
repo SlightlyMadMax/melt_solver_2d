@@ -116,10 +116,11 @@ def parse_args(argv=None) -> argparse.Namespace:
     )
     scheme.add_argument(
         "--heat-convection",
-        choices=("deferred", "central-div"),
+        choices=("deferred", "central-div", "deferred-div"),
         default="deferred",
         help="convective term of the heat equation: first-order upwind with limited "
-        "deferred correction, or central differences in divergent form d(v u)/dx",
+        "deferred correction, central differences in divergent form d(v u)/dx, or "
+        "upwind with limited deferred correction written as face fluxes of d(v u)/dx",
     )
     scheme.add_argument(
         "--no-latent-convection",
@@ -339,11 +340,11 @@ def run(args: argparse.Namespace) -> dict:
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=(
-            ConvectiveTermForm.DIVERGENT_CENTRAL
-            if args.heat_convection == "central-div"
-            else ConvectiveTermForm.DEFERRED_CORRECTION
-        ),
+        convective_term_form={
+            "deferred": ConvectiveTermForm.DEFERRED_CORRECTION,
+            "central-div": ConvectiveTermForm.DIVERGENT_CENTRAL,
+            "deferred-div": ConvectiveTermForm.DEFERRED_CORRECTION_DIV,
+        }[args.heat_convection],
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,

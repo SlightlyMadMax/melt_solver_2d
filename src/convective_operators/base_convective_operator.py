@@ -11,6 +11,7 @@ class ConvectiveTermForm(Enum):
     UPWIND_FC = "Upwind Face-Centered"
     UPWIND_NC = "Upwind Node-Centered"
     DEFERRED_CORRECTION = "Deferred Correction"
+    DEFERRED_CORRECTION_DIV = "Divergent Deferred Correction"
 
 
 class BaseConvectiveOperator(ABC):

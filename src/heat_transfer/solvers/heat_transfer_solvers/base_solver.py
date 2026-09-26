@@ -309,8 +309,29 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
             coeff_kwargs={"u": u},
             hook_kwargs={"sf": sf},
         )
+        self._fill_corners(u=self._u_new, time=time)
 
         return self._u_new
+
+    def _fill_corners(self, u: NDArray[np.float64], time: float) -> None:
+        """
+        Give the four corner nodes the value of the wall they sit on.
+
+        Neither sweep touches them: the x-sweep runs over the interior rows and the
+        y-sweep over the interior columns. No interior node has a corner in its
+        five-point stencil, so the solution does not care, but the wall integrals
+        (the Nusselt number) do, and a corner left at its initial value skews them.
+        A corner between two Dirichlet walls takes the x-wall value; one between two
+        Neumann walls copies its diagonal neighbour.
+        """
+        for j, bc_y in ((0, self.bcs.bottom), (-1, self.bcs.top)):
+            for i, bc_x in ((0, self.bcs.left), (-1, self.bcs.right)):
+                if bc_x.boundary_type == BoundaryConditionType.DIRICHLET:
+                    u[j, i] = bc_x.get_value(time)[j]
+                elif bc_y.boundary_type == BoundaryConditionType.DIRICHLET:
+                    u[j, i] = bc_y.get_value(time)[i]
+                else:
+                    u[j, i] = u[1 if j == 0 else -2, 1 if i == 0 else -2]
 
     def _scale_convection(self) -> None:
         """Multiply the convective coefficients by c / c_eff when latent heat is not convected."""
@@ -326,7 +347,10 @@ class ADIHeatSolver(BaseHeatSolver, ADIMixin, ABC):
         """
         Recalculate convective term after first sweep if using deferred correction.
         """
-        if self.convective_operator.form == ConvectiveTermForm.DEFERRED_CORRECTION:
+        if self.convective_operator.form in (
+            ConvectiveTermForm.DEFERRED_CORRECTION,
+            ConvectiveTermForm.DEFERRED_CORRECTION_DIV,
+        ):
             sf = kwargs.get("sf")
             if sf is None:
                 raise ValueError("sf is required for deferred correction")
