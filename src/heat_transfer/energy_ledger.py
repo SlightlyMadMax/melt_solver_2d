@@ -49,9 +49,10 @@ _FIELDS = (
     "t",
     "E_sens",
     "E_lat",
-    "Q_hot",
-    "Q_cold",
-    "Q_adiabatic",
+    "Q_left",
+    "Q_right",
+    "Q_bottom",
+    "Q_top",
     "defect_capacity",
     "defect_advection",
 )
@@ -132,22 +133,25 @@ class EnergyLedger:
     # ------------------------------------------------------------------ wall heat
 
     def _wall_x(self, u: np.ndarray) -> tuple[float, float]:
-        """Heat entering through the left (hot) and right (cold) walls, per unit time."""
+        """Heat entering through the left and right walls, per unit time."""
         k_x = self.solver._k_x  # k_x[:, i] is the face between nodes i-1 and i
         g = self.inv_pe * self.dy / self.dx
         rows = slice(1, -1)
-        hot = g * float(np.sum(k_x[rows, 1] * (u[rows, 0] - u[rows, 1])))
-        cold = g * float(np.sum(k_x[rows, -2] * (u[rows, -1] - u[rows, -2])))
-        return hot, cold
+        left = g * float(np.sum(k_x[rows, 1] * (u[rows, 0] - u[rows, 1])))
+        right = g * float(np.sum(k_x[rows, -2] * (u[rows, -1] - u[rows, -2])))
+        return left, right
 
-    def _wall_y(self, u: np.ndarray) -> float:
-        """Heat entering through the bottom and top walls; zero once u obeys the BC."""
+    def _wall_y(self, u: np.ndarray) -> tuple[float, float]:
+        """Heat entering through the bottom and top walls, per unit time.
+
+        Both vanish where the wall is insulated, since the first-order Neumann
+        condition makes the boundary node a copy of its neighbour."""
         k_y = self.solver._k_y
         g = self.inv_pe * self.dx / self.dy
         cols = slice(1, -1)
-        bottom = float(np.sum(k_y[1, cols] * (u[0, cols] - u[1, cols])))
-        top = float(np.sum(k_y[-2, cols] * (u[-1, cols] - u[-2, cols])))
-        return g * (bottom + top)
+        bottom = g * float(np.sum(k_y[1, cols] * (u[0, cols] - u[1, cols])))
+        top = g * float(np.sum(k_y[-2, cols] * (u[-1, cols] - u[-2, cols])))
+        return bottom, top
 
     # ------------------------------------------------------------------ bookkeeping
 
@@ -174,12 +178,16 @@ class EnergyLedger:
         c_eff = self.solver._c_eff
         stored = float(np.sum(c_eff[inner] * (u[inner] - u_n[inner]))) * self.area
 
-        hot, cold = self._wall_x(self._half)
-        adiabatic = 0.5 * (self._wall_y(u_n) + self._wall_y(u))
-        wall = hot + cold + adiabatic
+        left, right = self._wall_x(self._half)
+        # the y sweep is implicit on u^{n+1} and explicit on u^n, so its flux is the mean
+        b_n, t_n = self._wall_y(u_n)
+        b_1, t_1 = self._wall_y(u)
+        bottom, top = 0.5 * (b_n + b_1), 0.5 * (t_n + t_1)
+        wall = left + right + bottom + top
 
         self._rows.append(
-            (t, e_sens, e_lat, hot, cold, adiabatic, d_energy - stored, stored - self.tau * wall)
+            (t, e_sens, e_lat, left, right, bottom, top,
+             d_energy - stored, stored - self.tau * wall)
         )
         self._u_prev[:, :] = u
         self._e_prev = (e_sens, e_lat)
@@ -198,9 +206,15 @@ class EnergyLedger:
             "E_lat": col["E_lat"] * es,
             "E0_sens": np.float64(self._e_0[0] * es),
             "E0_lat": np.float64(self._e_0[1] * es),
-            "Q_hot": col["Q_hot"] * ps,
-            "Q_cold": col["Q_cold"] * ps,
-            "Q_adiabatic": col["Q_adiabatic"] * ps,
+            "Q_left": col["Q_left"] * ps,
+            "Q_right": col["Q_right"] * ps,
+            "Q_bottom": col["Q_bottom"] * ps,
+            "Q_top": col["Q_top"] * ps,
+            # kept so that figures made for the differentially heated cavity, where the
+            # left wall is the hot one and the horizontal walls are insulated, still read
+            "Q_hot": col["Q_left"] * ps,
+            "Q_cold": col["Q_right"] * ps,
+            "Q_adiabatic": (col["Q_bottom"] + col["Q_top"]) * ps,
             "defect_capacity": col["defect_capacity"] * es,
             "defect_advection": col["defect_advection"] * es,
         }
@@ -214,12 +228,17 @@ class EnergyLedger:
         adv = float(a["defect_advection"].sum())
         change = float(a["E_sens"][-1] + a["E_lat"][-1] - a["E0_sens"] - a["E0_lat"])
         # Gross heat through the domain: the net wall heat tends to the storage rate
-        # and becomes a poor yardstick once the ice front slows down
-        throughput = float(np.sum(0.5 * (np.abs(a["Q_hot"]) + np.abs(a["Q_cold"])) * dt))
+        # and becomes a poor yardstick once the front slows down. Only the walls held at
+        # a temperature drive the problem; an insulated one contributes nothing and must
+        # stay out of the yardstick, or the ratio divides by round-off
+        driving = [a[f"Q_{w}"] for w in ("left", "right", "bottom", "top")
+                   if np.abs(a[f"Q_{w}"]).max() > 1e-6 * max(
+                       np.abs(a[w2]).max() for w2 in ("Q_left", "Q_right", "Q_bottom", "Q_top"))]
+        throughput = float(np.sum(sum(np.abs(q) for q in driving) * dt / max(len(driving), 1)))
         return {
             "energy_change_J_per_m": change,
             "wall_heat_J_per_m": float(
-                np.sum((a["Q_hot"] + a["Q_cold"] + a["Q_adiabatic"]) * dt)
+                np.sum((a["Q_left"] + a["Q_right"] + a["Q_bottom"] + a["Q_top"]) * dt)
             ),
             "throughput_J_per_m": throughput,
             "defect_capacity_J_per_m": cap,
