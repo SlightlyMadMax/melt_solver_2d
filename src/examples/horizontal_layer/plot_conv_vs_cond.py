@@ -1,7 +1,28 @@
+"""
+Mean interface position against time for the horizontal layer, with convection
+(curve 1) and in the conduction-only limit (curve 2): a - melting, b - freezing.
+
+The convective curves are read from the checkpoints of the new-scheme runs; the
+conduction-only curves are the stored ones, which the change of the convective
+term cannot affect because there is no flow in that limit.
+"""
+import argparse
+import json
+import sys
+from pathlib import Path
+
 import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import numpy as np
+
+mpl.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT))
+from src.parameters.config import ExperimentConfig  # noqa: E402
+from src.examples.horizontal_layer.run import mean_interface_y  # noqa: E402
+
+LAYER = ROOT / "src/examples/horizontal_layer"
 
 mpl.rcParams.update(
     {
@@ -23,89 +44,81 @@ mpl.rcParams.update(
 )
 
 
-def add_subfigure_label(ax, label):
-    """Add subfigure label (a), (b), etc. centered above the axes."""
-    ax.text(
-        0.5,
-        1.05,
-        f"{label}",
-        transform=ax.transAxes,
-        ha="center",
-        va="bottom",
-        fontsize=12,
-        fontweight="bold",
-        zorder=10,
-    )
+def parse_args(argv=None):
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    p.add_argument("--melting-dir", type=Path,
+                   default=LAYER / "data/new_scheme/melting_dt0.1")
+    p.add_argument("--freezing-dir", type=Path,
+                   default=LAYER / "data/new_scheme/freezing_dt0.1")
+    p.add_argument("--t-max", type=float, default=24.0, help="hours")
+    p.add_argument("--out", type=Path, default=LAYER / "graphs/boundary_vs_time.tiff")
+    return p.parse_args(argv)
 
 
-# -----------------------------
-# load data
-# -----------------------------
-b_conv_melt = np.load("./data/boundary/melting/convection_boundary.npz")["b"]
-b_stef_melt = np.load("./data/boundary/melting/stefan_boundary.npz")["b"]
-
-b_conv_freeze = np.load("./data/boundary/freezing/convection_boundary.npz")["b"]
-b_stef_freeze = np.load("./data/boundary/freezing/stefan_boundary.npz")["b"]
-
-t = np.arange(0, len(b_stef_melt), 10) / 60
-
-# -----------------------------
-# figure
-# -----------------------------
-fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(6.3, 3.15), constrained_layout=True)
-
-# -------- (а) melting ----------
-y1m = b_conv_melt[0:1441:10]
-y2m = b_stef_melt[0:1441:10]
-
-ax0.plot(t, y1m)
-ax0.plot(t, y2m, "--")
-
-ax0.set_xlabel("Time, h")
-ax0.set_ylabel("Average interface position, m")
-ax0.set_ylim(0, 0.05)
-
-L = 0.003
-dy_line = 0.0
-dy_label = 0.0008
-
-i1 = int(0.7 * (len(t) - 1))
-x1, y1 = t[i1] - 0.05, y1m[i1]
-ax0.plot([x1, x1], [y1 - dy_line, y1 - dy_line - L], color="black", linewidth=0.8)
-ax0.text(x1 - 0.4, y1 - 0.001 - dy_label - L, "1", va="center", fontsize=10)
-
-i2 = int(0.4 * (len(t) - 1))
-x2, y2 = t[i2] - 0.05, y2m[i2]
-ax0.plot([x2, x2], [y2 + dy_line, y2 + dy_line + L], color="black", linewidth=0.8)
-ax0.text(x2, y2 + dy_line + dy_label + L, "2", ha="center", fontsize=10)
-
-add_subfigure_label(ax0, "a")
+def convective_curve(d: Path, cfg, t_max: float):
+    dt = json.load(open(d / "summary.json", encoding="utf-8"))["dt"]
+    steps = sorted(int(f.name[len("checkpoint_"):-len(".npz")])
+                   for f in d.glob("checkpoint_*.npz"))
+    t, y = [], []
+    for n in steps:
+        h = n * dt / 3600.0
+        if h > t_max:
+            break
+        t.append(h)
+        y.append(mean_interface_y(np.load(d / f"checkpoint_{n}.npz", allow_pickle=True)["u"], cfg))
+    return np.array(t), np.array(y)
 
 
-# -------- (б) freezing ----------
-y1f = b_conv_freeze[0:1441:10]
-y2f = b_stef_freeze[0:1441:10]
-
-ax1.plot(t, y1f, linewidth=2)
-ax1.plot(t, y2f, "--", linewidth=2)
-
-ax1.set_xlabel("Time, h")
-ax1.set_ylabel("Average interface position, m")
-ax1.set_ylim(0, 0.05)
-
-i1 = int(0.7 * (len(t) - 1))
-x1, y1 = t[i1], y1f[i1]
-ax1.plot([x1, x1], [y1 - dy_line, y1 - dy_line - L], color="black", linewidth=0.8)
-ax1.text(x1 - 0.4, y1 - 0.001 - dy_label - L, "1", va="center", fontsize=10)
-
-i2 = int(0.4 * (len(t) - 1))
-x2, y2 = t[i2] - 0.05, y2f[i2]
-ax1.plot([x2, x2], [y2 + dy_line, y2 + dy_line + L], color="black", linewidth=0.8)
-ax1.text(x2, y2 + dy_line + dy_label + L, "2", ha="center", fontsize=10)
-
-add_subfigure_label(ax1, "b")
+def conductive_curve(case: str, t_max: float):
+    """Stored curve, one sample per minute of model time, starting at t = 0."""
+    b = np.load(LAYER / f"data/boundary/{case}/stefan_boundary.npz")["b"]
+    t = np.arange(len(b)) / 60.0
+    m = t <= t_max
+    return t[m], b[m]
 
 
-# -----------------------------
-plt.savefig("./graphs/boundary_vs_time.tiff", dpi=300)
-plt.show()
+def label_curve(ax, t, y, frac, text, down=True, length=0.003, dx_text=0.0):
+    """Short leader line with a curve number, as in the published figure."""
+    i = int(frac * (len(t) - 1))
+    x0, y0 = t[i], y[i]
+    sign = -1.0 if down else 1.0
+    ax.plot([x0, x0], [y0, y0 + sign * length], color="black", linewidth=0.8)
+    ax.text(x0 + dx_text, y0 + sign * (length + 0.0016), text,
+            ha="center", va="center", fontsize=10)
+
+
+def panel(ax, case, d, cfg, t_max, letter):
+    t_c, y_c = convective_curve(d, cfg, t_max)
+    t_s, y_s = conductive_curve(case, t_max)
+    ax.plot(t_c, y_c, color="black")
+    ax.plot(t_s, y_s, "--", color="black")
+    ax.set_xlabel("Time, h")
+    ax.set_ylabel("Average interface position, m")
+    ax.set_xlim(0, t_max)
+    ax.set_ylim(0, 0.05)
+    ax.text(0.5, 1.05, letter, transform=ax.transAxes, ha="center", va="bottom",
+            fontsize=12, fontweight="bold", zorder=10)
+    if case == "melting":
+        label_curve(ax, t_c, y_c, 0.55, "1", down=True)
+        label_curve(ax, t_s, y_s, 0.45, "2", down=False)
+    else:
+        label_curve(ax, t_c, y_c, 0.55, "1", down=True)
+        label_curve(ax, t_s, y_s, 0.45, "2", down=False)
+    print(f"{case}: convection {y_c[-1]*1e3:.3f} mm at {t_c[-1]:.1f} h | "
+          f"conduction {y_s[-1]*1e3:.3f} mm at {t_s[-1]:.1f} h")
+
+
+def main(argv=None):
+    a = parse_args(argv)
+    cfg = ExperimentConfig.load_from_file(str(LAYER / "config.json"))
+    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(6.3, 3.15), constrained_layout=True)
+    panel(ax0, "melting", a.melting_dir, cfg, a.t_max, "a")
+    panel(ax1, "freezing", a.freezing_dir, cfg, a.t_max, "b")
+    a.out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(a.out, dpi=300)
+    fig.savefig(a.out.with_suffix(".png"), dpi=300)
+    print("->", a.out)
+
+
+if __name__ == "__main__":
+    main()
