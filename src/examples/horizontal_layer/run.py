@@ -59,6 +59,7 @@ from src.heat_transfer.solvers import HeatTransferSolver, HeatTransferSolverName
 from src.heat_transfer.solvers.heat_transfer_solvers.base_solver import KFaceMethod
 from src.parameters.config import ExperimentConfig
 from src.utils.boundary_conditions import (
+    linear_dirichlet_ramp,
     const_neumann_condition,
     const_dirichlet_condition,
 )
@@ -102,6 +103,34 @@ def parse_args(argv=None) -> argparse.Namespace:
         default=None,
         help="uniform initial temperature [degC]; defaults to --t-bottom for melting "
         "(ice) and --t-top for freezing (water)",
+    )
+
+    case.add_argument(
+        "--perturb",
+        type=float,
+        default=0.0,
+        help="amplitude [K] of a deterministic perturbation added to the initial "
+        "temperature, cos(2 pi k x / W) with k set by --perturb-mode. The convective "
+        "instability of the sublayer below the density maximum otherwise grows out of "
+        "round-off, so its onset depends on the scheme and the machine; a seed makes "
+        "it reproducible. 0 leaves the field unperturbed",
+    )
+    case.add_argument(
+        "--perturb-mode",
+        type=int,
+        default=4,
+        help="number of cosine periods across the width used by --perturb",
+    )
+
+    case.add_argument(
+        "--wall-ramp",
+        type=float,
+        default=0.0,
+        help="drive the active wall from the melting point to its final temperature "
+        "linearly over this many seconds instead of stepping it at once. The step "
+        "switches the penalty on across a whole row of nodes in one go, which the "
+        "explicit part of the penalty in the vorticity predictor cannot absorb; the "
+        "active wall is the cold one when freezing and the warm one when melting",
     )
 
     grid = p.add_argument_group("grid and time")
@@ -157,6 +186,21 @@ def parse_args(argv=None) -> argparse.Namespace:
         choices=("linear", "geom"),
         default="linear",
         help="how C grows during --penalty-ramp",
+    )
+    phys.add_argument(
+        "--heat-convection",
+        choices=("deferred", "central-div", "deferred-div"),
+        default="deferred",
+        help="convective term of the heat equation: first-order upwind with limited "
+        "deferred correction, central differences in divergent form d(v u)/dx, or "
+        "upwind with limited deferred correction written as face fluxes, which "
+        "telescope over the domain like the central ones",
+    )
+    phys.add_argument(
+        "--no-latent-convection",
+        action="store_true",
+        help="multiply the convective term of the heat equation by c instead of "
+        "c + lambda*delta, so that the flow carries sensible heat only",
     )
     phys.add_argument(
         "--penalty-time-scheme",
@@ -446,10 +490,27 @@ def run(args: argparse.Namespace) -> dict:
     def nd(t_celsius: float) -> float:
         return (t_celsius - ABS_ZERO - u_ref) / delta_u
 
+    u_pt_c = cfg.material_props.u_pt + ABS_ZERO  # melting point in Celsius
+    top_bc = const_dirichlet_condition(n_x, value=nd(args.t_top))
+    bottom_bc = const_dirichlet_condition(n_x, value=nd(args.t_bottom))
+    if args.wall_ramp > 0.0:
+        # Only the wall that drives the phase change is ramped; the other one already
+        # holds the phase the run starts from
+        ramp = linear_dirichlet_ramp(
+            n_x,
+            start_value=nd(u_pt_c),
+            end_value=nd(args.t_bottom if args.case == "freezing" else args.t_top),
+            duration=args.wall_ramp,
+        )
+        if args.case == "freezing":
+            bottom_bc = ramp
+        else:
+            top_bc = ramp
+        logger.info("Ramped the active wall over %g s", args.wall_ramp)
     u_bcs = BoundaryConditions(
-        top=const_dirichlet_condition(n_x, value=nd(args.t_top)),
+        top=top_bc,
         right=const_neumann_condition(n_y, value=0.0),
-        bottom=const_dirichlet_condition(n_x, value=nd(args.t_bottom)),
+        bottom=bottom_bc,
         left=const_neumann_condition(n_y, value=0.0),
     )
     sf_bcs = BoundaryConditions(
@@ -472,6 +533,15 @@ def run(args: argparse.Namespace) -> dict:
     logger.info("Initial state: uniform %.2f degC (%s)", t0, args.case)
 
     v_x, v_y = initialize_velocity(geometry=geometry)
+    if args.perturb != 0.0:
+        # Seed the convective instability deterministically instead of leaving it to
+        # round-off: one cosine across the width, uniform in height, in units of the
+        # temperature scale
+        xs = np.arange(n_x) * geometry.dx / geometry.width
+        u += (args.perturb / delta_u) * np.cos(2.0 * np.pi * args.perturb_mode * xs)[None, :]
+        logger.info("Seeded the initial field: %.3g K, %d cosine periods",
+                    args.perturb, args.perturb_mode)
+
     state = SimulationState(
         u=u,
         sf=initialize_stream_function(geometry=geometry, bcs=sf_bcs),
@@ -487,10 +557,15 @@ def run(args: argparse.Namespace) -> dict:
         tolerance=1e-6,
         urf=1.0,
         solver_name=HeatTransferSolverName.PEACEMAN_RACHFORD,
-        convective_term_form=ConvectiveTermForm.DEFERRED_CORRECTION,
+        convective_term_form={
+            "deferred": ConvectiveTermForm.DEFERRED_CORRECTION,
+            "central-div": ConvectiveTermForm.DIVERGENT_CENTRAL,
+            "deferred-div": ConvectiveTermForm.DEFERRED_CORRECTION_DIV,
+        }[args.heat_convection],
         step_scheme=StepScheme.ERF,
         delta_scheme=DeltaScheme.GAUSS,
         k_face_method=KFaceMethod.FROM_TEMP,
+        latent_convection=not args.no_latent_convection,
     )
 
     if args.no_flow:
@@ -574,6 +649,8 @@ def run(args: argparse.Namespace) -> dict:
         "penalty_C": penalty_c_of(cfg),
         "penalty_form": args.penalty_form,
         "penalty_time_scheme": args.penalty_time_scheme,
+        "heat_convection": args.heat_convection,
+        "latent_convection": not args.no_latent_convection,
         "penalty_ramp": args.penalty_ramp,
         "penalty_ramp_mode": args.penalty_ramp_mode,
         "vorticity_bc_order": args.vorticity_bc_order,
@@ -585,6 +662,9 @@ def run(args: argparse.Namespace) -> dict:
         "mean_interface_y": mean_interface_y(state.u, cfg),
         "interface_amplitude": interface_amplitude(state.u, cfg),
         "conductive_steady_interface": conductive_steady_interface(args, cfg),
+        "wall_ramp": args.wall_ramp,
+        "perturb": args.perturb,
+        "perturb_mode": args.perturb_mode,
         "Nu_top": calculate_nusselt(u=state.u, cfg=cfg, wall="top"),
         "Nu_bottom": calculate_nusselt(u=state.u, cfg=cfg, wall="bottom"),
         "max_speed_liquid": v_liquid,
