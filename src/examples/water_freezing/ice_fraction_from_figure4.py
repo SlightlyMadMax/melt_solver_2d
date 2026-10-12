@@ -49,9 +49,9 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 
 def time_of(path: Path) -> float:
-    m = re.fullmatch(r"t(\d+(?:\.\d+)?)s", path.stem)
+    m = re.fullmatch(r"t(\d+(?:\.\d+)?)s?", path.stem)
     if m is None:
-        raise ValueError(f"cannot read a time from {path.name}; expected t<seconds>s.csv")
+        raise ValueError(f"cannot read a time from {path.name}; expected t<seconds>.csv or t<seconds>s.csv")
     return float(m.group(1))
 
 
@@ -74,7 +74,7 @@ def ice_fraction(path: Path) -> dict:
 
 def main(argv=None) -> None:
     args = parse_args(argv)
-    rows = [ice_fraction(f) for f in sorted(args.dir.glob("t*s.csv"), key=time_of)]
+    rows = [ice_fraction(f) for f in sorted(args.dir.glob("t*.csv"), key=time_of)]
     if not rows:
         raise SystemExit(f"no digitised profiles in {args.dir}")
 

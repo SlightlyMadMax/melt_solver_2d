@@ -35,31 +35,31 @@ DATA = HERE / "data"
 mpl.rcParams.update(
     {
         "font.size": 12,
-        "axes.labelsize": 11,
+        "axes.labelsize": 10,
         "axes.titlesize": 10,
         "xtick.labelsize": 10,
         "ytick.labelsize": 10,
-        "legend.fontsize": 9,
+        "legend.fontsize": 10,
         "font.family": "serif",
         "font.serif": ["Times New Roman"],
         "mathtext.fontset": "custom",
         "mathtext.rm": "Times New Roman",
         "mathtext.it": "Times New Roman:italic",
         "mathtext.bf": "Times New Roman:bold",
-        "lines.linewidth": 1.6,
+        "lines.linewidth": 1.5,
         "figure.dpi": 300,
     }
 )
 
 BASELINE = "151x151_dt0.02_e0.1_ef0.1_C1e+06"
-RUNS = [
-    ("cold, old", DATA / "cold_start" / "energy_budget_implicit" / BASELINE, "#3b0f70", "--"),
-    ("warm, old", DATA / "warm_start" / "energy_budget_implicit" / BASELINE, "#3b6ea5", "-."),
-    ("cold, new", DATA / "cold_start" / "energy_budget_implicit_centraldiv_nolatconv" / BASELINE,
-     "#1f9e89", "-"),
-    ("warm, new", DATA / "warm_start" / "energy_budget_implicit_centraldiv_nolatconv" / BASELINE,
-     "#8fd744", "-"),
-]
+
+
+def runs_of(family: str, baseline: str):
+    """The two computed curves, warm first because both digitised runs started warm."""
+    return [
+        ("computed, warm start", DATA / "warm_start" / family / baseline, "#3b0f70", "-"),
+        ("computed, cold start", DATA / "cold_start" / family / baseline, "#1f9e89", "--"),
+    ]
 
 
 PIV_CURVE = DATA / "inputs" / "piv_boundary.npz"
@@ -67,15 +67,22 @@ PIV_CURVE = DATA / "inputs" / "piv_boundary.npz"
 
 def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    p.add_argument("--experiment", type=Path,
-                   default=DATA / "inputs" / "figure4_extracted" / "ice_fraction.csv",
-                   help="output of ice_fraction_from_figure4.py")
+    p.add_argument("--experiment", type=Path, nargs="+",
+                   default=[DATA / "inputs" / "figure4_extracted" / "ice_fraction.csv",
+                            DATA / "inputs" / "figure4_run8_exatracted" / "ice_fraction.csv"],
+                   help="outputs of ice_fraction_from_figure4.py")
+    p.add_argument("--experiment-labels", nargs="+",
+                   default=["run #4, external air", "run #8, external water"])
+    p.add_argument("--markers", nargs="+", default=["o", "s"])
     p.add_argument("--error-mode", choices=("thickness", "position", "none"),
                    default="thickness",
                    help="what the quoted 5-8% is taken to apply to")
+    p.add_argument("--family", default="star_sigma05_t3000",
+                   help="sub-directory of data/<start>_start holding the runs to draw")
+    p.add_argument("--baseline", default=BASELINE, help="run directory inside --family")
     p.add_argument("--config", type=Path, default=HERE / "config.json")
     p.add_argument("--out", type=Path,
-                   default=HERE / "graphs" / "scheme_comparison" / "ice_fraction_old_new.png")
+                   default=HERE / "graphs" / "new_scheme" / "ice_fraction_validation.png")
     p.add_argument("--stride", type=int, default=50, help="plot every Nth recorded step")
     p.add_argument("--run1", action=argparse.BooleanOptionalAction, default=True,
                    help="also show the single point of run #1, the front of Figure 1")
@@ -121,21 +128,23 @@ def main(argv=None) -> None:
     args = parse_args(argv)
     latent = latent_heat_per_volume(args.config)
 
-    fig, ax = plt.subplots(figsize=(5.2, 3.9), constrained_layout=True)
-    for label, run_dir, color, style in RUNS:
+    fig, ax = plt.subplots(figsize=(6.3, 3.4), constrained_layout=True)
+    for label, run_dir, color, style in runs_of(args.family, args.baseline):
         t, ice = ice_series(run_dir, latent)
         ax.plot(t[:: args.stride], ice[:: args.stride], color=color, ls=style, label=label)
 
-    with open(args.experiment, encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    t_exp = np.array([float(r["t_s"]) for r in rows])
-    f_exp = np.array([float(r["ice_fraction"]) for r in rows])
-    err = None
-    if args.error_mode != "none":
-        err = np.array([float(r[f"err_{args.error_mode}"]) for r in rows])
-    ax.errorbar(t_exp, f_exp, yerr=err, fmt="o", ms=4.5, color="k", mfc="white",
-                mew=1.1, elinewidth=0.9, capsize=2.5, zorder=5,
-                label="experiment, run #4")
+    shades = ["k", "0.45"]
+    for path, label, marker, shade in zip(args.experiment, args.experiment_labels,
+                                          args.markers, shades):
+        with open(path, encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        t_exp = np.array([float(r["t_s"]) for r in rows])
+        f_exp = np.array([float(r["ice_fraction"]) for r in rows])
+        err = None
+        if args.error_mode != "none":
+            err = np.array([float(r[f"err_{args.error_mode}"]) for r in rows])
+        ax.errorbar(t_exp, f_exp, yerr=err, fmt=marker, ms=4.5, color=shade, mfc="white",
+                    mew=1.1, elinewidth=0.9, capsize=2.5, zorder=5, label=label)
 
     f_run1 = None
     if args.run1:
@@ -151,19 +160,21 @@ def main(argv=None) -> None:
     ax.set_xlim(0.0, max(t_exp.max(), 2340.0) * 1.02)
     ax.set_ylim(bottom=0.0)
     ax.grid(alpha=0.25)
-    ax.set_title(r"$151\times151$, $\tau = 0.02$ s, $\varepsilon = 0.1$ K, "
-                 r"$C = 10^{6}$ s$^{-1}$")
     ax.legend(loc="lower right", frameon=False)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches="tight")
     print(f"-> {args.out}")
-    for label, run_dir, _, _ in RUNS:
+    for label, run_dir, _, _ in runs_of(args.family, args.baseline):
         t, ice = ice_series(run_dir, latent)
         at = [f"{te:.0f} s: {ice[np.searchsorted(t, te) - 1]:.4f}"
               for te in t_exp if te <= t[-1]]
-        print(f"  {label:<10} " + ", ".join(at))
-    print("  run #4     " + ", ".join(f"{te:.0f} s: {fe:.4f}" for te, fe in zip(t_exp, f_exp)))
+        print(f"  {label:<22} " + ", ".join(at))
+    for path, label in zip(args.experiment, args.experiment_labels):
+        with open(path, encoding="utf-8") as f:
+            rr = list(csv.DictReader(f))
+        print(f"  {label:<22} " + ", ".join(
+            f"{float(r['t_s']):.0f} s: {float(r['ice_fraction']):.4f}" for r in rr))
     if f_run1 is not None:
         print(f"  run #1      {args.run1_time:.0f} s: {f_run1:.4f}")
 

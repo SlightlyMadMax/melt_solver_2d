@@ -53,7 +53,8 @@ def add_subfigure_label(ax, label):
 cfg: ExperimentConfig = ExperimentConfig.load_from_file("./config.json")
 geometry: DomainGeometry = cfg.geometry
 img = plt.imread("./data/inputs/kowalewski.png")
-data = np.load("data/archive/old_data/after_freezing_151x151.npz")
+data = np.load("data/warm_start/star_sigma05/151x151_dt0.02_e0.1_ef0.1_C1e+06/"
+               "checkpoint_117000.npz")  # warm start at t = 2340 s
 u = data["u"]
 sf = data["sf"]
 w = data["w"]
@@ -74,7 +75,7 @@ fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(6.3, 3.15), constrained_layout=Tru
 # -------- (а) field ----------
 ax0.imshow(img, extent=[0, geometry.width, 0, geometry.height])
 X_b, Y_b = get_phase_trans_boundary(cfg=cfg, u=u_dim)
-ax0.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2, label="Численное решение")
+ax0.plot(X_b, Y_b, linestyle="--", color="red", linewidth=2)
 
 ax0.set_xlabel(r"$x$, m")
 ax0.set_ylabel(r"$y$, m")
@@ -84,7 +85,9 @@ add_subfigure_label(ax0, "a")
 
 # -------- (б) profile --------
 stride = 8
-contour = ax1.contourf(X, Y, u_dim + ABS_ZERO, levels=101, cmap="Blues")
+levels = np.linspace(-10.0, 10.0, 101)
+contour = ax1.contourf(X, Y, u_dim + ABS_ZERO, levels=levels, cmap="Blues",
+                       extend="both")
 
 ax1.quiver(
     X[::stride, ::stride],
@@ -117,5 +120,9 @@ cbar.set_label(r"Temperature, $^{\circ}\mathrm{C}$", rotation=270, labelpad=15)
 add_subfigure_label(ax1, "b")
 
 # -----------------------------
-plt.savefig("./graphs/water_freezing_upd.tiff", dpi=300)
+import os
+os.makedirs("./graphs/new_scheme", exist_ok=True)
+plt.savefig("./graphs/new_scheme/piv_comparison.tiff", dpi=300)
+plt.savefig("./graphs/new_scheme/piv_comparison.png", dpi=300)
+print("-> graphs/new_scheme/piv_comparison.tiff")
 plt.show()

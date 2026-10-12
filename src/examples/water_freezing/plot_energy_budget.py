@@ -34,14 +34,14 @@ mpl.rcParams.update(
         "axes.titlesize": 10,
         "xtick.labelsize": 10,
         "ytick.labelsize": 10,
-        "legend.fontsize": 8.5,
+        "legend.fontsize": 8,
         "font.family": "serif",
         "font.serif": ["Times New Roman"],
         "mathtext.fontset": "custom",
         "mathtext.rm": "Times New Roman",
         "mathtext.it": "Times New Roman:italic",
         "mathtext.bf": "Times New Roman:bold",
-        "lines.linewidth": 1.3,
+        "lines.linewidth": 1.5,
         "figure.dpi": 300,
     }
 )
@@ -99,9 +99,8 @@ def main(argv=None) -> None:
     i = log_sample(t.size, args.points)
     kj = 1e-3
 
-    fig, axes = plt.subplots(3, 1, figsize=(3.6, 6.4), sharex=True,
-                             constrained_layout=True,
-                             gridspec_kw={"height_ratios": [1.0, 1.15, 1.0]})
+    fig, axes = plt.subplots(1, 3, figsize=(6.3, 2.6), sharex=True,
+                             constrained_layout=True)
     ax_q, ax_e, ax_r = axes
 
     # (a) wall heat. Both drawn as magnitudes so one log axis holds them
@@ -149,14 +148,10 @@ def main(argv=None) -> None:
     # Panel letters sit outside the frame: inside, every corner is taken by a
     # legend or by data in one of the two start types
     for ax, tag in zip(axes, "abc"):
-        ax.text(-0.02, 1.0, f"({tag})", transform=ax.transAxes, ha="right", va="bottom",
-                fontsize=10)
+        ax.text(0.5, 1.02, tag, transform=ax.transAxes, ha="center", va="bottom",
+                fontsize=12, fontweight="bold")
         ax.grid(alpha=0.25, which="major")
-
-    head, sub = title_of(summary)
-    ax_q.set_title(head, fontsize=9, pad=13)
-    ax_q.text(0.5, 1.012, sub, transform=ax_q.transAxes, ha="center", va="bottom",
-              fontsize=7.5, color="0.35")
+        ax.set_xlabel(r"$t$, s")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches="tight")
