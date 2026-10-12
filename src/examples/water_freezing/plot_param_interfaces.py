@@ -2,15 +2,14 @@
 """
 Phase interface of the square cavity under each numerical parameter, at t = 2340 s.
 
-    a  grid spacing        b  time step        c  smoothing width
-    d  largest speed left in the ice against the penalty coefficient
+    a  grid spacing      b  time step
+    c  smoothing width   d  penalty coefficient
 
     python -m src.examples.water_freezing.plot_param_interfaces
 """
 import argparse
 import glob
 import json
-import math
 import os
 from pathlib import Path
 
@@ -21,13 +20,6 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
-import sys  # noqa: E402
-
-sys.path.insert(0, str(ROOT))
-from src.parameters.config import ExperimentConfig  # noqa: E402
-from src.fluid_dynamics.utils import calculate_velocity_from_sf  # noqa: E402
-
 DATA = HERE / "data"
 
 mpl.rcParams.update(
@@ -47,6 +39,8 @@ def parse_args(argv=None):
     p.add_argument("--family", type=Path, default=DATA / "warm_start" / "star_sigma05")
     p.add_argument("--out", type=Path,
                    default=HERE / "graphs" / "new_scheme" / "parameter_interfaces.png")
+    p.add_argument("--time", type=float, default=2340.0)
+    p.add_argument("--xlim", type=float, nargs=2, default=(0.585, 0.74))
     return p.parse_args(argv)
 
 
@@ -76,36 +70,21 @@ def load(family: Path):
     return runs
 
 
-def draw(ax, runs, keys, labels, colors):
+def draw(ax, runs, keys, labels, colors, time):
     for k, lab, c in zip(keys, labels, colors):
+        if k not in runs:
+            continue
         s, d = runs[k]
-        f = d / f"checkpoint_{int(round(2340.0 / s['dt']))}.npz"
+        f = d / f"checkpoint_{int(round(time / s['dt']))}.npz"
         if not f.exists():
             continue
         xs = front(np.load(f, allow_pickle=True)["u"])
         y = np.linspace(0.0, 1.0, s["n_y"])
         good = np.isfinite(xs)
         ax.plot(xs[good], y[good], color=c, label=lab)
-    ax.set(xlim=(0.58, 0.74), ylim=(0.0, 1.0))
+    ax.set(ylim=(0.0, 1.0))
     ax.grid(alpha=0.25)
-    ax.legend(frameon=False, loc="lower left")
-
-
-def liquid_speed(s, d: Path) -> float:
-    """Largest speed in the water of that run, from the stored stream function."""
-    data = json.load(open(HERE / "config.json", encoding="utf-8"))
-    g = data["geometry"]
-    g["n_x"], g["n_y"] = s["n_x"], s["n_y"]
-    g["n_t"], g["end_time"] = s["n_t"], s["end_time"]
-    data["delta"], data["delta_flow"] = s["eps_T"], s["eps_flow"]
-    data["epsilon"] = 1.0 / math.sqrt(s["penalty_C"])
-    cfg = ExperimentConfig.model_validate(data)
-    z = np.load(d / f"checkpoint_{int(round(2340.0 / s['dt']))}.npz", allow_pickle=True)
-    vx = np.empty_like(z["sf"]); vy = np.empty_like(z["sf"])
-    calculate_velocity_from_sf(z["sf"], vx, vy, cfg)
-    sp = np.hypot(vx, vy) * cfg.v
-    liquid = z["u"] > 0
-    return float(sp[liquid].max()) if liquid.any() else float("nan")
+    ax.legend(frameon=False, loc="upper left")
 
 
 def main(argv=None):
@@ -113,45 +92,29 @@ def main(argv=None):
     runs = load(a.family)
     cmap = plt.cm.viridis(np.linspace(0.1, 0.85, 4))
 
-    fig, axes = plt.subplots(2, 2, figsize=(6.3, 5.4), constrained_layout=True)
+    fig, axes = plt.subplots(2, 2, figsize=(6.3, 5.4), sharex=True, sharey=True,
+                             constrained_layout=True)
 
     grids = [51, 101, 151, 201]
     draw(axes[0, 0], runs, [(n, 0.02, 0.1, 10 ** 6) for n in grids],
-         [f"${n}\\times{n}$" for n in grids], cmap)
-    axes[0, 0].set_ylabel(r"$Y$")
+         [f"${n}\\times{n}$" for n in grids], cmap, a.time)
 
     dts = [0.01, 0.02, 0.05, 0.1]
     draw(axes[0, 1], runs, [(151, t, 0.1, 10 ** 6) for t in dts],
-         [rf"$\tau = {t:g}$ s" for t in dts], cmap)
+         [rf"$\tau = {t:g}$ s" for t in dts], cmap, a.time)
 
     eps = [0.05, 0.1, 0.2, 0.4]
     draw(axes[1, 0], runs, [(151, 0.02, e, 10 ** 6) for e in eps],
-         [rf"$\varepsilon = {e:g}$ $^\circ$C" for e in eps], cmap)
-    axes[1, 0].set(xlabel=r"$X$", ylabel=r"$Y$")
-    axes[0, 1].set(xlabel="")
-    axes[1, 1].set_xlabel(r"$A$, s$^{-1}$")
+         [rf"$\varepsilon = {e:g}$ $^\circ$C" for e in eps], cmap, a.time)
 
     As = [10 ** 4, 10 ** 5, 10 ** 6, 10 ** 7]
-    vs, av = [], []
-    for A in As:
-        k = (151, 0.02, 0.1, A)
-        if k not in runs:
-            continue
-        s, d = runs[k]
-        av.append(A); vs.append(s["max_speed_in_solid"])
-    ax = axes[1, 1]
-    ax.loglog(av, vs, "o-", ms=4, color="tab:blue", label=r"largest $|v|$ in the ice")
-    ref = np.array([av[0], av[-1]], dtype=float)
-    ax.loglog(ref, vs[0] * ref[0] / ref, ":", color="0.6", lw=1.0)
-    ax.text(ref[1] * 0.6, vs[0] * ref[0] / ref[1] * 1.6, r"$A^{-1}$",
-            fontsize=8.5, color="0.45")
-    s0, d0 = runs[(151, 0.02, 0.1, 10 ** 6)]
-    vl = liquid_speed(s0, d0)
-    ax.axhline(vl, color="tab:red", ls="--", lw=1.2,
-               label=r"largest $|v|$ in the water")
-    ax.set_ylabel(r"$|v|$, m s$^{-1}$")
-    ax.grid(alpha=0.25, which="both")
-    ax.legend(frameon=False, loc="lower left")
+    draw(axes[1, 1], runs, [(151, 0.02, 0.1, A) for A in As],
+         [rf"$A = 10^{{{int(round(np.log10(A)))}}}$ s$^{{-1}}$" for A in As],
+         cmap, a.time)
+
+    axes[0, 0].set_ylabel(r"$Y$")
+    axes[1, 0].set(xlabel=r"$X$", ylabel=r"$Y$", xlim=tuple(a.xlim))
+    axes[1, 1].set_xlabel(r"$X$")
 
     for ax, tag in zip(axes.ravel(), "abcd"):
         ax.text(0.5, 1.02, tag, transform=ax.transAxes, ha="center", va="bottom",
@@ -161,9 +124,14 @@ def main(argv=None):
     fig.savefig(a.out, dpi=300, bbox_inches="tight")
     fig.savefig(a.out.with_suffix(".tiff"), dpi=300, bbox_inches="tight")
     print("->", a.out)
-    print(f"   largest |v| in the water at A = 1e6: {vl * 1e3:.3f} mm/s")
-    for A, v in zip(av, vs):
-        print(f"   A = {A:.0e}: |v| in ice {v:.2e} m/s, ratio to water {v / vl:.1e}")
+    for lab, keys in (("grid", [(n, 0.02, 0.1, 10 ** 6) for n in grids]),
+                      ("dt", [(151, t, 0.1, 10 ** 6) for t in dts]),
+                      ("eps", [(151, 0.02, e, 10 ** 6) for e in eps]),
+                      ("A", [(151, 0.02, 0.1, A) for A in As])):
+        xs = [runs[k][0]["mean_interface_x"] for k in keys if k in runs]
+        print(f"   {lab:5} mean X over the set: "
+              + ", ".join(f"{v:.4f}" for v in xs)
+              + f"   spread {100 * (max(xs) - min(xs)) / np.mean(xs):.3f} %")
 
 
 if __name__ == "__main__":

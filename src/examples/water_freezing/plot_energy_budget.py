@@ -99,7 +99,7 @@ def main(argv=None) -> None:
     i = log_sample(t.size, args.points)
     kj = 1e-3
 
-    fig, axes = plt.subplots(1, 3, figsize=(6.3, 2.6), sharex=True,
+    fig, axes = plt.subplots(3, 1, figsize=(6.3, 6.6), sharex=True,
                              constrained_layout=True)
     ax_q, ax_e, ax_r = axes
 
@@ -146,12 +146,13 @@ def main(argv=None) -> None:
                   ha=ha, va=va, fontsize=8.5, color="tab:purple")
 
     # Panel letters sit outside the frame: inside, every corner is taken by a
-    # legend or by data in one of the two start types
+    # legend or by data in one of the two start types. Stacked panels share the
+    # time axis, so only the bottom one carries its label
     for ax, tag in zip(axes, "abc"):
         ax.text(0.5, 1.02, tag, transform=ax.transAxes, ha="center", va="bottom",
                 fontsize=12, fontweight="bold")
         ax.grid(alpha=0.25, which="major")
-        ax.set_xlabel(r"$t$, s")
+    ax_r.set_xlabel(r"$t$, s")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.out, dpi=300, bbox_inches="tight")
